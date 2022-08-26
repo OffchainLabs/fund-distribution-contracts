@@ -21,6 +21,7 @@ error NonZeroBalance(uint256 value);
 // 4. optimise gas a bit
 // 5. remove the safety check at the end of the function?
 // 6. Add tests to CI
+// 7. and an else and emit an event if there were no dues to deliver
 
 contract RewardDistributor is Ownable {
     event OwnerRecieved(address owner, address recipient, uint256 value);
