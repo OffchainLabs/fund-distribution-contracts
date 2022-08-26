@@ -72,7 +72,7 @@ contract RewardDistributor is Ownable {
                 }
 
                 // send the funds
-                (bool success,) = recipients[r].call{value: individualDues, gas: 100000 }("");
+                (bool success,) = recipients[r].call{value: individualDues, gas: 100000}("");
 
                 // if the funds failed to send we send them to the owner for safe keeping
                 // then the owner will have the opportunity to distribute them out of band
@@ -84,7 +84,6 @@ contract RewardDistributor is Ownable {
                     if (!ownerSuccess) {
                         revert OwnerFailedRecieve(owner(), recipients[r], individualDues);
                     }
-
                     emit OwnerRecieved(owner(), recipients[r], individualDues);
                 }
             }

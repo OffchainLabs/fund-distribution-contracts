@@ -6,10 +6,11 @@ import "../src/RewardDistributor.sol";
 import "forge-std/Test.sol";
 
 contract EmptyContract {}
+
 contract UsesTooMuchGasContract {
     receive() external payable {
         // 1k iterations should use at least 100k gas
-        uint j = 0;
+        uint256 j = 0;
         for (uint256 i; i < 1000; i++) {
             j++;
         }
