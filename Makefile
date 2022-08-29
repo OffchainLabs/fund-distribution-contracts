@@ -11,6 +11,7 @@ build     :; forge build
 coverage  :; FOUNDRY_PROFILE=coverage forge coverage
 gas       :; forge snapshot --gas-report
 gas-check :; forge snapshot --gas-report --check
-test      :; forge test -vvv
+test-forge:; forge test -vvv
 clean     :; forge clean
 fmt       :; forge fmt
+test      :  test-forge
