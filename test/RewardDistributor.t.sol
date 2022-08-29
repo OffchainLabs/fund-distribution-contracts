@@ -66,7 +66,6 @@ contract RewardDistributorTest is Test {
         new RewardDistributor(recipients);
     }
 
-    // 1. does it distribute from non owner
     function testDistributeRewards() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
@@ -133,7 +132,6 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(emptyRecipients);
     }
 
-    // 4. does it check for correct recipients - different number, and one different value
     function testDistributeRewardsDoesNotDistributeWrongRecipients() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
