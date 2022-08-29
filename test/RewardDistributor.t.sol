@@ -86,8 +86,32 @@ contract RewardDistributorTest is Test {
         assertEq(c.balance, aReward, "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertGt(reward % 3, 0, "remainder");
+        assertGt(reward % 3, 0, "remainder"); // test the code path with remainder
         assertEq(address(rd).balance, reward % 3, "rewards balance");
+    }
+
+    function testDistributeRewardsToMany() public {
+        clearAccounts();
+        address[] memory recipients = makeRecipientGroup(100);
+
+        vm.prank(owner);
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        // increase the balance of rd
+        uint256 reward = 1e8;
+        vm.deal(address(rd), reward);
+
+        vm.prank(nobody);
+        rd.distributeRewards(recipients);
+
+        uint256 aReward = reward / 100;
+        assertEq(a.balance, aReward, "a balance");
+        assertEq(b.balance, aReward, "b balance");
+        assertEq(c.balance, aReward, "c balance");
+        assertEq(owner.balance, 0, "owner balance");
+        assertEq(nobody.balance, 0, "nobody balance");
+        assertEq(reward % 100, 0, "remainder"); // test the code path without remainder
+        assertEq(address(rd).balance, reward % 100, "rewards balance");
     }
 
     function testDistributeRewardsDoesRefundsOwner() public {
