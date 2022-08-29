@@ -42,6 +42,9 @@ contract RewardDistributor is Ownable {
         // create a committment to the recipient group and update current
         bytes32 recipientGroup;
         assembly ("memory-safe") {
+            // same as keccak256(abi.encodePacked(recipients))
+            // save gas since the array is already in the memory
+            // we skip the first 32 bytes (length) and hash the next length * 32 bytes
             recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
         }
         currentRecipientGroup = recipientGroup;
@@ -58,13 +61,16 @@ contract RewardDistributor is Ownable {
         }
 
         // cache currentRecipientGroup in memory
-        bytes32 _currentRecipientGroup = currentRecipientGroup;
+        // bytes32 _currentRecipientGroup = currentRecipientGroup;
         bytes32 recipientGroup;
         assembly ("memory-safe") {
+            // same as keccak256(abi.encodePacked(recipients))
+            // save gas since the array is already in the memory
+            // we skip the first 32 bytes (length) and hash the next length * 32 bytes
             recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
         }
-        if (recipientGroup != _currentRecipientGroup) {
-            revert InvalidRecipientGroup(_currentRecipientGroup, recipientGroup);
+        if (recipientGroup != currentRecipientGroup) {
+            revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
         uint256 dues = address(this).balance;
