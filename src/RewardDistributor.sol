@@ -33,7 +33,7 @@ contract RewardDistributor is Ownable {
         setRecipients(recipients);
     }
 
-    function hashRecipients(address[] memory recipients) internal pure returns(bytes32 recipientGroup){
+    function hashRecipients(address[] memory recipients) internal pure returns (bytes32 recipientGroup) {
         assembly ("memory-safe") {
             // same as keccak256(abi.encodePacked(recipients))
             // save gas since the array is already in the memory
@@ -52,7 +52,7 @@ contract RewardDistributor is Ownable {
         currentRecipientGroup = recipientGroup;
     }
 
-    function updateRecipients(address[] memory currentRecipients, address[] memory newRecipients) public onlyOwner {
+    function updateRecipients(address[] memory currentRecipients, address[] memory newRecipients) external onlyOwner {
         distributeRewards(currentRecipients);
         setRecipients(newRecipients);
     }
