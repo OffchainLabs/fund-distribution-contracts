@@ -68,14 +68,14 @@ contract RewardDistributor is Ownable {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
-        uint256 dues = address(this).balance;
-        if (dues > 0) {
-            // send out the dues
+        uint256 rewards = address(this).balance;
+        if (rewards > 0) {
+            // send out the rewards
             uint256 individualRewards;
             uint256 last_r;
             unchecked {
                 // recipients.length cannot be 0
-                individualRewards = dues / recipients.length;
+                individualRewards = rewards / recipients.length;
                 last_r = recipients.length - 1;
             }
             for (uint256 r; r < recipients.length;) {
