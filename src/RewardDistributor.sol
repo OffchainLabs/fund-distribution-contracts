@@ -22,7 +22,7 @@ error InvalidBalance();
 // 4. optimise gas a bit
 // 5. remove the safety check at the end of the function?
 // 6. Add tests to CI
-// 7. and an else and emit an event if there were no dues to deliver
+// 7. and an else and emit an event if there were no rewards to deliver
 
 contract RewardDistributor is Ownable {
     event OwnerRecieved(address owner, address recipient, uint256 value);
@@ -32,15 +32,6 @@ contract RewardDistributor is Ownable {
 
     constructor(address[] memory recipients) Ownable() {
         setRecipients(recipients);
-    }
-
-    function updateRecipients(address[] memory currentRecipients, address[] memory newRecipients) public onlyOwner {
-        sendAll(currentRecipients);
-        setRecipients(newRecipients);
-    }
-
-    function distributeDues(address[] memory recipients) public {
-        sendAll(recipients);
     }
 
     function setRecipients(address[] memory recipients) private {
@@ -56,7 +47,12 @@ contract RewardDistributor is Ownable {
         currentRecipientGroup = recipientGroup;
     }
 
-    function sendAll(address[] memory recipients) private {
+    function updateRecipients(address[] memory currentRecipients, address[] memory newRecipients) public onlyOwner {
+        distributeRewards(currentRecipients);
+        setRecipients(newRecipients);
+    }
+
+    function distributeRewards(address[] memory recipients) public {
         if (recipients.length == 0) {
             revert EmptyRecipients();
         }
@@ -74,18 +70,18 @@ contract RewardDistributor is Ownable {
         uint256 dues = address(this).balance;
         if (dues > 0) {
             // send out the dues
-            uint256 individualDues;
+            uint256 individualRewards;
             uint256 last_r;
             unchecked {
                 // recipients.length cannot be 0
-                individualDues = dues / recipients.length;
+                individualRewards = dues / recipients.length;
                 last_r = recipients.length - 1;
             }
             for (uint256 r; r < recipients.length;) {
                 if (r == last_r) {
                     // last lucky recipient gets the change
-                    individualDues = address(this).balance;
-                    if (individualDues == 0) {
+                    individualRewards = address(this).balance;
+                    if (individualRewards == 0) {
                         // last recipient may reentrant into this function
                         // and distributed the whole balance already
                         revert InvalidBalance();
@@ -93,21 +89,21 @@ contract RewardDistributor is Ownable {
                 }
 
                 // send the funds
-                (bool success,) = recipients[r].call{value: individualDues, gas: 100000}("");
+                (bool success,) = recipients[r].call{value: individualRewards, gas: 100000}("");
 
                 // if the funds failed to send we send them to the owner for safe keeping
                 // then the owner will have the opportunity to distribute them out of band
                 if (success) {
-                    emit RecipientRecieved(recipients[r], individualDues);
+                    emit RecipientRecieved(recipients[r], individualRewards);
                 } else {
                     // cache owner in memory
                     address _owner = owner();
-                    (bool ownerSuccess,) = _owner.call{value: individualDues}("");
+                    (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
                     // if this is the case then revert and sort it out
                     if (!ownerSuccess) {
-                        revert OwnerFailedRecieve(_owner, recipients[r], individualDues);
+                        revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
                     }
-                    emit OwnerRecieved(_owner, recipients[r], individualDues);
+                    emit OwnerRecieved(_owner, recipients[r], individualRewards);
                 }
                 unchecked {
                     ++r;
