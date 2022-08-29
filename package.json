@@ -1,0 +1,11 @@
+{
+    "name": "dac-rewards",
+    "version": "1.0.0",
+    "license": "Apache-2.0",
+    "scripts": {
+        "build": "FOUNDRY_PROFILE=default forge build",
+        "coverage": "FOUNDRY_PROFILE=coverage forge coverage",
+        "gas": "FOUNDRY_PROFILE=default forge test --gas-report",
+        "test": "FOUNDRY_PROFILE=default forge test -vvv"
+    }
+  }
