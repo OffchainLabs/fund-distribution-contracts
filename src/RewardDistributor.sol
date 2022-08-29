@@ -63,11 +63,9 @@ contract RewardDistributor is Ownable {
             revert EmptyRecipients();
         }
 
-        // cache currentRecipientGroup in memory
-        bytes32 _currentRecipientGroup = currentRecipientGroup;
         bytes32 recipientGroup = hashRecipients(recipients);
-        if (recipientGroup != _currentRecipientGroup) {
-            revert InvalidRecipientGroup(_currentRecipientGroup, recipientGroup);
+        if (recipientGroup != currentRecipientGroup) {
+            revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
         uint256 dues = address(this).balance;
