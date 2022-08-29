@@ -213,14 +213,18 @@ contract RewardDistributorTest is Test {
 
         // TODO: fuzz this value?
         vm.deal(address(rd), 5 ether);
+
         uint256 gasleftPrior = gasleft();
+        emit log_named_uint("gas left prior", gasleftPrior);
+
         rd.distributeRewards(recipients);
+
         uint256 gasleftAfter = gasleft();
+        emit log_named_uint("gas left after", gasleftAfter);
 
-        console.log("had ", gasleftPrior, " gas, and now ", gasleftAfter);
         uint256 gasUsed = gasleftPrior - gasleftAfter;
-        console.log("used ", gasUsed);
-
+        emit log_named_uint("gas left used", gasUsed);
+        
         uint256 blockGasLimit = 32_000_000;
         // must fit within block gas limit (this value may change in the future)
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
