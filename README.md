@@ -53,5 +53,5 @@ make snapshot
 ### Compare with Gas Snapshot
 
 ```
-make snapshot --check
+make gas-check
 ```
