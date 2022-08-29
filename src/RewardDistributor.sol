@@ -74,9 +74,15 @@ contract RewardDistributor is Ownable {
         uint256 dues = address(this).balance;
         if (dues > 0) {
             // send out the dues
-            uint256 individualDues = dues / recipients.length;
+            uint256 individualDues;
+            uint256 last_r;
+            unchecked {
+                // recipients.length cannot be 0
+                individualDues = dues / recipients.length;
+                last_r = recipients.length - 1;
+            }
             for (uint256 r; r < recipients.length;) {
-                if (r == (recipients.length - 1)) {
+                if (r == last_r) {
                     // last lucky recipient gets the change
                     individualDues = address(this).balance;
                     if (individualDues == 0) {
