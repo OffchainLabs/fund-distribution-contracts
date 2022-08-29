@@ -33,11 +33,11 @@ contract RewardDistributor is Ownable {
 
     /// @notice amount of gas forwarded to each transfer call
     /// @dev the recipient group is assumed to be a known set of contracts that won't consume more than this amount
-    uint256 constant public PER_RECIPIENT_GAS = 100_000;
-    
+    uint256 public constant PER_RECIPIENT_GAS = 100_000;
+
     /// @notice the maximum number of addresses that may be recipients
     /// @dev this ensures that all sends may always happen within a block
-    uint64 constant public MAX_RECIPIENTS = 64;
+    uint64 public constant MAX_RECIPIENTS = 64;
 
     /// @notice hash of concat'ed recipient group
     bytes32 public currentRecipientGroup;
@@ -68,19 +68,21 @@ contract RewardDistributor is Ownable {
 
     /**
      * @notice Distributes previous rewards then updates the recipients to a new set
-     * @param currentRecipients set of addresses that will receive their final rewards 
+     * @param currentRecipients set of addresses that will receive their final rewards
      * @param newRecipients set of addresses that will receive future rewards
      */
-    function distributeAndUpdateRecipients(address[] memory currentRecipients, address[] memory newRecipients) public onlyOwner {
+    function distributeAndUpdateRecipients(address[] memory currentRecipients, address[] memory newRecipients)
+        public
+        onlyOwner
+    {
         distributeRewards(currentRecipients);
         setRecipients(newRecipients);
     }
 
-
     /**
      * @notice sends rewards to the set of recipients
      * @dev it is assumed that PER_RECIPIENT_GAS * MAX_RECIPIENTS covers the dynamic cost of falling back to sending to the owner
-     * @dev the last recipient gets the leftover dust 
+     * @dev the last recipient gets the leftover dust
      * @param recipients set of addresses to receive rewards
      */
     function distributeRewards(address[] memory recipients) public {
