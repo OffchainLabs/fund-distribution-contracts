@@ -84,30 +84,38 @@ contract RewardDistributorTest is Test {
         assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
-    function testDistributeAndUpdateRecipients() public withContext(50) {
+    function testDistributeAndUpdateRecipients() public withContext(64) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        address[] memory many_recipients = makeRecipientGroup(50);
-        rd.distributeAndUpdateRecipients(recipients, many_recipients);
+        address[] memory less_recipients = makeRecipientGroup(50);
+        rd.distributeAndUpdateRecipients(recipients, less_recipients);
 
         vm.stopPrank();
         vm.startPrank(nobody);
 
         // only owner should be able to call distributeRewards
         vm.expectRevert("Ownable: caller is not the owner");
-        rd.distributeAndUpdateRecipients(many_recipients, recipients);
+        rd.distributeAndUpdateRecipients(less_recipients, recipients);
+
+        uint256 aReward = reward / 64;
+        assertEq(less_recipients[0].balance, aReward, "a balance before update");
+        assertEq(less_recipients[1].balance, aReward, "b balance before update");
+        assertEq(less_recipients[2].balance, aReward, "c balance before update");
+
+        // increase the balance of rd
+        vm.deal(address(rd), reward);
 
         // anyone should be able to call distributeRewards
-        rd.distributeRewards(many_recipients);
+        rd.distributeRewards(less_recipients);
 
-        uint256 aReward = reward / 50;
-        assertEq(many_recipients[0].balance, aReward, "a balance");
-        assertEq(many_recipients[1].balance, aReward, "b balance");
-        assertEq(many_recipients[2].balance, aReward, "c balance");
+        uint256 newReward = aReward + reward / 50;
+        assertEq(less_recipients[0].balance, newReward, "a balance after update");
+        assertEq(less_recipients[1].balance, newReward, "b balance after update");
+        assertEq(less_recipients[2].balance, newReward, "c balance after update");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
         assertEq(reward % 50, 0, "remainder"); // test the code path without remainder
