@@ -22,7 +22,6 @@ contract RewardDistributorTest is Test {
     address a = vm.addr(0x01);
     address b = vm.addr(0x02);
     address c = vm.addr(0x03);
-    // TODO: add test where owner is a gnosis safe?
     address owner = vm.addr(0x04);
     address nobody = vm.addr(0x05);
 
@@ -78,6 +77,9 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
+        vm.stopPrank();
+        vm.startPrank(nobody);
+        // anyone should be able to call distributeRewards
         rd.distributeRewards(recipients);
 
         uint256 aReward = reward / 3;
@@ -204,20 +206,16 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), rewards);
 
         uint256 gasleftPrior = gasleft();
-        emit log_named_uint("gas left prior", gasleftPrior);
 
         rd.distributeRewards(recipients);
 
         uint256 gasleftAfter = gasleft();
-        emit log_named_uint("gas left after", gasleftAfter);
-
         uint256 gasUsed = gasleftPrior - gasleftAfter;
-        emit log_named_uint("gas left used", gasUsed);
 
-        uint256 blockGasLimit = 32_000_000;
-        // must fit within block gas limit (this value may change in the future)
+        uint256 targetBlockGasLimit = 16_000_000;
+        // must fit within target block gas limit (this value may change in the future)
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
-        assertGt(blockGasLimit, gasUsed, "past block gas limit");
+        assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
         assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
         assertEq(address(owner).balance, rewards, "owner didn't receive all funds");
     }
