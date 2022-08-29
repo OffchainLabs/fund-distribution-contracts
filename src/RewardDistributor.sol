@@ -81,7 +81,6 @@ contract RewardDistributor is Ownable {
 
     /**
      * @notice sends rewards to the set of recipients
-     * @dev it is assumed that PER_RECIPIENT_GAS * MAX_RECIPIENTS covers the dynamic cost of falling back to sending to the owner
      * @dev the last recipient gets the leftover dust
      * @param recipients set of addresses to receive rewards
      */
