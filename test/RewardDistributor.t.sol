@@ -100,25 +100,25 @@ contract RewardDistributorTest is Test {
         vm.stopPrank();
         vm.startPrank(nobody);
 
-        address[] memory less_recipients = makeRecipientGroup(50);
+        address[] memory newRecipients = makeRecipientGroup(50);
 
         // only owner should be able to call distributeRewards
         vm.expectRevert("Ownable: caller is not the owner");
-        rd.distributeAndUpdateRecipients(recipients, less_recipients);
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
     }
 
     function testDistributeAndUpdateRecipientsBadPrevious() public withContext(64) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
-        address[] memory less_recipients = makeRecipientGroup(50);
+        address[] memory newRecipients = makeRecipientGroup(50);
 
         // revert on wrong previous group
         vm.expectRevert(
             abi.encodeWithSelector(
-                InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(less_recipients))
+                InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients))
             )
         );
-        rd.distributeAndUpdateRecipients(less_recipients, less_recipients);
+        rd.distributeAndUpdateRecipients(newRecipients, newRecipients);
     }
 
     function testDistributeRewardsDoesRefundsOwner() public withContext(3) {
