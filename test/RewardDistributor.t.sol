@@ -66,10 +66,59 @@ contract RewardDistributorTest is Test {
         uint256 aReward = reward / 3;
         assertEq(recipients[0].balance, aReward, "a balance");
         assertEq(recipients[1].balance, aReward, "b balance");
-        assertEq(recipients[2].balance, aReward + reward % 3, "c balance");
+        assertEq(recipients[2].balance, aReward, "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(address(rd).balance, 0, "rewards balance");
+        assertGt(reward % 3, 0, "remainder"); // test the code path with remainder
+        assertEq(address(rd).balance, reward % 3, "rewards balance");
+    }
+
+    function testDistributeAndUpdateRecipients() public withContext(64) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        // increase the balance of rd
+        uint256 reward = 1e8;
+        vm.deal(address(rd), reward);
+
+        address[] memory newRecipients = makeRecipientGroup(50);
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+        assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients)));
+
+        uint256 aReward = reward / 64;
+        assertEq(newRecipients[0].balance, aReward, "a balance before update");
+        assertEq(newRecipients[1].balance, aReward, "b balance before update");
+        assertEq(newRecipients[2].balance, aReward, "c balance before update");
+        assertEq(owner.balance, 0, "owner balance");
+        assertEq(nobody.balance, 0, "nobody balance");
+        assertEq(reward % 64, 0, "remainder"); // test the code path without remainder
+        assertEq(address(rd).balance, reward % 64, "rewards balance");
+    }
+
+    function testDistributeAndUpdateRecipientsNotOwner() public withContext(64) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        vm.stopPrank();
+        vm.startPrank(nobody);
+
+        address[] memory newRecipients = makeRecipientGroup(50);
+
+        // only owner should be able to call distributeRewards
+        vm.expectRevert("Ownable: caller is not the owner");
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+    }
+
+    function testDistributeAndUpdateRecipientsBadPrevious() public withContext(64) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        address[] memory newRecipients = makeRecipientGroup(50);
+
+        // revert on wrong previous group
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients))
+            )
+        );
+        rd.distributeAndUpdateRecipients(newRecipients, newRecipients);
     }
 
     function testDistributeRewardsDoesRefundsOwner() public withContext(3) {
@@ -90,9 +139,9 @@ contract RewardDistributorTest is Test {
         assertEq(recipients[0].balance, aReward, "a balance");
         assertEq(recipients[1].balance, aReward, "b balance");
         assertEq(recipients[2].balance, 0, "c balance");
-        assertEq(owner.balance, aReward + reward % 3, "owner balance");
+        assertEq(owner.balance, aReward, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(address(rd).balance, 0, "rewards balance");
+        assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
     function testDistributeRewardsDoesNotDistributeToEmpty() public withContext(3) {
@@ -157,9 +206,7 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3) + reward % 3)
-        );
+        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3)));
 
         rd.distributeRewards(recipients);
     }
@@ -205,9 +252,7 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients);
 
         for (uint256 i = 0; i < numRecipients; i++) {
-            bool isLast = i == numRecipients - 1;
-            uint256 expectedBalance = isLast ? rewards : 0;
-            assertEq(recipients[i].balance, expectedBalance, "expected reward incorrect");
+            assertEq(recipients[i].balance, 0, "expected reward incorrect");
         }
     }
 }

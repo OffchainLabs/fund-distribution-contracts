@@ -46,6 +46,15 @@ contract RewardDistributor is Ownable {
         setRecipients(recipients);
     }
 
+    function hashRecipients(address[] memory recipients) internal pure returns (bytes32 recipientGroup) {
+        assembly ("memory-safe") {
+            // same as keccak256(abi.encodePacked(recipients))
+            // save gas since the array is already in the memory
+            // we skip the first 32 bytes (length) and hash the next length * 32 bytes
+            recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
+        }
+    }
+
     /**
      * @notice Validates and sets the set of recipient addresses.
      * @dev We enforce a max number of recipients to ensure the distribution of rewards fits within a block.
@@ -61,7 +70,7 @@ contract RewardDistributor is Ownable {
         }
 
         // create a committment to the recipient group and update current
-        bytes32 recipientGroup = keccak256(abi.encodePacked(recipients));
+        bytes32 recipientGroup = hashRecipients(recipients);
         currentRecipientGroup = recipientGroup;
     }
 
@@ -71,7 +80,7 @@ contract RewardDistributor is Ownable {
      * @param newRecipients Set of addresses that will receive future rewards.
      */
     function distributeAndUpdateRecipients(address[] memory currentRecipients, address[] memory newRecipients)
-        public
+        external
         onlyOwner
     {
         distributeRewards(currentRecipients);
@@ -80,7 +89,7 @@ contract RewardDistributor is Ownable {
 
     /**
      * @notice Sends rewards to the set of recipients.
-     * @dev The last recipient gets the leftover dust.
+     * @dev The remainder will be kept in the contract.
      * @param recipients Set of addresses to receive rewards.
      */
     function distributeRewards(address[] memory recipients) public {
@@ -88,22 +97,24 @@ contract RewardDistributor is Ownable {
             revert EmptyRecipients();
         }
 
-        bytes32 recipientGroup = keccak256(abi.encodePacked(recipients));
+        bytes32 recipientGroup = hashRecipients(recipients);
         if (recipientGroup != currentRecipientGroup) {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
         uint256 rewards = address(this).balance;
-        if (rewards > 0) {
-            // send out the rewards
-            uint256 individualRewards = rewards / recipients.length;
-            for (uint256 r; r < recipients.length; r++) {
-                if (r == (recipients.length - 1)) {
-                    // last lucky recipient gets the change
-                    individualRewards += rewards % recipients.length;
-                }
-
+        // calculate individual reward
+        uint256 individualRewards;
+        unchecked {
+            // recipients.length cannot be 0
+            individualRewards = rewards / recipients.length;
+        }
+        if (individualRewards > 0) {
+            for (uint256 r; r < recipients.length;) {
                 // send the funds
+                // if the recipient reentry to steal funds, the contract will not have sufficient
+                // funds and revert when trying to send fund to the next recipient
+                // if the recipient is the last, it doesn't matter since there are no extra fund to steal
                 (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
 
                 // if the funds failed to send we send them to the owner for safe keeping
@@ -111,12 +122,17 @@ contract RewardDistributor is Ownable {
                 if (success) {
                     emit RecipientRecieved(recipients[r], individualRewards);
                 } else {
-                    (bool ownerSuccess,) = owner().call{value: individualRewards}("");
+                    // cache owner in memory
+                    address _owner = owner();
+                    (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
                     // if this is the case then revert and sort it out
                     if (!ownerSuccess) {
-                        revert OwnerFailedRecieve(owner(), recipients[r], individualRewards);
+                        revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
                     }
-                    emit OwnerRecieved(owner(), recipients[r], individualRewards);
+                    emit OwnerRecieved(_owner, recipients[r], individualRewards);
+                }
+                unchecked {
+                    ++r;
                 }
             }
         }
