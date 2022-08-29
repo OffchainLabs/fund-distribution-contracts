@@ -9,8 +9,8 @@ update    :; forge update
 # Build & test
 build     :; forge build
 coverage  :; FOUNDRY_PROFILE=coverage forge coverage
-gas       :; forge snapshot --gas-report
-gas-check :; forge snapshot --gas-report --check
+gas       :; forge test --gas-report
+snapshot  :; forge snapshot
 test-forge:; forge test -vvv
 clean     :; forge clean
 fmt       :; forge fmt
