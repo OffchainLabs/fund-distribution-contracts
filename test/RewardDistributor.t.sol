@@ -4,19 +4,8 @@ pragma solidity ^0.8.16;
 // import "./src/RewardDistributor.sol";
 import "../src/RewardDistributor.sol";
 import "./Reverter.sol";
+import "./Empty.sol";
 import "forge-std/Test.sol";
-
-contract EmptyContract {}
-
-contract UsesTooMuchGasContract {
-    receive() external payable {
-        // 1k iterations should use at least 100k gas
-        uint256 j = 0;
-        for (uint256 i; i < 1000; i++) {
-            j++;
-        }
-    }
-}
 
 contract RewardDistributorTest is Test {
     address owner = vm.addr(0x04);
@@ -88,7 +77,7 @@ contract RewardDistributorTest is Test {
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address to have this code
-        UsesTooMuchGasContract ec = new UsesTooMuchGasContract();
+        Reverter ec = new Reverter();
         vm.etch(recipients[2], address(ec).code);
 
         // increase the balance of rd
@@ -160,7 +149,7 @@ contract RewardDistributorTest is Test {
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address and the owner to have this code
-        EmptyContract ec = new EmptyContract();
+        Empty ec = new Empty();
         vm.etch(recipients[2], address(ec).code);
         vm.etch(owner, address(ec).code);
 
