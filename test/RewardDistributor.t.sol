@@ -229,7 +229,7 @@ contract RewardDistributorTest is Test {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         uint256 rewards = 6;
-        assertGt(rewards, numRecipients, "test not configured correctly");
+        assertGt(numRecipients, rewards, "test not configured correctly");
 
         vm.deal(address(rd), rewards);
 
