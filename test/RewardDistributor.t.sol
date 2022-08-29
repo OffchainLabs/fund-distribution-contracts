@@ -80,17 +80,14 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        address[] memory less_recipients = makeRecipientGroup(50);
-        rd.distributeAndUpdateRecipients(recipients, less_recipients);
-        assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(less_recipients)));
-
-        vm.stopPrank();
-        vm.startPrank(nobody);
+        address[] memory newRecipients = makeRecipientGroup(50);
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+        assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients)));
 
         uint256 aReward = reward / 64;
-        assertEq(less_recipients[0].balance, aReward, "a balance before update");
-        assertEq(less_recipients[1].balance, aReward, "b balance before update");
-        assertEq(less_recipients[2].balance, aReward, "c balance before update");
+        assertEq(newRecipients[0].balance, aReward, "a balance before update");
+        assertEq(newRecipients[1].balance, aReward, "b balance before update");
+        assertEq(newRecipients[2].balance, aReward, "c balance before update");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
         assertEq(reward % 64, 0, "remainder"); // test the code path without remainder
