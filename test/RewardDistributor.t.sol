@@ -86,6 +86,7 @@ contract RewardDistributorTest is Test {
         assertEq(c.balance, aReward + reward % 3, "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
+        assertEq(address(rd).balance, 0, "rewards balance");
     }
 
     function testDistributeRewardsDoesRefundsOwner() public {
@@ -113,6 +114,7 @@ contract RewardDistributorTest is Test {
         assertEq(c.balance, 0, "c balance");
         assertEq(owner.balance, aReward + reward % 3, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
+        assertEq(address(rd).balance, 0, "rewards balance");
     }
 
     function testDistributeRewardsDoesNotDistributeToEmpty() public {
