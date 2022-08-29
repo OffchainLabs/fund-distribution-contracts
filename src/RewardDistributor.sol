@@ -113,7 +113,7 @@ contract RewardDistributor is Ownable {
             // the remainder will be kept in the contract
             for (uint256 r; r < recipients.length;) {
                 // send the funds
-                // if the recipient reentry to steal funds, the contract will not have sufficient 
+                // if the recipient reentry to steal funds, the contract will not have sufficient
                 // funds and revert when trying to send fund to the next recipient
                 // if the recipient is the last, it doesn't matter since there are no extra fund to steal
                 (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");

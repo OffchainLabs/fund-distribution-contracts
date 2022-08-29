@@ -84,16 +84,23 @@ contract RewardDistributorTest is Test {
         assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
-    function testDistributeRewardsToMany() public withContext(50) {
-        address[] memory many_recipients = makeRecipientGroup(50);
-        RewardDistributor rd = new RewardDistributor(many_recipients);
+    function testDistributeAndUpdateRecipients() public withContext(50) {
+        RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
+        address[] memory many_recipients = makeRecipientGroup(50);
+        rd.distributeAndUpdateRecipients(recipients, many_recipients);
+
         vm.stopPrank();
         vm.startPrank(nobody);
+
+        // only owner should be able to call distributeRewards
+        vm.expectRevert("Ownable: caller is not the owner");
+        rd.distributeAndUpdateRecipients(many_recipients, recipients);
+
         // anyone should be able to call distributeRewards
         rd.distributeRewards(many_recipients);
 
@@ -199,6 +206,7 @@ contract RewardDistributorTest is Test {
     }
 
     uint64 numReverters = 64;
+
     function testBlockGasLimit() public withContext(numReverters) {
         for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Reverter());
@@ -227,6 +235,7 @@ contract RewardDistributorTest is Test {
     }
 
     uint256 numRecipients = 8;
+
     function testLowSend() public withContext(8) {
         RewardDistributor rd = new RewardDistributor(recipients);
         uint256 rewards = 6;
