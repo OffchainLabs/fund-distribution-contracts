@@ -7,6 +7,7 @@ error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error OwnerFailedRecieve(address owner, address recipient, uint256 value);
 error NonZeroBalance(uint256 value);
+error InvalidBalance();
 
 // CHRIS: TODO:
 // 1. comments
@@ -48,7 +49,10 @@ contract RewardDistributor is Ownable {
         }
 
         // create a committment to the recipient group and update current
-        bytes32 recipientGroup = keccak256(abi.encodePacked(recipients));
+        bytes32 recipientGroup;
+        assembly{
+            recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
+        }
         currentRecipientGroup = recipientGroup;
     }
 
@@ -57,19 +61,29 @@ contract RewardDistributor is Ownable {
             revert EmptyRecipients();
         }
 
-        bytes32 recipientGroup = keccak256(abi.encodePacked(recipients));
-        if (recipientGroup != currentRecipientGroup) {
-            revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
+        // cache currentRecipientGroup in memory
+        bytes32 _currentRecipientGroup = currentRecipientGroup;
+        bytes32 recipientGroup;
+        assembly{
+            recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
+        }
+        if (recipientGroup != _currentRecipientGroup) {
+            revert InvalidRecipientGroup(_currentRecipientGroup, recipientGroup);
         }
 
         uint256 dues = address(this).balance;
         if (dues > 0) {
             // send out the dues
             uint256 individualDues = dues / recipients.length;
-            for (uint256 r; r < recipients.length; r++) {
+            for (uint256 r; r < recipients.length;) {
                 if (r == (recipients.length - 1)) {
                     // last lucky recipient gets the change
-                    individualDues += dues % recipients.length;
+                    individualDues = address(this).balance;
+                    if (individualDues == 0) {
+                        // last recipient may reentrant into this function
+                        // and distributed the whole balance already
+                        revert InvalidBalance();
+                    }
                 }
 
                 // send the funds
@@ -80,12 +94,17 @@ contract RewardDistributor is Ownable {
                 if (success) {
                     emit RecipientRecieved(recipients[r], individualDues);
                 } else {
-                    (bool ownerSuccess,) = owner().call{value: individualDues}("");
+                    // cache owner in memory
+                    address _owner = owner();
+                    (bool ownerSuccess,) = _owner.call{value: individualDues}("");
                     // if this is the case then revert and sort it out
                     if (!ownerSuccess) {
-                        revert OwnerFailedRecieve(owner(), recipients[r], individualDues);
+                        revert OwnerFailedRecieve(_owner, recipients[r], individualDues);
                     }
-                    emit OwnerRecieved(owner(), recipients[r], individualDues);
+                    emit OwnerRecieved(_owner, recipients[r], individualDues);
+                }
+                unchecked {
+                    ++r;
                 }
             }
         }
