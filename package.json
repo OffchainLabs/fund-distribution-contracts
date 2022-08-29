@@ -5,7 +5,8 @@
     "scripts": {
         "build": "FOUNDRY_PROFILE=default forge build",
         "coverage": "FOUNDRY_PROFILE=coverage forge coverage",
-        "gas": "FOUNDRY_PROFILE=default forge snapshot --check --gas-report",
+        "gas": "FOUNDRY_PROFILE=default forge snapshot --gas-report",
+        "gas:check": "FOUNDRY_PROFILE=default forge snapshot --check --gas-report",
         "test": "FOUNDRY_PROFILE=default forge test -vvv"
     }
 }
