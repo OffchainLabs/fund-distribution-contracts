@@ -92,33 +92,46 @@ contract RewardDistributorTest is Test {
 
         address[] memory less_recipients = makeRecipientGroup(50);
         rd.distributeAndUpdateRecipients(recipients, less_recipients);
+        assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(less_recipients)));
 
         vm.stopPrank();
         vm.startPrank(nobody);
-
-        // only owner should be able to call distributeRewards
-        vm.expectRevert("Ownable: caller is not the owner");
-        rd.distributeAndUpdateRecipients(less_recipients, recipients);
 
         uint256 aReward = reward / 64;
         assertEq(less_recipients[0].balance, aReward, "a balance before update");
         assertEq(less_recipients[1].balance, aReward, "b balance before update");
         assertEq(less_recipients[2].balance, aReward, "c balance before update");
-
-        // increase the balance of rd
-        vm.deal(address(rd), reward);
-
-        // anyone should be able to call distributeRewards
-        rd.distributeRewards(less_recipients);
-
-        uint256 newReward = aReward + reward / 50;
-        assertEq(less_recipients[0].balance, newReward, "a balance after update");
-        assertEq(less_recipients[1].balance, newReward, "b balance after update");
-        assertEq(less_recipients[2].balance, newReward, "c balance after update");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(reward % 50, 0, "remainder"); // test the code path without remainder
-        assertEq(address(rd).balance, reward % 50, "rewards balance");
+        assertEq(reward % 64, 0, "remainder"); // test the code path without remainder
+        assertEq(address(rd).balance, reward % 64, "rewards balance");
+    }
+
+    function testDistributeAndUpdateRecipientsNotOwner() public withContext(64) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        vm.stopPrank();
+        vm.startPrank(nobody);
+
+        address[] memory less_recipients = makeRecipientGroup(50);
+
+        // only owner should be able to call distributeRewards
+        vm.expectRevert("Ownable: caller is not the owner");
+        rd.distributeAndUpdateRecipients(recipients, less_recipients);
+    }
+
+    function testDistributeAndUpdateRecipientsBadPrevious() public withContext(64) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        address[] memory less_recipients = makeRecipientGroup(50);
+
+        // revert on wrong previous group
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(less_recipients))
+            )
+        );
+        rd.distributeAndUpdateRecipients(less_recipients, less_recipients);
     }
 
     function testDistributeRewardsDoesRefundsOwner() public withContext(3) {
@@ -213,9 +226,7 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3))
-        );
+        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3)));
 
         rd.distributeRewards(recipients);
     }
@@ -261,8 +272,7 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients);
 
         for (uint256 i = 0; i < numRecipients; i++) {
-            uint256 expectedBalance = 0;
-            assertEq(recipients[i].balance, expectedBalance, "expected reward incorrect");
+            assertEq(recipients[i].balance, 0, "expected reward incorrect");
         }
     }
 }
