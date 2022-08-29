@@ -7,10 +7,4 @@ out/
 /broadcast/*
 /broadcast/*/31337/
 
-# yarn
-node_modules
 .env
-coverage
-coverage.json
-typechain-types
-yarn-error.log
