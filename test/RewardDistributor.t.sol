@@ -22,6 +22,7 @@ contract RewardDistributorTest is Test {
     address a = vm.addr(0x01);
     address b = vm.addr(0x02);
     address c = vm.addr(0x03);
+    // TODO: add test where owner is a gnosis safe?
     address owner = vm.addr(0x04);
     address nobody = vm.addr(0x05);
 
@@ -197,7 +198,8 @@ contract RewardDistributorTest is Test {
         assertEq(numReverters, rd.MAX_RECIPIENTS());
 
         // TODO: fuzz this value?
-        vm.deal(address(rd), 5 ether);
+        uint256 rewards = 5 ether;
+        vm.deal(address(rd), rewards);
 
         uint256 gasleftPrior = gasleft();
         emit log_named_uint("gas left prior", gasleftPrior);
@@ -213,7 +215,8 @@ contract RewardDistributorTest is Test {
         uint256 blockGasLimit = 32_000_000;
         // must fit within block gas limit (this value may change in the future)
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
-        assertTrue(blockGasLimit >= gasUsed);
-        assertTrue(gasUsed >= rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS());
+        assertTrue(blockGasLimit >= gasUsed, "past block gas limit");
+        assertTrue(gasUsed >= rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
+        assertTrue(address(owner).balance == rewards, "owner didn't receive all funds");
     }
 }
