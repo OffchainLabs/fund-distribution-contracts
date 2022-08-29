@@ -7,7 +7,6 @@ error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error OwnerFailedRecieve(address owner, address recipient, uint256 value);
 error NonZeroBalance(uint256 value);
-error InvalidBalance();
 
 // CHRIS: TODO:
 // 1. comments
