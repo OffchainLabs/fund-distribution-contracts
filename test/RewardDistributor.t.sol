@@ -8,6 +8,9 @@ import "./Empty.sol";
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
+    event OwnerRecieved(address owner, address recipient, uint256 value);
+    event RecipientRecieved(address recipient, uint256 value);
+
     address owner = vm.addr(0x04);
     address nobody = vm.addr(0x05);
     address[] recipients;
@@ -58,12 +61,19 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
+        uint256 aReward = reward / 3;
+        vm.expectEmit(true, false, false, true);
+        emit RecipientRecieved(recipients[0], aReward);
+        vm.expectEmit(true, false, false, true);
+        emit RecipientRecieved(recipients[1], aReward);
+        vm.expectEmit(true, false, false, true);
+        emit RecipientRecieved(recipients[2], aReward);
+
         vm.stopPrank();
         vm.startPrank(nobody);
         // anyone should be able to call distributeRewards
         rd.distributeRewards(recipients);
 
-        uint256 aReward = reward / 3;
         assertEq(recipients[0].balance, aReward, "a balance");
         assertEq(recipients[1].balance, aReward, "b balance");
         assertEq(recipients[2].balance, aReward, "c balance");
@@ -123,9 +133,16 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
+        uint256 aReward = reward / 3;
+        vm.expectEmit(true, false, false, true);
+        emit RecipientRecieved(recipients[0], aReward);
+        vm.expectEmit(true, false, false, true);
+        emit RecipientRecieved(recipients[1], aReward);
+        vm.expectEmit(true, false, false, true);
+        emit OwnerRecieved(owner, recipients[2], aReward);
+
         rd.distributeRewards(recipients);
 
-        uint256 aReward = reward / 3;
         assertEq(recipients[0].balance, aReward, "a balance");
         assertEq(recipients[1].balance, aReward, "b balance");
         assertEq(recipients[2].balance, 0, "c balance");

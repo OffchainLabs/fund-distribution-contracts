@@ -7,11 +7,9 @@ error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error OwnerFailedRecieve(address owner, address recipient, uint256 value);
-error NonZeroBalance(uint256 value);
 
 // CHRIS: TODO:
 // 1. comments
-// 2. add tests for the events
 // 3. decide whether to have update functionality, or just a separate contract, tradeoffs:
 //      pros:
 //      1. save the call data (not so important on nova)
@@ -20,8 +18,8 @@ error NonZeroBalance(uint256 value);
 //      1. when updating the group need to do a 2 step update the contract then point it at the old one
 // 3.b Add tests for update functionality if we decide to keep it
 // 4. optimise gas a bit
-// 6. Add tests to CI
 // 7. and an else and emit an event if there were no rewards to deliver
+// 8. Add an event for set recipients
 
 contract RewardDistributor is Ownable {
     /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
