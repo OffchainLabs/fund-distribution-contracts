@@ -25,32 +25,32 @@ error NonZeroBalance(uint256 value);
 // 7. and an else and emit an event if there were no rewards to deliver
 
 contract RewardDistributor is Ownable {
-    /// @notice the recipient couldn't receive rewards, so fallback to owner was triggered
+    /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
     event OwnerRecieved(address owner, address recipient, uint256 value);
 
-    /// @notice address successfully received rewards
+    /// @notice Address successfully received rewards.
     event RecipientRecieved(address recipient, uint256 value);
 
-    /// @notice amount of gas forwarded to each transfer call
-    /// @dev the recipient group is assumed to be a known set of contracts that won't consume more than this amount
+    /// @notice Amount of gas forwarded to each transfer call.
+    /// @dev The recipient group is assumed to be a known set of contracts that won't consume more than this amount.
     uint256 public constant PER_RECIPIENT_GAS = 100_000;
 
-    /// @notice the maximum number of addresses that may be recipients
-    /// @dev this ensures that all sends may always happen within a block
+    /// @notice The maximum number of addresses that may be recipients.
+    /// @dev This ensures that all sends may always happen within a block.
     uint64 public constant MAX_RECIPIENTS = 64;
 
-    /// @notice hash of concat'ed recipient group
+    /// @notice Hash of concat'ed recipient group.
     bytes32 public currentRecipientGroup;
 
-    /// @param recipients addresses to receive rewards
+    /// @param recipients Addresses to receive rewards.
     constructor(address[] memory recipients) Ownable() {
         setRecipients(recipients);
     }
 
     /**
-     * @notice validates and sets the set of recipient addresses
-     * @dev we enforce a max number of recipients to ensure the distribution of rewards fits within a block
-     * @param recipients set of addresses that will receive future rewards
+     * @notice Validates and sets the set of recipient addresses.
+     * @dev We enforce a max number of recipients to ensure the distribution of rewards fits within a block.
+     * @param recipients Set of addresses that will receive future rewards.
      */
     function setRecipients(address[] memory recipients) private {
         if (recipients.length == 0) {
@@ -67,9 +67,9 @@ contract RewardDistributor is Ownable {
     }
 
     /**
-     * @notice Distributes previous rewards then updates the recipients to a new set
-     * @param currentRecipients set of addresses that will receive their final rewards
-     * @param newRecipients set of addresses that will receive future rewards
+     * @notice Distributes previous rewards then updates the recipients to a new set.
+     * @param currentRecipients Set of addresses that will receive their final rewards.
+     * @param newRecipients Set of addresses that will receive future rewards.
      */
     function distributeAndUpdateRecipients(address[] memory currentRecipients, address[] memory newRecipients)
         public
@@ -80,9 +80,9 @@ contract RewardDistributor is Ownable {
     }
 
     /**
-     * @notice sends rewards to the set of recipients
-     * @dev the last recipient gets the leftover dust
-     * @param recipients set of addresses to receive rewards
+     * @notice Sends rewards to the set of recipients.
+     * @dev The last recipient gets the leftover dust.
+     * @param recipients Set of addresses to receive rewards.
      */
     function distributeRewards(address[] memory recipients) public {
         if (recipients.length == 0) {
