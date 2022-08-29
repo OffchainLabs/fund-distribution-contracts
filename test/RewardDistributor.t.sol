@@ -217,9 +217,9 @@ contract RewardDistributorTest is Test {
         uint256 blockGasLimit = 32_000_000;
         // must fit within block gas limit (this value may change in the future)
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
-        assertTrue(blockGasLimit >= gasUsed, "past block gas limit");
-        assertTrue(gasUsed >= rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
-        assertTrue(address(owner).balance == rewards, "owner didn't receive all funds");
+        assertGt(blockGasLimit, gasUsed, "past block gas limit");
+        assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
+        assertEq(address(owner).balance, rewards, "owner didn't receive all funds");
     }
 
     function testLowSend() public withContext {
@@ -229,7 +229,7 @@ contract RewardDistributorTest is Test {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         uint256 rewards = 6;
-        assertTrue(rewards < numRecipients, "test not configured correctly");
+        assertGt(rewards, numRecipients, "test not configured correctly");
 
         vm.deal(address(rd), rewards);
 
@@ -238,7 +238,7 @@ contract RewardDistributorTest is Test {
         for (uint256 i = 0; i < numRecipients; i++) {
             bool isLast = i == numRecipients - 1;
             uint256 expectedBalance = isLast ? rewards : 0;
-            assertTrue(recipients[i].balance == expectedBalance, "expected reward incorrect");
+            assertEq(recipients[i].balance, expectedBalance, "expected reward incorrect");
         }
     }
 }
