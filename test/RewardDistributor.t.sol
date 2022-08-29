@@ -168,12 +168,15 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3) + reward % 3));
+        vm.expectRevert(
+            abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3) + reward % 3)
+        );
 
         rd.distributeRewards(recipients);
     }
 
     uint64 numReverters = 64;
+
     function testBlockGasLimit() public withContext(numReverters) {
         for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Reverter());
@@ -202,6 +205,7 @@ contract RewardDistributorTest is Test {
     }
 
     uint256 numRecipients = 8;
+
     function testLowSend() public withContext(8) {
         RewardDistributor rd = new RewardDistributor(recipients);
         uint256 rewards = 6;
