@@ -68,26 +68,15 @@ contract RewardDistributor is Ownable {
         }
 
         uint256 rewards = address(this).balance;
-        if (rewards > 0) {
-            // send out the rewards
-            uint256 individualRewards;
-            uint256 last_r;
-            unchecked {
-                // recipients.length cannot be 0
-                individualRewards = rewards / recipients.length;
-                last_r = recipients.length - 1;
-            }
+        // calculate individual reward
+        uint256 individualRewards;
+        unchecked {
+            // recipients.length cannot be 0
+            individualRewards = rewards / recipients.length;
+        }
+        if (individualRewards > 0) {
+            // the remainder will be kept in the contract
             for (uint256 r; r < recipients.length;) {
-                if (r == last_r) {
-                    // last lucky recipient gets the change
-                    individualRewards = address(this).balance;
-                    if (individualRewards == 0) {
-                        // last recipient may reentrant into this function
-                        // and distributed the whole balance already
-                        revert InvalidBalance();
-                    }
-                }
-
                 // send the funds
                 (bool success,) = recipients[r].call{value: individualRewards, gas: 100000}("");
 

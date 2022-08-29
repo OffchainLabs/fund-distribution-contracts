@@ -83,10 +83,11 @@ contract RewardDistributorTest is Test {
         uint256 aReward = reward / 3;
         assertEq(a.balance, aReward, "a balance");
         assertEq(b.balance, aReward, "b balance");
-        assertEq(c.balance, aReward + reward % 3, "c balance");
+        assertEq(c.balance, aReward, "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(address(rd).balance, 0, "rewards balance");
+        assertGt(reward % 3, 0, "remainder");
+        assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
     function testDistributeRewardsDoesRefundsOwner() public {
@@ -112,9 +113,10 @@ contract RewardDistributorTest is Test {
         assertEq(a.balance, aReward, "a balance");
         assertEq(b.balance, aReward, "b balance");
         assertEq(c.balance, 0, "c balance");
-        assertEq(owner.balance, aReward + reward % 3, "owner balance");
+        assertEq(owner.balance, aReward, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(address(rd).balance, 0, "rewards balance");
+        assertGt(reward % 3, 0, "remainder");
+        assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
     function testDistributeRewardsDoesNotDistributeToEmpty() public {
@@ -197,7 +199,7 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, c, (reward / 3) + reward % 3));
+        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, c, (reward / 3)));
         vm.prank(nobody);
         rd.distributeRewards(recipients);
     }
