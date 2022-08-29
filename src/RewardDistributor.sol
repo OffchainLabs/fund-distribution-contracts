@@ -19,7 +19,6 @@ error NonZeroBalance(uint256 value);
 //      1. when updating the group need to do a 2 step update the contract then point it at the old one
 // 3.b Add tests for update functionality if we decide to keep it
 // 4. optimise gas a bit
-// 5. remove the safety check at the end of the function?
 // 6. Add tests to CI
 // 7. and an else and emit an event if there were no rewards to deliver
 
@@ -84,11 +83,6 @@ contract RewardDistributor is Ownable {
                     emit OwnerRecieved(owner(), recipients[r], individualRewards);
                 }
             }
-        }
-
-        // safety check that all was correctly sent
-        if (address(this).balance != 0) {
-            revert NonZeroBalance(address(this).balance);
         }
     }
 }
