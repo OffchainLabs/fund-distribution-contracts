@@ -89,7 +89,7 @@ contract RewardDistributor is Ownable {
 
     /**
      * @notice Sends rewards to the set of recipients.
-     * @dev The last recipient gets the leftover dust.
+     * @dev The remainder will be kept in the contract.
      * @param recipients Set of addresses to receive rewards.
      */
     function distributeRewards(address[] memory recipients) public {
@@ -110,7 +110,6 @@ contract RewardDistributor is Ownable {
             individualRewards = rewards / recipients.length;
         }
         if (individualRewards > 0) {
-            // the remainder will be kept in the contract
             for (uint256 r; r < recipients.length;) {
                 // send the funds
                 // if the recipient reentry to steal funds, the contract will not have sufficient
