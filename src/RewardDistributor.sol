@@ -34,19 +34,22 @@ contract RewardDistributor is Ownable {
         setRecipients(recipients);
     }
 
-    function setRecipients(address[] memory recipients) private {
-        if (recipients.length == 0) {
-            revert EmptyRecipients();
-        }
-
-        // create a committment to the recipient group and update current
-        bytes32 recipientGroup;
+    function hashRecipients(address[] memory recipients) internal pure returns(bytes32 recipientGroup){
         assembly ("memory-safe") {
             // same as keccak256(abi.encodePacked(recipients))
             // save gas since the array is already in the memory
             // we skip the first 32 bytes (length) and hash the next length * 32 bytes
             recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
         }
+    }
+
+    function setRecipients(address[] memory recipients) private {
+        if (recipients.length == 0) {
+            revert EmptyRecipients();
+        }
+
+        // create a committment to the recipient group and update current
+        bytes32 recipientGroup = hashRecipients(recipients);
         currentRecipientGroup = recipientGroup;
     }
 
@@ -61,16 +64,10 @@ contract RewardDistributor is Ownable {
         }
 
         // cache currentRecipientGroup in memory
-        // bytes32 _currentRecipientGroup = currentRecipientGroup;
-        bytes32 recipientGroup;
-        assembly ("memory-safe") {
-            // same as keccak256(abi.encodePacked(recipients))
-            // save gas since the array is already in the memory
-            // we skip the first 32 bytes (length) and hash the next length * 32 bytes
-            recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
-        }
-        if (recipientGroup != currentRecipientGroup) {
-            revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
+        bytes32 _currentRecipientGroup = currentRecipientGroup;
+        bytes32 recipientGroup = hashRecipients(recipients);
+        if (recipientGroup != _currentRecipientGroup) {
+            revert InvalidRecipientGroup(_currentRecipientGroup, recipientGroup);
         }
 
         uint256 dues = address(this).balance;
