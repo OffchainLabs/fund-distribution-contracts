@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 // import "./src/RewardDistributor.sol";
 import "../src/RewardDistributor.sol";
+import "./Reverter.sol";
 import "forge-std/Test.sol";
 
 contract EmptyContract {}
@@ -18,136 +19,119 @@ contract UsesTooMuchGasContract {
 }
 
 contract RewardDistributorTest is Test {
-    address a = vm.addr(0x01);
-    address b = vm.addr(0x02);
-    address c = vm.addr(0x03);
     address owner = vm.addr(0x04);
     address nobody = vm.addr(0x05);
+    address[] recipients;
 
-    function clearAccounts() public {
-        vm.deal(a, 0);
-        vm.deal(b, 0);
-        vm.deal(c, 0);
+    modifier withContext(uint256 count) {
+        recipients = makeRecipientGroup(count);
+        // clear accounts
         vm.deal(owner, 0);
         vm.deal(nobody, 0);
+
+        // set owner as caller before execution
+        vm.startPrank(owner);
+        _;
+        vm.stopPrank();
     }
 
-    function makeRecipientGroup(uint256 count) private view returns (address[] memory) {
-        address[] memory recipients = new address[](count);
-        if (0 < count) {
-            recipients[0] = a;
+    function makeRecipientGroup(uint256 count) private returns (address[] memory) {
+        address[] memory recps = new address[](count);
+        for (uint256 i = 0; i < count; i++) {
+            // offset to avoid collision with a/b/c/owner/nobody
+            recps[i] = vm.addr(i + 105);
+            vm.deal(recps[i], 0);
         }
-        if (1 < count) {
-            recipients[1] = b;
-        }
-        if (2 < count) {
-            recipients[2] = c;
-        }
-        return recipients;
+        return recps;
     }
 
-    function testConstructor() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(3);
-
-        vm.prank(owner);
+    function testConstructor() public withContext(3) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(recipients)));
         assertEq(rd.owner(), owner);
     }
 
-    function testConstructorDoesNotAcceptEmpty() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(0);
-
-        vm.prank(owner);
+    function testConstructorDoesNotAcceptEmpty() public withContext(0) {
         vm.expectRevert(EmptyRecipients.selector);
         new RewardDistributor(recipients);
     }
 
-    function testDistributeRewards() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(3);
+    function testConstructorDoesNotAcceptPastLimit() public withContext(65) {
+        vm.expectRevert(TooManyRecipients.selector);
+        new RewardDistributor(recipients);
+    }
 
-        vm.prank(owner);
+    function testDistributeRewards() public withContext(3) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.prank(nobody);
+        vm.stopPrank();
+        vm.startPrank(nobody);
+        // anyone should be able to call distributeRewards
         rd.distributeRewards(recipients);
 
         uint256 aReward = reward / 3;
-        assertEq(a.balance, aReward, "a balance");
-        assertEq(b.balance, aReward, "b balance");
-        assertEq(c.balance, aReward, "c balance");
+        assertEq(recipients[0].balance, aReward, "a balance");
+        assertEq(recipients[1].balance, aReward, "b balance");
+        assertEq(recipients[2].balance, aReward, "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
         assertGt(reward % 3, 0, "remainder"); // test the code path with remainder
         assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
-    function testDistributeRewardsToMany() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(100);
-
-        vm.prank(owner);
-        RewardDistributor rd = new RewardDistributor(recipients);
+    function testDistributeRewardsToMany() public withContext(50) {
+        address[] memory many_recipients = makeRecipientGroup(50);
+        RewardDistributor rd = new RewardDistributor(many_recipients);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.prank(nobody);
-        rd.distributeRewards(recipients);
+        vm.stopPrank();
+        vm.startPrank(nobody);
+        // anyone should be able to call distributeRewards
+        rd.distributeRewards(many_recipients);
 
-        uint256 aReward = reward / 100;
-        assertEq(a.balance, aReward, "a balance");
-        assertEq(b.balance, aReward, "b balance");
-        assertEq(c.balance, aReward, "c balance");
+        uint256 aReward = reward / 50;
+        assertEq(many_recipients[0].balance, aReward, "a balance");
+        assertEq(many_recipients[1].balance, aReward, "b balance");
+        assertEq(many_recipients[2].balance, aReward, "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(reward % 100, 0, "remainder"); // test the code path without remainder
-        assertEq(address(rd).balance, reward % 100, "rewards balance");
+        assertEq(reward % 50, 0, "remainder"); // test the code path without remainder
+        assertEq(address(rd).balance, reward % 50, "rewards balance");
     }
 
-    function testDistributeRewardsDoesRefundsOwner() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(3);
-
-        vm.prank(owner);
+    function testDistributeRewardsDoesRefundsOwner() public withContext(3) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address to have this code
         UsesTooMuchGasContract ec = new UsesTooMuchGasContract();
-        vm.etch(c, address(ec).code);
+        vm.etch(recipients[2], address(ec).code);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.prank(nobody);
         rd.distributeRewards(recipients);
 
         uint256 aReward = reward / 3;
-        assertEq(a.balance, aReward, "a balance");
-        assertEq(b.balance, aReward, "b balance");
-        assertEq(c.balance, 0, "c balance");
+
+        assertEq(recipients[0].balance, aReward, "a balance");
+        assertEq(recipients[1].balance, aReward, "b balance");
+        assertEq(recipients[2].balance, 0, "c balance");
         assertEq(owner.balance, aReward, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertGt(reward % 3, 0, "remainder");
         assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
-    function testDistributeRewardsDoesNotDistributeToEmpty() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(3);
-
-        vm.prank(owner);
+    function testDistributeRewardsDoesNotDistributeToEmpty() public withContext(3) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
@@ -156,15 +140,11 @@ contract RewardDistributorTest is Test {
 
         vm.expectRevert(EmptyRecipients.selector);
         address[] memory emptyRecipients = makeRecipientGroup(0);
-        vm.prank(nobody);
+
         rd.distributeRewards(emptyRecipients);
     }
 
-    function testDistributeRewardsDoesNotDistributeWrongRecipients() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(3);
-
-        vm.prank(owner);
+    function testDistributeRewardsDoesNotDistributeWrongRecipients() public withContext(3) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
@@ -172,8 +152,8 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), reward);
 
         address[] memory wrongRecipients = new address[](3);
-        wrongRecipients[0] = a;
-        wrongRecipients[1] = b;
+        wrongRecipients[0] = recipients[0];
+        wrongRecipients[1] = recipients[1];
         // wrong recipient
         wrongRecipients[2] = nobody;
         vm.expectRevert(
@@ -181,15 +161,10 @@ contract RewardDistributorTest is Test {
                 InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(wrongRecipients))
             )
         );
-        vm.prank(nobody);
         rd.distributeRewards(wrongRecipients);
     }
 
-    function testDistributeRewardsDoesNotDistributeToWrongCount() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(3);
-
-        vm.prank(owner);
+    function testDistributeRewardsDoesNotDistributeToWrongCount() public withContext(3) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
@@ -202,29 +177,68 @@ contract RewardDistributorTest is Test {
                 InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(shortRecipients))
             )
         );
-        vm.prank(nobody);
         rd.distributeRewards(shortRecipients);
     }
 
-    function testDistributeRewardsFailsToRefundsOwner() public {
-        clearAccounts();
-        address[] memory recipients = makeRecipientGroup(3);
-
-        vm.prank(owner);
+    function testDistributeRewardsFailsToRefundsOwner() public withContext(3) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address and the owner to have this code
         EmptyContract ec = new EmptyContract();
-        vm.etch(c, address(ec).code);
+        vm.etch(recipients[2], address(ec).code);
         vm.etch(owner, address(ec).code);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, c, (reward / 3)));
-        vm.prank(nobody);
+        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3)));
+
         rd.distributeRewards(recipients);
+    }
+
+    uint64 numReverters = 64;
+    function testBlockGasLimit() public withContext(numReverters) {
+        for (uint256 i = 0; i < recipients.length; i++) {
+            recipients[i] = address(new Reverter());
+        }
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        assertEq(numReverters, rd.MAX_RECIPIENTS());
+
+        // TODO: fuzz this value?
+        uint256 rewards = 5 ether;
+        vm.deal(address(rd), rewards);
+
+        uint256 gasleftPrior = gasleft();
+
+        rd.distributeRewards(recipients);
+
+        uint256 gasleftAfter = gasleft();
+        uint256 gasUsed = gasleftPrior - gasleftAfter;
+
+        uint256 targetBlockGasLimit = 16_000_000;
+        // must fit within target block gas limit (this value may change in the future)
+        // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
+        assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
+        assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
+        assertEq(address(owner).balance, rewards, "owner didn't receive all funds");
+    }
+
+    uint256 numRecipients = 8;
+    function testLowSend() public withContext(8) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+        uint256 rewards = 6;
+        assertGt(numRecipients, rewards, "test not configured correctly");
+
+        vm.deal(address(rd), rewards);
+
+        rd.distributeRewards(recipients);
+
+        for (uint256 i = 0; i < numRecipients; i++) {
+            uint256 expectedBalance = 0;
+            assertEq(recipients[i].balance, expectedBalance, "expected reward incorrect");
+        }
     }
 }
