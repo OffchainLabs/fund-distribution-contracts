@@ -33,23 +33,17 @@ contract RewardDistributorTest is Test {
         vm.deal(c, 0);
         vm.deal(owner, 0);
         vm.deal(nobody, 0);
-        
+
         // set owner as caller before execution
         vm.startPrank(owner);
         _;
         vm.stopPrank();
     }
 
-    function makeRecipientGroup(uint256 count) private view returns (address[] memory) {
+    function makeRecipientGroup(uint256 count) private returns (address[] memory) {
         address[] memory recipients = new address[](count);
-        if (0 < count) {
-            recipients[0] = a;
-        }
-        if (1 < count) {
-            recipients[1] = b;
-        }
-        if (2 < count) {
-            recipients[2] = c;
+        for (uint256 i = 0; i < count; i++) {
+            recipients[i] = vm.addr(i + 1);
         }
         return recipients;
     }
@@ -66,6 +60,12 @@ contract RewardDistributorTest is Test {
     function testConstructorDoesNotAcceptEmpty() public withContext {
         address[] memory recipients = makeRecipientGroup(0);
         vm.expectRevert(EmptyRecipients.selector);
+        new RewardDistributor(recipients);
+    }
+
+    function testConstructorDoesNotAcceptPastLimit() public withContext {
+        address[] memory recipients = makeRecipientGroup(65);
+        vm.expectRevert(TooManyRecipients.selector);
         new RewardDistributor(recipients);
     }
 
@@ -218,5 +218,25 @@ contract RewardDistributorTest is Test {
         assertTrue(blockGasLimit >= gasUsed, "past block gas limit");
         assertTrue(gasUsed >= rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
         assertTrue(address(owner).balance == rewards, "owner didn't receive all funds");
+    }
+
+    function testLowSend() public withContext {
+        uint256 numRecipients = 8;
+        address[] memory recipients = makeRecipientGroup(numRecipients);
+
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        uint256 rewards = 6;
+        assertTrue(rewards < numRecipients, "test not configured correctly");
+
+        vm.deal(address(rd), rewards);
+
+        rd.distributeRewards(recipients);
+
+        for (uint256 i = 0; i < numRecipients; i++) {
+            bool isLast = i == numRecipients - 1;
+            uint256 expectedBalance = isLast ? rewards : 0;
+            assertTrue(recipients[i].balance == expectedBalance, "expected reward incorrect");
+        }
     }
 }
