@@ -48,8 +48,8 @@ contract RewardDistributor is Ownable {
     }
 
     /**
-     * @dev the block gas limit is assumed to only increase (if it decreases this contract is expected to be redeployed)
-     * 
+     * @notice validates and sets the set of recipient addresses
+     * @dev we enforce a max number of recipients to ensure the distribution of rewards fits within a block
      * @param recipients set of addresses that will receive future rewards
      */
     function setRecipients(address[] memory recipients) private {
