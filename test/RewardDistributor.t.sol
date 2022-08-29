@@ -196,9 +196,7 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3))
-        );
+        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3)));
 
         rd.distributeRewards(recipients);
     }
