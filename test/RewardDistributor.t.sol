@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 // import "./src/RewardDistributor.sol";
 import "../src/RewardDistributor.sol";
+import "./Reverter.sol";
 import "forge-std/Test.sol";
 
 contract EmptyContract {}
@@ -199,4 +200,36 @@ contract RewardDistributorTest is Test {
         vm.prank(nobody);
         rd.distributeRewards(recipients);
     }
+
+
+
+    function testBlockGasLimit() public {
+        uint64 numReverters = 64;
+        address[] memory recipients = new address[](numReverters);
+        for (uint256 i=0; i<recipients.length; i++) {
+            recipients[i] = address(new Reverter());
+        }
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        assertEq(numReverters, rd.MAX_RECIPIENTS());
+
+        // TODO: fuzz this value?
+        vm.deal(address(rd), 5 ether);
+        uint256 gasleftPrior = gasleft();
+        rd.distributeRewards(recipients);
+        uint256 gasleftAfter = gasleft();
+        
+        console.log("had ", gasleftPrior, " gas, and now ", gasleftAfter);
+        uint256 gasUsed = gasleftPrior - gasleftAfter;
+        console.log("used ", gasUsed);
+
+        uint256 blockGasLimit = 32_000_000;
+        // must fit within block gas limit (this value may change in the future)
+        // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
+        assertTrue(blockGasLimit >= gasUsed);
+        assertTrue(gasUsed >= rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS());
+    }
+
+    // this is triggered when the owner fallback is called
+    receive() external payable {}
 }
