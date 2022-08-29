@@ -42,7 +42,8 @@ contract RewardDistributorTest is Test {
     function makeRecipientGroup(uint256 count) private returns (address[] memory) {
         address[] memory recipients = new address[](count);
         for (uint256 i = 0; i < count; i++) {
-            recipients[i] = vm.addr(i + 1);
+            // offset to avoid collision with a/b/c/owner/nobody
+            recipients[i] = vm.addr(i + 105);
         }
         return recipients;
     }
