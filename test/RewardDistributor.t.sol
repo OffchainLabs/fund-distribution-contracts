@@ -201,12 +201,10 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients);
     }
 
-
-
     function testBlockGasLimit() public {
         uint64 numReverters = 64;
         address[] memory recipients = new address[](numReverters);
-        for (uint256 i=0; i<recipients.length; i++) {
+        for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Reverter());
         }
         RewardDistributor rd = new RewardDistributor(recipients);
@@ -218,7 +216,7 @@ contract RewardDistributorTest is Test {
         uint256 gasleftPrior = gasleft();
         rd.distributeRewards(recipients);
         uint256 gasleftAfter = gasleft();
-        
+
         console.log("had ", gasleftPrior, " gas, and now ", gasleftAfter);
         uint256 gasUsed = gasleftPrior - gasleftAfter;
         console.log("used ", gasUsed);
