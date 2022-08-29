@@ -21,7 +21,7 @@ error NonZeroBalance(uint256 value);
 // 4. optimise gas a bit
 // 5. remove the safety check at the end of the function?
 // 6. Add tests to CI
-// 7. and an else and emit an event if there were no dues to deliver
+// 7. and an else and emit an event if there were no rewards to deliver
 
 contract RewardDistributor is Ownable {
     event OwnerRecieved(address owner, address recipient, uint256 value);
@@ -31,15 +31,6 @@ contract RewardDistributor is Ownable {
 
     constructor(address[] memory recipients) Ownable() {
         setRecipients(recipients);
-    }
-
-    function updateRecipients(address[] memory currentRecipients, address[] memory newRecipients) public onlyOwner {
-        sendAll(currentRecipients);
-        setRecipients(newRecipients);
-    }
-
-    function distributeDues(address[] memory recipients) public {
-        sendAll(recipients);
     }
 
     function setRecipients(address[] memory recipients) private {
@@ -52,7 +43,12 @@ contract RewardDistributor is Ownable {
         currentRecipientGroup = recipientGroup;
     }
 
-    function sendAll(address[] memory recipients) private {
+    function updateRecipients(address[] memory currentRecipients, address[] memory newRecipients) public onlyOwner {
+        distributeRewards(currentRecipients);
+        setRecipients(newRecipients);
+    }
+
+    function distributeRewards(address[] memory recipients) public {
         if (recipients.length == 0) {
             revert EmptyRecipients();
         }
@@ -62,30 +58,30 @@ contract RewardDistributor is Ownable {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
-        uint256 dues = address(this).balance;
-        if (dues > 0) {
-            // send out the dues
-            uint256 individualDues = dues / recipients.length;
+        uint256 rewards = address(this).balance;
+        if (rewards > 0) {
+            // send out the rewards
+            uint256 individualRewards = rewards / recipients.length;
             for (uint256 r; r < recipients.length; r++) {
                 if (r == (recipients.length - 1)) {
                     // last lucky recipient gets the change
-                    individualDues += dues % recipients.length;
+                    individualRewards += rewards % recipients.length;
                 }
 
                 // send the funds
-                (bool success,) = recipients[r].call{value: individualDues, gas: 100000}("");
+                (bool success,) = recipients[r].call{value: individualRewards, gas: 100000}("");
 
                 // if the funds failed to send we send them to the owner for safe keeping
                 // then the owner will have the opportunity to distribute them out of band
                 if (success) {
-                    emit RecipientRecieved(recipients[r], individualDues);
+                    emit RecipientRecieved(recipients[r], individualRewards);
                 } else {
-                    (bool ownerSuccess,) = owner().call{value: individualDues}("");
+                    (bool ownerSuccess,) = owner().call{value: individualRewards}("");
                     // if this is the case then revert and sort it out
                     if (!ownerSuccess) {
-                        revert OwnerFailedRecieve(owner(), recipients[r], individualDues);
+                        revert OwnerFailedRecieve(owner(), recipients[r], individualRewards);
                     }
-                    emit OwnerRecieved(owner(), recipients[r], individualDues);
+                    emit OwnerRecieved(owner(), recipients[r], individualRewards);
                 }
             }
         }

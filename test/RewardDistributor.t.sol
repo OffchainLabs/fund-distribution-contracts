@@ -67,7 +67,7 @@ contract RewardDistributorTest is Test {
     }
 
     // 1. does it distribute from non owner
-    function testDistributeDues() public {
+    function testDistributeRewards() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
 
@@ -79,7 +79,7 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), reward);
 
         vm.prank(nobody);
-        rd.distributeDues(recipients);
+        rd.distributeRewards(recipients);
 
         uint256 aReward = reward / 3;
         assertEq(a.balance, aReward, "a balance");
@@ -89,7 +89,7 @@ contract RewardDistributorTest is Test {
         assertEq(nobody.balance, 0, "nobody balance");
     }
 
-    function testDistributeDuesDoesRefundsOwner() public {
+    function testDistributeRewardsDoesRefundsOwner() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
 
@@ -106,7 +106,7 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), reward);
 
         vm.prank(nobody);
-        rd.distributeDues(recipients);
+        rd.distributeRewards(recipients);
 
         uint256 aReward = reward / 3;
         assertEq(a.balance, aReward, "a balance");
@@ -116,7 +116,7 @@ contract RewardDistributorTest is Test {
         assertEq(nobody.balance, 0, "nobody balance");
     }
 
-    function testDistributeDuesDoesNotDistributeToEmpty() public {
+    function testDistributeRewardsDoesNotDistributeToEmpty() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
 
@@ -130,11 +130,11 @@ contract RewardDistributorTest is Test {
         vm.expectRevert(EmptyRecipients.selector);
         address[] memory emptyRecipients = makeRecipientGroup(0);
         vm.prank(nobody);
-        rd.distributeDues(emptyRecipients);
+        rd.distributeRewards(emptyRecipients);
     }
 
     // 4. does it check for correct recipients - different number, and one different value
-    function testDistributeDuesDoesNotDistributeWrongRecipients() public {
+    function testDistributeRewardsDoesNotDistributeWrongRecipients() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
 
@@ -156,10 +156,10 @@ contract RewardDistributorTest is Test {
             )
         );
         vm.prank(nobody);
-        rd.distributeDues(wrongRecipients);
+        rd.distributeRewards(wrongRecipients);
     }
 
-    function testDistributeDuesDoesNotDistributeToWrongCount() public {
+    function testDistributeRewardsDoesNotDistributeToWrongCount() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
 
@@ -177,10 +177,10 @@ contract RewardDistributorTest is Test {
             )
         );
         vm.prank(nobody);
-        rd.distributeDues(shortRecipients);
+        rd.distributeRewards(shortRecipients);
     }
 
-    function testDistributeDuesFailsToRefundsOwner() public {
+    function testDistributeRewardsFailsToRefundsOwner() public {
         clearAccounts();
         address[] memory recipients = makeRecipientGroup(3);
 
@@ -199,6 +199,6 @@ contract RewardDistributorTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, c, (reward / 3) + reward % 3));
         vm.prank(nobody);
-        rd.distributeDues(recipients);
+        rd.distributeRewards(recipients);
     }
 }
