@@ -7,11 +7,11 @@ install   :; forge install
 update    :; forge update
 
 # Build & test
-build     :; forge build
-coverage  :; FOUNDRY_PROFILE=coverage forge coverage
-gas       :; forge test --gas-report
-gas-check :; forge snapshot --check
-snapshot  :; forge snapshot
+build     :; FOUNDRY_PROFILE=optimized forge build
+coverage  :; forge coverage
+gas       :; FOUNDRY_PROFILE=optimized forge test --gas-report
+gas-check :; FOUNDRY_PROFILE=optimized forge snapshot --check
+snapshot  :; FOUNDRY_PROFILE=optimized forge snapshot
 test-forge:; forge test -vvv
 clean     :; forge clean
 fmt       :; forge fmt
