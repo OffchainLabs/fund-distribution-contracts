@@ -287,25 +287,25 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients);
     }
 
-    function testHashRecipients() public {
+    function testHashAddresses() public {
         address[] memory input;
         bytes32 actual;
         bytes32 expected;
 
         // in practice reward distributor does not allow this to happen
         input = new address[](0);
-        actual = hashRecipients(input);
+        actual = hashAddresses(input);
         expected = bytes32(0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
         assertEq(actual, expected, "incorrect empty hash");
 
         input = new address[](1);
         input[0] = address(1);
-        actual = hashRecipients(input);
+        actual = hashAddresses(input);
         expected = bytes32(0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6);
         assertEq(actual, expected, "incorrect addr 1 hash");
 
         input = makeRecipientGroup(MAX_RECIPIENTS);
-        actual = hashRecipients(input);
+        actual = hashAddresses(input);
         expected = bytes32(0x95e9a53b9c4215b83ebc13939985ca72fe2424db3c861aa2b1bc741c56efabd0);
         assertEq(actual, expected, "incorrect max recipients hash");
     }

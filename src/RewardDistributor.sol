@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
+import { hashAddresses, uncheckedInc } from "./Util.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 error TooManyRecipients();
@@ -62,7 +63,7 @@ contract RewardDistributor is Ownable {
             revert EmptyRecipients();
         }
 
-        bytes32 recipientGroup = hashRecipients(recipients);
+        bytes32 recipientGroup = hashAddresses(recipients);
         if (recipientGroup != currentRecipientGroup) {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
@@ -118,30 +119,10 @@ contract RewardDistributor is Ownable {
         }
 
         // create a committment to the recipient group and update current
-        bytes32 recipientGroup = hashRecipients(recipients);
+        bytes32 recipientGroup = hashAddresses(recipients);
         currentRecipientGroup = recipientGroup;
 
         emit RecipientsUpdated(recipientGroup, recipients);
     }
 }
 
-// utility free functions
-
-/// @notice sequentially hashes an array of recipient addresses
-/// @param recipients addresses to be hashed
-function hashRecipients(address[] memory recipients) pure returns (bytes32 recipientGroup) {
-    assembly ("memory-safe") {
-        // same as keccak256(abi.encodePacked(recipients))
-        // save gas since the array is already in the memory
-        // we skip the first 32 bytes (length) and hash the next length * 32 bytes
-        recipientGroup := keccak256(add(recipients, 32), mul(mload(recipients), 32))
-    }
-}
-
-/// @notice increments an integer without checking for overflows
-/// @dev from https://github.com/ethereum/solidity/issues/11721#issuecomment-890917517
-function uncheckedInc(uint256 x) pure returns (uint256) {
-    unchecked {
-        return x + 1;
-    }
-}
