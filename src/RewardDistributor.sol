@@ -84,11 +84,6 @@ contract RewardDistributor is Ownable {
      * @param recipients Set of addresses to receive rewards.
      */
     function distributeRewards(address[] memory recipients) public {
-        uint256 rewards = address(this).balance;
-        if (rewards == 0) {
-            revert NoFundsToDistribute();
-        }
-
         if (recipients.length == 0) {
             revert EmptyRecipients();
         }
@@ -99,38 +94,40 @@ contract RewardDistributor is Ownable {
         }
 
         // calculate individual reward
+        uint256 rewards = address(this).balance;
         uint256 individualRewards;
         unchecked {
             // recipients.length cannot be 0
             individualRewards = rewards / recipients.length;
         }
-        if (individualRewards > 0) {
-            for (uint256 r; r < recipients.length;) {
-                // send the funds
-                // if the recipient reentry to steal funds, the contract will not have sufficient
-                // funds and revert when trying to send fund to the next recipient
-                // if the recipient is the last, it doesn't matter since there are no extra fund to steal
-                (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
+        if (individualRewards == 0) {
+            revert NoFundsToDistribute();
+        }
+        for (uint256 r; r < recipients.length;) {
+            // send the funds
+            // if the recipient reentry to steal funds, the contract will not have sufficient
+            // funds and revert when trying to send fund to the next recipient
+            // if the recipient is the last, it doesn't matter since there are no extra fund to steal
+            (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
 
-                // if the funds failed to send we send them to the owner for safe keeping
-                // then the owner will have the opportunity to distribute them out of band
-                if (success) {
-                    emit RecipientRecieved(recipients[r], individualRewards);
-                } else {
-                    // cache owner in memory
-                    address _owner = owner();
-                    (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
-                    // if this is the case then revert and sort it out
-                    // it's important that this fail in order to preserve the accounting in this contract.
-                    // if we dont fail here we enable a re-entrancy attack
-                    if (!ownerSuccess) {
-                        revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
-                    }
-                    emit OwnerRecieved(_owner, recipients[r], individualRewards);
+            // if the funds failed to send we send them to the owner for safe keeping
+            // then the owner will have the opportunity to distribute them out of band
+            if (success) {
+                emit RecipientRecieved(recipients[r], individualRewards);
+            } else {
+                // cache owner in memory
+                address _owner = owner();
+                (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
+                // if this is the case then revert and sort it out
+                // it's important that this fail in order to preserve the accounting in this contract.
+                // if we dont fail here we enable a re-entrancy attack
+                if (!ownerSuccess) {
+                    revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
                 }
-                unchecked {
-                    ++r;
-                }
+                emit OwnerRecieved(_owner, recipients[r], individualRewards);
+            }
+            unchecked {
+                ++r;
             }
         }
     }

@@ -110,6 +110,7 @@ contract RewardDistributorTest is Test {
     }
 
     address zero = 0x0000000000000000000000000000000000000000;
+
     function testDistributeRewards() public withContext(3) {
         vm.expectEmit(true, true, false, false);
         emit OwnershipTransferred(zero, owner);
@@ -120,7 +121,7 @@ contract RewardDistributorTest is Test {
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
-        
+
         uint256 aReward = reward / 3;
         vm.expectEmit(true, false, false, true);
         emit RecipientRecieved(recipients[0], aReward);
@@ -244,7 +245,6 @@ contract RewardDistributorTest is Test {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         vm.expectRevert(NoFundsToDistribute.selector);
-
         rd.distributeRewards(recipients);
     }
 
@@ -286,10 +286,7 @@ contract RewardDistributorTest is Test {
 
         vm.deal(address(rd), rewards);
 
+        vm.expectRevert(NoFundsToDistribute.selector);
         rd.distributeRewards(recipients);
-
-        for (uint256 i = 0; i < numRecipients; i++) {
-            assertEq(recipients[i].balance, 0, "expected reward incorrect");
-        }
     }
 }
