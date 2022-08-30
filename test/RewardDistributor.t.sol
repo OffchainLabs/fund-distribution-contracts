@@ -8,8 +8,8 @@ import "./Empty.sol";
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
-    event OwnerRecieved(address owner, address recipient, uint256 value);
-    event RecipientRecieved(address recipient, uint256 value);
+    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
+    event RecipientRecieved(address indexed recipient, uint256 value);
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
@@ -110,13 +110,11 @@ contract RewardDistributorTest is Test {
     }
 
     address zero = 0x0000000000000000000000000000000000000000;
-
-    function testDistributeRewardsQQQ() public withContext(3) {
-        // vm.expectEmit(true, true, false, false);
-        // emit OwnershipTransferred(zero, owner);
-        // RewardDistributor rd = new RewardDistributor(recipients);
-        // vm.expectEmit(true, true, false, false);
-        // emit RecipientsUpdated(keccak256(abi.encodePacked(recipients)), recipients);
+    function testDistributeRewards() public withContext(3) {
+        vm.expectEmit(true, true, false, false);
+        emit OwnershipTransferred(zero, owner);
+        vm.expectEmit(true, true, false, false);
+        emit RecipientsUpdated(keccak256(abi.encodePacked(recipients)), recipients);
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
@@ -124,12 +122,12 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), reward);
         
         uint256 aReward = reward / 3;
-        vm.expectEmit(false, false, false, true);
+        vm.expectEmit(true, false, false, true);
         emit RecipientRecieved(recipients[0], aReward);
-        // vm.expectEmit(true, false, false, true);
-        // emit RecipientRecieved(recipients[1], aReward);
-        // vm.expectEmit(true, false, false, true);
-        // emit RecipientRecieved(recipients[2], aReward);
+        vm.expectEmit(true, false, false, true);
+        emit RecipientRecieved(recipients[1], aReward);
+        vm.expectEmit(true, false, false, true);
+        emit RecipientRecieved(recipients[2], aReward);
 
         vm.stopPrank();
         vm.startPrank(nobody);

@@ -17,7 +17,7 @@ contract RewardDistributor is Ownable {
     event RecipientRecieved(address indexed recipient, uint256 value);
 
     /// @notice New recipients have been set
-    // event RecipientsUpdated(bytes32 recipientGroup, address[] recipients);
+    event RecipientsUpdated(bytes32 recipientGroup, address[] recipients);
 
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known set of contracts that won't consume more than this amount.
@@ -62,7 +62,7 @@ contract RewardDistributor is Ownable {
         bytes32 recipientGroup = hashRecipients(recipients);
         currentRecipientGroup = recipientGroup;
 
-        // emit RecipientsUpdated(recipientGroup, recipients);
+        emit RecipientsUpdated(recipientGroup, recipients);
     }
 
     /**
