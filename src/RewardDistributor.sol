@@ -40,6 +40,10 @@ contract RewardDistributor is Ownable {
         setRecipients(recipients);
     }
 
+    /// @notice allows eth to be deposited into this contract
+    /// @dev this contract is expected to handle ether appearing in its balance as well as an explicit deposit
+    receive() external payable {}
+
     /**
      * @notice Distributes previous rewards then updates the recipients to a new group.
      * @param currentRecipients Group of addresses that will receive their final rewards.
