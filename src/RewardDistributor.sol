@@ -7,28 +7,17 @@ error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error OwnerFailedRecieve(address owner, address recipient, uint256 value);
-error NonZeroBalance(uint256 value);
-
-// CHRIS: TODO:
-// 1. comments
-// 2. add tests for the events
-// 3. decide whether to have update functionality, or just a separate contract, tradeoffs:
-//      pros:
-//      1. save the call data (not so important on nova)
-//      2. save the single sload
-//      cons:
-//      1. when updating the group need to do a 2 step update the contract then point it at the old one
-// 3.b Add tests for update functionality if we decide to keep it
-// 4. optimise gas a bit
-// 6. Add tests to CI
-// 7. and an else and emit an event if there were no rewards to deliver
+error NoFundsToDistribute();
 
 contract RewardDistributor is Ownable {
     /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
-    event OwnerRecieved(address owner, address recipient, uint256 value);
+    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
 
     /// @notice Address successfully received rewards.
-    event RecipientRecieved(address recipient, uint256 value);
+    event RecipientRecieved(address indexed recipient, uint256 value);
+
+    /// @notice New recipients have been set
+    event RecipientsUpdated(bytes32 recipientGroup, address[] recipients);
 
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known set of contracts that won't consume more than this amount.
@@ -72,6 +61,8 @@ contract RewardDistributor is Ownable {
         // create a committment to the recipient group and update current
         bytes32 recipientGroup = hashRecipients(recipients);
         currentRecipientGroup = recipientGroup;
+
+        emit RecipientsUpdated(recipientGroup, recipients);
     }
 
     /**
@@ -102,38 +93,41 @@ contract RewardDistributor is Ownable {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
-        uint256 rewards = address(this).balance;
         // calculate individual reward
+        uint256 rewards = address(this).balance;
         uint256 individualRewards;
         unchecked {
             // recipients.length cannot be 0
             individualRewards = rewards / recipients.length;
         }
-        if (individualRewards > 0) {
-            for (uint256 r; r < recipients.length;) {
-                // send the funds
-                // if the recipient reentry to steal funds, the contract will not have sufficient
-                // funds and revert when trying to send fund to the next recipient
-                // if the recipient is the last, it doesn't matter since there are no extra fund to steal
-                (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
+        if (individualRewards == 0) {
+            revert NoFundsToDistribute();
+        }
+        for (uint256 r; r < recipients.length;) {
+            // send the funds
+            // if the recipient reentry to steal funds, the contract will not have sufficient
+            // funds and revert when trying to send fund to the next recipient
+            // if the recipient is the last, it doesn't matter since there are no extra fund to steal
+            (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
 
-                // if the funds failed to send we send them to the owner for safe keeping
-                // then the owner will have the opportunity to distribute them out of band
-                if (success) {
-                    emit RecipientRecieved(recipients[r], individualRewards);
-                } else {
-                    // cache owner in memory
-                    address _owner = owner();
-                    (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
-                    // if this is the case then revert and sort it out
-                    if (!ownerSuccess) {
-                        revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
-                    }
-                    emit OwnerRecieved(_owner, recipients[r], individualRewards);
+            // if the funds failed to send we send them to the owner for safe keeping
+            // then the owner will have the opportunity to distribute them out of band
+            if (success) {
+                emit RecipientRecieved(recipients[r], individualRewards);
+            } else {
+                // cache owner in memory
+                address _owner = owner();
+                (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
+                // if this is the case then revert and sort it out
+                // it's important that this fail in order to preserve the accounting in this contract.
+                // if we dont fail here we enable a re-entrancy attack
+                if (!ownerSuccess) {
+                    revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
                 }
-                unchecked {
-                    ++r;
-                }
+                emit OwnerRecieved(_owner, recipients[r], individualRewards);
+            }
+            unchecked {
+                ++r;
             }
         }
     }
