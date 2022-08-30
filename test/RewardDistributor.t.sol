@@ -56,6 +56,24 @@ contract RewardDistributorTest is Test {
         new RewardDistributor(recipients);
     }
 
+    function testUpdateDoesNotAcceptInvalidValues() public withContext(5) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+        
+        // increase the balance of rd
+        uint256 reward = 1e8;
+        vm.deal(address(rd), reward);
+
+        address[] memory newRecipients;
+        
+        newRecipients = makeRecipientGroup(65);
+        vm.expectRevert(TooManyRecipients.selector);
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+
+        newRecipients = makeRecipientGroup(0);
+        vm.expectRevert(EmptyRecipients.selector);
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+    }
+
     function testDistributeAndUpdateRecipients() public withContext(64) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
@@ -245,15 +263,15 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients);
     }
 
-    uint64 numReverters = 64;
+    uint64 MAX_RECIPIENTS = 64;
 
-    function testBlockGasLimit() public withContext(numReverters) {
+    function testBlockGasLimit() public withContext(MAX_RECIPIENTS) {
         for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Reverter());
         }
         RewardDistributor rd = new RewardDistributor(recipients);
 
-        assertEq(numReverters, rd.MAX_RECIPIENTS());
+        assertEq(MAX_RECIPIENTS, rd.MAX_RECIPIENTS());
 
         // TODO: fuzz this value?
         uint256 rewards = 5 ether;
@@ -285,5 +303,45 @@ contract RewardDistributorTest is Test {
 
         vm.expectRevert(NoFundsToDistribute.selector);
         rd.distributeRewards(recipients);
+    }
+
+    function testHashAddresses() public {
+        address[] memory input;
+        bytes32 actual;
+        bytes32 expected;
+
+        // in practice reward distributor does not allow this to happen
+        input = new address[](0);
+        actual = hashAddresses(input);
+        expected = bytes32(0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470);
+        assertEq(actual, expected, "incorrect empty hash");
+
+        input = new address[](1);
+        input[0] = address(1);
+        actual = hashAddresses(input);
+        expected = bytes32(0xb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6);
+        assertEq(actual, expected, "incorrect addr 1 hash");
+
+        input = makeRecipientGroup(MAX_RECIPIENTS);
+        actual = hashAddresses(input);
+        expected = bytes32(0x95e9a53b9c4215b83ebc13939985ca72fe2424db3c861aa2b1bc741c56efabd0);
+        assertEq(actual, expected, "incorrect max recipients hash");
+    }
+
+    function testUncheckedInc() public {
+        uint256 expected;
+        uint256 actual;
+
+        expected = 1;
+        actual = uncheckedInc(0);
+        assertEq(actual, expected, "incorrect low num increment");
+
+        expected = type(uint256).max;
+        actual = uncheckedInc(type(uint256).max - 1);
+        assertEq(actual, expected, "incorrect high num increment");
+
+        expected = 0;
+        actual = uncheckedInc(type(uint256).max);
+        assertEq(actual, expected, "incorrect overflow increment");
     }
 }
