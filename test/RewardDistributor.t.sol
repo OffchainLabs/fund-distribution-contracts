@@ -56,6 +56,24 @@ contract RewardDistributorTest is Test {
         new RewardDistributor(recipients);
     }
 
+    function testUpdateDoesNotAcceptInvalidValues() public withContext(5) {
+        RewardDistributor rd = new RewardDistributor(recipients);
+        
+        // increase the balance of rd
+        uint256 reward = 1e8;
+        vm.deal(address(rd), reward);
+
+        address[] memory newRecipients;
+        
+        newRecipients = makeRecipientGroup(65);
+        vm.expectRevert(TooManyRecipients.selector);
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+
+        newRecipients = makeRecipientGroup(0);
+        vm.expectRevert(EmptyRecipients.selector);
+        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+    }
+
     function testDistributeAndUpdateRecipients() public withContext(64) {
         RewardDistributor rd = new RewardDistributor(recipients);
 
