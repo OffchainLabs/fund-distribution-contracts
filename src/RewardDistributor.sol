@@ -7,26 +7,17 @@ error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error OwnerFailedRecieve(address owner, address recipient, uint256 value);
-
-// CHRIS: TODO:
-// 1. comments
-// 3. decide whether to have update functionality, or just a separate contract, tradeoffs:
-//      pros:
-//      1. save the call data (not so important on nova)
-//      2. save the single sload
-//      cons:
-//      1. when updating the group need to do a 2 step update the contract then point it at the old one
-// 3.b Add tests for update functionality if we decide to keep it
-// 4. optimise gas a bit
-// 7. and an else and emit an event if there were no rewards to deliver
-// 8. Add an event for set recipients
+error NoFundsToDistribute();
 
 contract RewardDistributor is Ownable {
     /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
-    event OwnerRecieved(address owner, address recipient, uint256 value);
+    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
 
     /// @notice Address successfully received rewards.
-    event RecipientRecieved(address recipient, uint256 value);
+    event RecipientRecieved(address indexed recipient, uint256 value);
+
+    /// @notice New recipients have been set
+    // event RecipientsUpdated(bytes32 recipientGroup, address[] recipients);
 
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known set of contracts that won't consume more than this amount.
@@ -70,6 +61,8 @@ contract RewardDistributor is Ownable {
         // create a committment to the recipient group and update current
         bytes32 recipientGroup = hashRecipients(recipients);
         currentRecipientGroup = recipientGroup;
+
+        // emit RecipientsUpdated(recipientGroup, recipients);
     }
 
     /**
@@ -91,6 +84,11 @@ contract RewardDistributor is Ownable {
      * @param recipients Set of addresses to receive rewards.
      */
     function distributeRewards(address[] memory recipients) public {
+        uint256 rewards = address(this).balance;
+        if (rewards == 0) {
+            revert NoFundsToDistribute();
+        }
+
         if (recipients.length == 0) {
             revert EmptyRecipients();
         }
@@ -100,7 +98,6 @@ contract RewardDistributor is Ownable {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
-        uint256 rewards = address(this).balance;
         // calculate individual reward
         uint256 individualRewards;
         unchecked {
@@ -124,6 +121,8 @@ contract RewardDistributor is Ownable {
                     address _owner = owner();
                     (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
                     // if this is the case then revert and sort it out
+                    // it's important that this fail in order to preserve the accounting in this contract.
+                    // if we dont fail here we enable a re-entrancy attack
                     if (!ownerSuccess) {
                         revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
                     }
