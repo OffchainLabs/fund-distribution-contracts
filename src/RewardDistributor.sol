@@ -11,11 +11,11 @@ error OwnerFailedRecieve(address owner, address recipient, uint256 value);
 error NoFundsToDistribute();
 
 /// @title A distributor of ether
-/// @notice You can use this contract to distribute ether evenly between a set of participants managed by an owner.
+/// @notice You can use this contract to distribute ether evenly between a group of participants managed by an owner.
 /// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
 contract RewardDistributor is Ownable {
     /// @notice Amount of gas forwarded to each transfer call.
-    /// @dev The recipient group is assumed to be a known set of contracts that won't consume more than this amount.
+    /// @dev The recipient group is assumed to be a known group of contracts that won't consume more than this amount.
     uint256 public constant PER_RECIPIENT_GAS = 100_000;
 
     /// @notice The maximum number of addresses that may be recipients.
@@ -41,9 +41,9 @@ contract RewardDistributor is Ownable {
     }
 
     /**
-     * @notice Distributes previous rewards then updates the recipients to a new set.
-     * @param currentRecipients Set of addresses that will receive their final rewards.
-     * @param newRecipients Set of addresses that will receive future rewards.
+     * @notice Distributes previous rewards then updates the recipients to a new group.
+     * @param currentRecipients Group of addresses that will receive their final rewards.
+     * @param newRecipients Group of addresses that will receive future rewards.
      */
     function distributeAndUpdateRecipients(address[] memory currentRecipients, address[] memory newRecipients)
         external
@@ -54,9 +54,9 @@ contract RewardDistributor is Ownable {
     }
 
     /**
-     * @notice Sends rewards to the set of recipients.
+     * @notice Sends rewards to the current group of recipients.
      * @dev The remainder will be kept in the contract.
-     * @param recipients Set of addresses to receive rewards.
+     * @param recipients Group of addresses to receive rewards.
      */
     function distributeRewards(address[] memory recipients) public {
         if (recipients.length == 0) {
@@ -105,9 +105,9 @@ contract RewardDistributor is Ownable {
     }
 
     /**
-     * @notice Validates and sets the set of recipient addresses. It is assumed that all recipients are able to receive eth when
+     * @notice Validates and sets the group of recipient addresses. It is assumed that all recipients are able to receive eth
      * @dev We enforce a max number of recipients to ensure the distribution of rewards fits within a block.
-     * @param recipients Set of addresses that will receive future rewards.
+     * @param recipients Group of addresses that will receive future rewards.
      */
     function setRecipients(address[] memory recipients) private {
         if (recipients.length == 0) {
