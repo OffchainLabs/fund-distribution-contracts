@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
-import { hashAddresses, uncheckedInc } from "./Util.sol";
+import {hashAddresses, uncheckedInc} from "./Util.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 error TooManyRecipients();
@@ -125,4 +125,3 @@ contract RewardDistributor is Ownable {
         emit RecipientsUpdated(recipientGroup, recipients);
     }
 }
-
