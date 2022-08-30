@@ -125,8 +125,11 @@ contract RewardDistributorTest is Test {
     }
 
     address zero = 0x0000000000000000000000000000000000000000;
+    function testDistributeRewards(uint256 reward) public withContext(3) {
+        // If reward is less than recipient.length, we expect to throw an error
+        // see testLowSend
+        vm.assume(reward >= recipients.length);
 
-    function testDistributeRewards() public withContext(3) {
         vm.expectEmit(true, true, false, false);
         emit OwnershipTransferred(zero, owner);
         vm.expectEmit(true, true, false, false);
@@ -134,7 +137,6 @@ contract RewardDistributorTest is Test {
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // increase the balance of rd
-        uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
         uint256 aReward = reward / 3;
@@ -155,11 +157,22 @@ contract RewardDistributorTest is Test {
         assertEq(recipients[2].balance, aReward, "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertGt(reward % 3, 0, "remainder"); // test the code path with remainder
         assertEq(address(rd).balance, reward % 3, "rewards balance");
     }
 
-    function testDistributeRewardsDoesRefundsOwner() public withContext(3) {
+    function testLowSend(uint256 rewards) public withContext(8) {
+        vm.assume(rewards < recipients.length);
+
+        RewardDistributor rd = new RewardDistributor(recipients);
+
+        vm.deal(address(rd), rewards);
+
+        vm.expectRevert(NoFundsToDistribute.selector);
+        rd.distributeRewards(recipients);
+    }
+
+    function testDistributeRewardsDoesRefundsOwner(uint256 reward) public withContext(3) {
+        vm.assume(reward >= recipients.length);
         RewardDistributor rd = new RewardDistributor(recipients);
 
         // the empty contract will revert when sending funds to it, as it doesn't
@@ -168,7 +181,6 @@ contract RewardDistributorTest is Test {
         vm.etch(recipients[2], address(ec).code);
 
         // increase the balance of rd
-        uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
         uint256 aReward = reward / 3;
@@ -256,13 +268,6 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients);
     }
 
-    function testDistributeRewardsFailsForEmptyRD() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(recipients);
-
-        vm.expectRevert(NoFundsToDistribute.selector);
-        rd.distributeRewards(recipients);
-    }
-
     uint64 MAX_RECIPIENTS = 64;
 
     function testBlockGasLimit() public withContext(MAX_RECIPIENTS) {
@@ -270,17 +275,13 @@ contract RewardDistributorTest is Test {
             recipients[i] = address(new Reverter());
         }
         RewardDistributor rd = new RewardDistributor(recipients);
-
         assertEq(MAX_RECIPIENTS, rd.MAX_RECIPIENTS());
 
-        // TODO: fuzz this value?
         uint256 rewards = 5 ether;
         vm.deal(address(rd), rewards);
 
         uint256 gasleftPrior = gasleft();
-
         rd.distributeRewards(recipients);
-
         uint256 gasleftAfter = gasleft();
         uint256 gasUsed = gasleftPrior - gasleftAfter;
 
@@ -289,20 +290,7 @@ contract RewardDistributorTest is Test {
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
         assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
         assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
-        assertEq(address(owner).balance, rewards, "owner didn't receive all funds");
-    }
-
-    uint256 numRecipients = 8;
-
-    function testLowSend() public withContext(8) {
-        RewardDistributor rd = new RewardDistributor(recipients);
-        uint256 rewards = 6;
-        assertGt(numRecipients, rewards, "test not configured correctly");
-
-        vm.deal(address(rd), rewards);
-
-        vm.expectRevert(NoFundsToDistribute.selector);
-        rd.distributeRewards(recipients);
+        assertEq(address(owner).balance, rewards - (rewards % recipients.length), "owner didn't receive all funds");
     }
 
     function testHashAddresses() public {
