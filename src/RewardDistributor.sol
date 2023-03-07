@@ -40,6 +40,7 @@ contract RewardDistributor is Ownable {
 
     /// @notice It is assumed that all recipients are able to receive eth when called with value but no data
     /// @param recipients Addresses to receive rewards.
+    /// @param weights Weights of each recipient in basis points.
     constructor(address[] memory recipients, uint256[] memory weights) Ownable() {
         setRecipients(recipients, weights);
     }
@@ -51,7 +52,9 @@ contract RewardDistributor is Ownable {
     /**
      * @notice Distributes previous rewards then updates the recipients to a new group.
      * @param currentRecipients Group of addresses that will receive their final rewards.
+     * @param currentWeights Weights of the final rewards.
      * @param newRecipients Group of addresses that will receive future rewards.
+     * @param newWeights Weights of the future rewards.
      */
     function distributeAndUpdateRecipients(
         address[] memory currentRecipients,
@@ -67,6 +70,7 @@ contract RewardDistributor is Ownable {
      * @notice Sends rewards to the current group of recipients.
      * @dev The remainder will be kept in the contract.
      * @param recipients Group of addresses to receive rewards.
+     * @param weights Weights of each recipient in basis points.
      */
     function distributeRewards(address[] memory recipients, uint256[] memory weights) public {
         if (recipients.length == 0) {
@@ -129,6 +133,7 @@ contract RewardDistributor is Ownable {
      * @notice Validates and sets the group of recipient addresses. It is assumed that all recipients are able to receive eth
      * @dev We enforce a max number of recipients to ensure the distribution of rewards fits within a block.
      * @param recipients Group of addresses that will receive future rewards.
+     * @param weights Weights of each recipient in basis points.
      */
     function setRecipients(address[] memory recipients, uint256[] memory weights) private {
         if (recipients.length == 0) {
