@@ -144,7 +144,7 @@ contract RewardDistributor is Ownable {
         for (uint256 i; i < weights.length; i = uncheckedInc(i)) {
             totalWeight += weights[i];
         }
-        if (totalWeight > BASIS_POINTS) {
+        if (totalWeight != BASIS_POINTS) {
             revert InvalidTotalWeight(totalWeight);
         }
 
