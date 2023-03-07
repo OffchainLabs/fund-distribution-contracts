@@ -10,15 +10,17 @@ import "forge-std/Test.sol";
 contract RewardDistributorTest is Test {
     event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
     event RecipientRecieved(address indexed recipient, uint256 value);
-    event RecipientsUpdated(bytes32 recipientGroup, address[] recipients);
+    event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     address owner = vm.addr(0x04);
     address nobody = vm.addr(0x05);
     address[] recipients;
+    uint256[] weights;
 
     modifier withContext(uint256 count) {
         recipients = makeRecipientGroup(count);
+        weights = makeRecipientWeights(count);
         // clear accounts
         vm.deal(owner, 0);
         vm.deal(nobody, 0);
@@ -39,8 +41,21 @@ contract RewardDistributorTest is Test {
         return recps;
     }
 
+    function makeRecipientWeights(uint256 count) private returns (uint256[] memory) {
+        uint256[] memory weig = new uint256[](count);
+        if (count == 0) {
+            return weig;
+        }
+        uint256 even = BASIS_POINTS / count;
+        for (uint256 i = 0; i < count; i++) {
+            weig[i] = even;
+        }
+        weig[count - 1] += BASIS_POINTS - (even * (count));
+        return weig;
+    }
+
     function testConstructor() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(recipients)));
         assertEq(rd.owner(), owner);
@@ -48,72 +63,102 @@ contract RewardDistributorTest is Test {
 
     function testConstructorDoesNotAcceptEmpty() public withContext(0) {
         vm.expectRevert(EmptyRecipients.selector);
-        new RewardDistributor(recipients);
+        new RewardDistributor(recipients, weights);
     }
 
     function testConstructorDoesNotAcceptPastLimit() public withContext(65) {
         vm.expectRevert(TooManyRecipients.selector);
-        new RewardDistributor(recipients);
+        new RewardDistributor(recipients, weights);
+    }
+
+    function testConstructorInputLengthMismatch() public withContext(3) {
+        uint256[] memory shortWeights = new uint256[](2);
+        shortWeights[0] = weights[0];
+        shortWeights[1] = weights[1];
+        vm.expectRevert(InputLengthMismatch.selector);
+        new RewardDistributor(recipients, shortWeights);
     }
 
     function testUpdateDoesNotAcceptInvalidValues() public withContext(5) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
         address[] memory newRecipients;
+        uint256[] memory newWeights;
 
         newRecipients = makeRecipientGroup(65);
+        newWeights = makeRecipientWeights(65);
         vm.expectRevert(TooManyRecipients.selector);
-        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+        rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
 
         newRecipients = makeRecipientGroup(0);
+        newWeights = makeRecipientWeights(0);
         vm.expectRevert(EmptyRecipients.selector);
-        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+        rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
+
+        newRecipients = makeRecipientGroup(3);
+        newWeights = makeRecipientWeights(2);
+        vm.expectRevert(InputLengthMismatch.selector);
+        rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
+
+        newRecipients = makeRecipientGroup(2);
+        newWeights = makeRecipientWeights(3);
+        vm.expectRevert(InputLengthMismatch.selector);
+        rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
+
+        newRecipients = makeRecipientGroup(2);
+        newWeights = new uint256[](2);
+        newWeights[0] = 10000;
+        newWeights[1] = 10000;
+        vm.expectRevert(abi.encodeWithSelector(InvalidTotalWeight.selector, 20000));
+        rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
     }
 
     function testDistributeAndUpdateRecipients() public withContext(64) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
         address[] memory newRecipients = makeRecipientGroup(50);
-        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+        uint256[] memory newWeights = makeRecipientWeights(50);
+        rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients)));
 
-        uint256 aReward = reward / 64;
-        assertEq(newRecipients[0].balance, aReward, "a balance before update");
-        assertEq(newRecipients[1].balance, aReward, "b balance before update");
-        assertEq(newRecipients[2].balance, aReward, "c balance before update");
+        assertEq(newRecipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance before update");
+        assertEq(newRecipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance before update");
+        assertEq(newRecipients[2].balance, reward / BASIS_POINTS * weights[2], "c balance before update");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
         assertEq(reward % 64, 0, "remainder"); // test the code path without remainder
-        assertEq(address(rd).balance, reward % 64, "rewards balance");
+        assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
     }
 
     function testDistributeAndUpdateRecipientsNotOwner() public withContext(64) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         vm.stopPrank();
         vm.startPrank(nobody);
 
         address[] memory newRecipients = makeRecipientGroup(50);
+        uint256[] memory newWeights = makeRecipientWeights(50);
 
         // only owner should be able to call distributeRewards
         vm.expectRevert("Ownable: caller is not the owner");
-        rd.distributeAndUpdateRecipients(recipients, newRecipients);
+        rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
     }
 
     function testDistributeAndUpdateRecipientsBadPrevious() public withContext(64) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
         address[] memory newRecipients = makeRecipientGroup(50);
+        uint256[] memory newWeights = makeRecipientWeights(50);
 
         // revert on wrong previous group
         vm.expectRevert(
@@ -121,59 +166,61 @@ contract RewardDistributorTest is Test {
                 InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients))
             )
         );
-        rd.distributeAndUpdateRecipients(newRecipients, newRecipients);
+        rd.distributeAndUpdateRecipients(newRecipients, newWeights, newRecipients, newWeights);
     }
 
     address zero = 0x0000000000000000000000000000000000000000;
+
     function testDistributeRewards(uint256 reward) public withContext(3) {
         // If reward is less than recipient.length, we expect to throw an error
         // see testLowSend
-        vm.assume(reward >= recipients.length);
+        vm.assume(reward >= BASIS_POINTS);
 
         vm.expectEmit(true, true, false, false);
         emit OwnershipTransferred(zero, owner);
         vm.expectEmit(true, true, false, false);
-        emit RecipientsUpdated(keccak256(abi.encodePacked(recipients)), recipients);
-        RewardDistributor rd = new RewardDistributor(recipients);
+        emit RecipientsUpdated(
+            keccak256(abi.encodePacked(recipients)), recipients, keccak256(abi.encodePacked(weights)), weights
+        );
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // increase the balance of rd
         vm.deal(address(rd), reward);
 
-        uint256 aReward = reward / 3;
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[0], aReward);
+        emit RecipientRecieved(recipients[0], reward / BASIS_POINTS * weights[0]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[1], aReward);
+        emit RecipientRecieved(recipients[1], reward / BASIS_POINTS * weights[1]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[2], aReward);
+        emit RecipientRecieved(recipients[2], reward / BASIS_POINTS * weights[2]);
 
         vm.stopPrank();
         vm.startPrank(nobody);
         // anyone should be able to call distributeRewards
-        rd.distributeRewards(recipients);
+        rd.distributeRewards(recipients, weights);
 
-        assertEq(recipients[0].balance, aReward, "a balance");
-        assertEq(recipients[1].balance, aReward, "b balance");
-        assertEq(recipients[2].balance, aReward, "c balance");
+        assertEq(recipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance");
+        assertEq(recipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance");
+        assertEq(recipients[2].balance, reward / BASIS_POINTS * weights[2], "c balance");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(address(rd).balance, reward % 3, "rewards balance");
+        assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
     }
 
     function testLowSend(uint256 rewards) public withContext(8) {
-        vm.assume(rewards < recipients.length);
+        vm.assume(rewards < BASIS_POINTS);
 
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         vm.deal(address(rd), rewards);
 
-        vm.expectRevert(NoFundsToDistribute.selector);
-        rd.distributeRewards(recipients);
+        vm.expectRevert(TooFewFundsToDistribute.selector);
+        rd.distributeRewards(recipients, weights);
     }
 
     function testDistributeRewardsDoesRefundsOwner(uint256 reward) public withContext(3) {
-        vm.assume(reward >= recipients.length);
-        RewardDistributor rd = new RewardDistributor(recipients);
+        vm.assume(reward >= BASIS_POINTS);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address to have this code
@@ -183,26 +230,25 @@ contract RewardDistributorTest is Test {
         // increase the balance of rd
         vm.deal(address(rd), reward);
 
-        uint256 aReward = reward / 3;
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[0], aReward);
+        emit RecipientRecieved(recipients[0], reward / BASIS_POINTS * weights[0]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[1], aReward);
+        emit RecipientRecieved(recipients[1], reward / BASIS_POINTS * weights[1]);
         vm.expectEmit(true, false, false, true);
-        emit OwnerRecieved(owner, recipients[2], aReward);
+        emit OwnerRecieved(owner, recipients[2], reward / BASIS_POINTS * weights[2]);
 
-        rd.distributeRewards(recipients);
+        rd.distributeRewards(recipients, weights);
 
-        assertEq(recipients[0].balance, aReward, "a balance");
-        assertEq(recipients[1].balance, aReward, "b balance");
+        assertEq(recipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance");
+        assertEq(recipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance");
         assertEq(recipients[2].balance, 0, "c balance");
-        assertEq(owner.balance, aReward, "owner balance");
+        assertEq(owner.balance, reward / BASIS_POINTS * weights[2], "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(address(rd).balance, reward % 3, "rewards balance");
+        assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
     }
 
     function testDistributeRewardsDoesNotDistributeToEmpty() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -210,12 +256,13 @@ contract RewardDistributorTest is Test {
 
         vm.expectRevert(EmptyRecipients.selector);
         address[] memory emptyRecipients = makeRecipientGroup(0);
+        uint256[] memory emptyWeights = makeRecipientWeights(0);
 
-        rd.distributeRewards(emptyRecipients);
+        rd.distributeRewards(emptyRecipients, emptyWeights);
     }
 
     function testDistributeRewardsDoesNotDistributeWrongRecipients() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -231,27 +278,49 @@ contract RewardDistributorTest is Test {
                 InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(wrongRecipients))
             )
         );
-        rd.distributeRewards(wrongRecipients);
+        rd.distributeRewards(wrongRecipients, weights);
+    }
+
+    function testDistributeRewardsDoesNotDistributeWrongWeights() public withContext(3) {
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
+
+        // increase the balance of rd
+        uint256 reward = 1e8;
+        vm.deal(address(rd), reward);
+
+        uint256[] memory wrongWeights = new uint256[](3);
+        wrongWeights[0] = 1;
+        wrongWeights[1] = 2;
+        wrongWeights[2] = 9997;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidRecipientWeights.selector,
+                rd.currentRecipientWeights(),
+                keccak256(abi.encodePacked(wrongWeights))
+            )
+        );
+        rd.distributeRewards(recipients, wrongWeights);
     }
 
     function testDistributeRewardsDoesNotDistributeToWrongCount() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
         address[] memory shortRecipients = makeRecipientGroup(2);
+        uint256[] memory shortWeights = makeRecipientWeights(2);
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidRecipientGroup.selector, rd.currentRecipientGroup(), keccak256(abi.encodePacked(shortRecipients))
             )
         );
-        rd.distributeRewards(shortRecipients);
+        rd.distributeRewards(shortRecipients, shortWeights);
     }
 
     function testDistributeRewardsFailsToRefundsOwner() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address and the owner to have this code
@@ -263,9 +332,22 @@ contract RewardDistributorTest is Test {
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        vm.expectRevert(abi.encodeWithSelector(OwnerFailedRecieve.selector, owner, recipients[2], (reward / 3)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                OwnerFailedRecieve.selector, owner, recipients[2], (reward / BASIS_POINTS * weights[2])
+            )
+        );
 
-        rd.distributeRewards(recipients);
+        rd.distributeRewards(recipients, weights);
+    }
+
+    function testDistributeRewardsInputLengthMismatch() public withContext(3) {
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
+        uint256[] memory shortWeights = new uint256[](2);
+        shortWeights[0] = weights[0];
+        shortWeights[1] = weights[1];
+        vm.expectRevert(InputLengthMismatch.selector);
+        rd.distributeRewards(recipients, shortWeights);
     }
 
     uint64 MAX_RECIPIENTS = 64;
@@ -274,14 +356,14 @@ contract RewardDistributorTest is Test {
         for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Reverter());
         }
-        RewardDistributor rd = new RewardDistributor(recipients);
+        RewardDistributor rd = new RewardDistributor(recipients, weights);
         assertEq(MAX_RECIPIENTS, rd.MAX_RECIPIENTS());
 
         uint256 rewards = 5 ether;
         vm.deal(address(rd), rewards);
 
         uint256 gasleftPrior = gasleft();
-        rd.distributeRewards(recipients);
+        rd.distributeRewards(recipients, weights);
         uint256 gasleftAfter = gasleft();
         uint256 gasUsed = gasleftPrior - gasleftAfter;
 

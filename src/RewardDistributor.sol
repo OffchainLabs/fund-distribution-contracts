@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
-import {hashAddresses, uncheckedInc} from "./Util.sol";
+import {BASIS_POINTS, hashAddresses, hashWeights, uncheckedInc} from "./Util.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
+error InvalidRecipientWeights(bytes32 currentRecipientWeights, bytes32 providedRecipientWeights);
 error OwnerFailedRecieve(address owner, address recipient, uint256 value);
-error NoFundsToDistribute();
+error TooFewFundsToDistribute();
+error InputLengthMismatch();
+error InvalidTotalWeight(uint256 totalWeight);
 
 /// @title A distributor of ether
 /// @notice You can use this contract to distribute ether evenly between a group of participants managed by an owner.
@@ -24,6 +27,7 @@ contract RewardDistributor is Ownable {
 
     /// @notice Hash of concat'ed recipient group.
     bytes32 public currentRecipientGroup;
+    bytes32 public currentRecipientWeights;
 
     /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
     event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
@@ -32,12 +36,12 @@ contract RewardDistributor is Ownable {
     event RecipientRecieved(address indexed recipient, uint256 value);
 
     /// @notice New recipients have been set
-    event RecipientsUpdated(bytes32 recipientGroup, address[] recipients);
+    event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
 
     /// @notice It is assumed that all recipients are able to receive eth when called with value but no data
     /// @param recipients Addresses to receive rewards.
-    constructor(address[] memory recipients) Ownable() {
-        setRecipients(recipients);
+    constructor(address[] memory recipients, uint256[] memory weights) Ownable() {
+        setRecipients(recipients, weights);
     }
 
     /// @notice allows eth to be deposited into this contract
@@ -49,12 +53,14 @@ contract RewardDistributor is Ownable {
      * @param currentRecipients Group of addresses that will receive their final rewards.
      * @param newRecipients Group of addresses that will receive future rewards.
      */
-    function distributeAndUpdateRecipients(address[] memory currentRecipients, address[] memory newRecipients)
-        external
-        onlyOwner
-    {
-        distributeRewards(currentRecipients);
-        setRecipients(newRecipients);
+    function distributeAndUpdateRecipients(
+        address[] memory currentRecipients,
+        uint256[] memory currentWeights,
+        address[] memory newRecipients,
+        uint256[] memory newWeights
+    ) external onlyOwner {
+        distributeRewards(currentRecipients, currentWeights);
+        setRecipients(newRecipients, newWeights);
     }
 
     /**
@@ -62,9 +68,13 @@ contract RewardDistributor is Ownable {
      * @dev The remainder will be kept in the contract.
      * @param recipients Group of addresses to receive rewards.
      */
-    function distributeRewards(address[] memory recipients) public {
+    function distributeRewards(address[] memory recipients, uint256[] memory weights) public {
         if (recipients.length == 0) {
             revert EmptyRecipients();
+        }
+
+        if (recipients.length != weights.length) {
+            revert InputLengthMismatch();
         }
 
         bytes32 recipientGroup = hashAddresses(recipients);
@@ -72,17 +82,21 @@ contract RewardDistributor is Ownable {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
+        bytes32 recipentWeights = hashWeights(weights);
+        if (recipentWeights != currentRecipientWeights) {
+            revert InvalidRecipientWeights(currentRecipientWeights, recipentWeights);
+        }
+
         // calculate individual reward
         uint256 rewards = address(this).balance;
-        uint256 individualRewards;
-        unchecked {
-            // recipients.length cannot be 0
-            individualRewards = rewards / recipients.length;
-        }
-        if (individualRewards == 0) {
-            revert NoFundsToDistribute();
+        if (rewards < BASIS_POINTS) {
+            revert TooFewFundsToDistribute();
         }
         for (uint256 r; r < recipients.length; r = uncheckedInc(r)) {
+            uint256 individualRewards;
+            unchecked {
+                individualRewards = rewards / BASIS_POINTS * weights[r];
+            }
             // send the funds
             // if the recipient reentry to steal funds, the contract will not have sufficient
             // funds and revert when trying to send fund to the next recipient
@@ -113,19 +127,35 @@ contract RewardDistributor is Ownable {
      * @dev We enforce a max number of recipients to ensure the distribution of rewards fits within a block.
      * @param recipients Group of addresses that will receive future rewards.
      */
-    function setRecipients(address[] memory recipients) private {
+    function setRecipients(address[] memory recipients, uint256[] memory weights) private {
         if (recipients.length == 0) {
             revert EmptyRecipients();
+        }
+        if (recipients.length != weights.length) {
+            revert InputLengthMismatch();
         }
         if (recipients.length > MAX_RECIPIENTS) {
             // it is expected that all sends may happen within the block gas limit
             revert TooManyRecipients();
         }
 
+        // validate that the total weight is 100%
+        uint256 totalWeight = 0;
+        for (uint256 i; i < weights.length; i = uncheckedInc(i)) {
+            totalWeight += weights[i];
+        }
+        if (totalWeight > BASIS_POINTS) {
+            revert InvalidTotalWeight(totalWeight);
+        }
+
         // create a committment to the recipient group and update current
         bytes32 recipientGroup = hashAddresses(recipients);
         currentRecipientGroup = recipientGroup;
 
-        emit RecipientsUpdated(recipientGroup, recipients);
+        // create a committment to the recipient weights and update current
+        bytes32 recipientWeights = hashWeights(weights);
+        currentRecipientWeights = recipientWeights;
+
+        emit RecipientsUpdated(recipientGroup, recipients, recipientWeights, weights);
     }
 }
