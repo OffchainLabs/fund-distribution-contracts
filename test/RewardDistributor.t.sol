@@ -214,7 +214,7 @@ contract RewardDistributorTest is Test {
 
         vm.deal(address(rd), rewards);
 
-        vm.expectRevert(TooFewFundsToDistribute.selector);
+        vm.expectRevert(NoFundsToDistribute.selector);
         rd.distributeRewards(recipients, weights);
     }
 

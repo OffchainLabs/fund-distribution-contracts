@@ -9,7 +9,7 @@ error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error InvalidRecipientWeights(bytes32 currentRecipientWeights, bytes32 providedRecipientWeights);
 error OwnerFailedRecieve(address owner, address recipient, uint256 value);
-error TooFewFundsToDistribute();
+error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
 
@@ -89,13 +89,16 @@ contract RewardDistributor is Ownable {
 
         // calculate individual reward
         uint256 rewards = address(this).balance;
-        if (rewards < BASIS_POINTS) {
-            revert TooFewFundsToDistribute();
+        // the reminder will be kept in the contract
+        uint256 rewardPerBps = rewards / BASIS_POINTS;
+        if (rewardPerBps == 0) {
+            revert NoFundsToDistribute();
         }
         for (uint256 r; r < recipients.length; r = uncheckedInc(r)) {
             uint256 individualRewards;
             unchecked {
-                individualRewards = rewards / BASIS_POINTS * weights[r];
+                // we know weights <= BASIS_POINTS
+                individualRewards = rewardPerBps * weights[r];
             }
             // send the funds
             // if the recipient reentry to steal funds, the contract will not have sufficient
