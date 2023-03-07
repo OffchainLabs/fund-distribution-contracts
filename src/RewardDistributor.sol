@@ -14,7 +14,7 @@ error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
 
 /// @title A distributor of ether
-/// @notice You can use this contract to distribute ether evenly between a group of participants managed by an owner.
+/// @notice You can use this contract to distribute ether according to defined weights between a group of participants managed by an owner.
 /// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
 contract RewardDistributor is Ownable {
     /// @notice Amount of gas forwarded to each transfer call.
