@@ -27,6 +27,7 @@ contract RewardDistributor is Ownable {
 
     /// @notice Hash of concat'ed recipient group.
     bytes32 public currentRecipientGroup;
+    /// @notice Hash of concat'ed recipient weights.
     bytes32 public currentRecipientWeights;
 
     /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
@@ -86,9 +87,9 @@ contract RewardDistributor is Ownable {
             revert InvalidRecipientGroup(currentRecipientGroup, recipientGroup);
         }
 
-        bytes32 recipentWeights = hashWeights(weights);
-        if (recipentWeights != currentRecipientWeights) {
-            revert InvalidRecipientWeights(currentRecipientWeights, recipentWeights);
+        bytes32 recipientWeights = hashWeights(weights);
+        if (recipientWeights != currentRecipientWeights) {
+            revert InvalidRecipientWeights(currentRecipientWeights, recipientWeights);
         }
 
         // calculate individual reward
