@@ -46,7 +46,7 @@ contract DeployScript is Script {
             recipients: recipients,
             weights: weights
         });
-        rd_l2base.transferOwnership(l1TimelockAlias);
+        rd_l2base.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L2 Base at: ");
         console.log(address(rd_l2base));
 
@@ -59,7 +59,7 @@ contract DeployScript is Script {
             recipients: recipients,
             weights: weights
         });
-        rd_l2surplus.transferOwnership(l1TimelockAlias);
+        rd_l2surplus.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L2 Surplus at: ");
         console.log(address(rd_l2surplus));
 
@@ -68,7 +68,7 @@ contract DeployScript is Script {
             recipients: recipients,
             weights: weights
         });
-        rd_l1base.transferOwnership(l1TimelockAlias);
+        rd_l1base.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L1 Base at: ");
         console.log(address(rd_l1base));
 
@@ -77,7 +77,7 @@ contract DeployScript is Script {
             recipients: recipients,
             weights: weights
         });
-        rd_l1surplus.transferOwnership(l1TimelockAlias);
+        rd_l1surplus.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L1 Surplus at: ");
         console.log(address(rd_l1surplus));
 
