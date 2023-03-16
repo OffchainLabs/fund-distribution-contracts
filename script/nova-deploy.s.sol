@@ -13,6 +13,7 @@ contract DeployScript is Script {
     // l1Timelock is 0xE6841D92B0C345144506576eC13ECf5103aC7f49
     address constant l1TimelockAlias = address(0xf7951D92B0C345144506576eC13Ecf5103aC905a);
 
+    address constant MultiSigForGoogleCloud = address(0x41C327d5fc9e29680CcD45e5E52446E0DB3DAdFd);
     address constant QuickNode = address(0x02C2599aa929e2509741b44F3a13029745aB1AB2);
     address constant Consensys = address(0xA221f29236996BDEfA5C585acdD407Ec84D78447);
     address constant P2P = address(0x0fB1f1a31429F1A90a19Ab5486a6DFb384179641);
@@ -32,7 +33,7 @@ contract DeployScript is Script {
         weights[0] = 8000;
         recipients[1] = l2OffchainLabsMultisigNova;
         weights[1] = 375;
-        recipients[2] = l2OffchainLabsMultisigNova;
+        recipients[2] = MultiSigForGoogleCloud;
         weights[2] = 373;
         recipients[3] = QuickNode;
         weights[3] = 373;
