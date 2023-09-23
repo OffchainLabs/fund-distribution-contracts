@@ -8,8 +8,8 @@ import "./Empty.sol";
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
-    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
-    event RecipientRecieved(address indexed recipient, uint256 value);
+    event OwnerReceived(address indexed owner, address indexed recipient, uint256 value);
+    event RecipientReceived(address indexed recipient, uint256 value);
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
@@ -147,7 +147,7 @@ contract RewardDistributorTest is Test {
         address[] memory newRecipients = makeRecipientGroup(50);
         uint256[] memory newWeights = makeRecipientWeights(50);
 
-        // only owner should be able to call distributeRewards
+        // only owner should be able to call distributeAndUpdateRecipients
         vm.expectRevert("Ownable: caller is not the owner");
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
     }
@@ -188,11 +188,11 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), reward);
 
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[0], reward / BASIS_POINTS * weights[0]);
+        emit RecipientReceived(recipients[0], reward / BASIS_POINTS * weights[0]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[1], reward / BASIS_POINTS * weights[1]);
+        emit RecipientReceived(recipients[1], reward / BASIS_POINTS * weights[1]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[2], reward / BASIS_POINTS * weights[2]);
+        emit RecipientReceived(recipients[2], reward / BASIS_POINTS * weights[2]);
 
         vm.stopPrank();
         vm.startPrank(nobody);
@@ -231,11 +231,11 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), reward);
 
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[0], reward / BASIS_POINTS * weights[0]);
+        emit RecipientReceived(recipients[0], reward / BASIS_POINTS * weights[0]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientRecieved(recipients[1], reward / BASIS_POINTS * weights[1]);
+        emit RecipientReceived(recipients[1], reward / BASIS_POINTS * weights[1]);
         vm.expectEmit(true, false, false, true);
-        emit OwnerRecieved(owner, recipients[2], reward / BASIS_POINTS * weights[2]);
+        emit OwnerReceived(owner, recipients[2], reward / BASIS_POINTS * weights[2]);
 
         rd.distributeRewards(recipients, weights);
 
@@ -334,7 +334,7 @@ contract RewardDistributorTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                OwnerFailedRecieve.selector, owner, recipients[2], (reward / BASIS_POINTS * weights[2])
+                OwnerFailedReceive.selector, owner, recipients[2], (reward / BASIS_POINTS * weights[2])
             )
         );
 
@@ -371,7 +371,7 @@ contract RewardDistributorTest is Test {
         // must fit within target block gas limit (this value may change in the future)
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
         assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
-        assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
+        assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didn't use all gas");
         assertEq(address(owner).balance, rewards - (rewards % recipients.length), "owner didn't receive all funds");
     }
 

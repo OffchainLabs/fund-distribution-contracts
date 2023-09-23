@@ -8,14 +8,14 @@ error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error InvalidRecipientWeights(bytes32 currentRecipientWeights, bytes32 providedRecipientWeights);
-error OwnerFailedRecieve(address owner, address recipient, uint256 value);
+error OwnerFailedReceive(address owner, address recipient, uint256 value);
 error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
 
 /// @title A distributor of ether
 /// @notice You can use this contract to distribute ether according to defined weights between a group of participants managed by an owner.
-/// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
+/// @dev If a particular recipient is not able to receive funds at their address, the payment will fallback to the owner.
 contract RewardDistributor is Ownable {
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known group of contracts that won't consume more than this amount.
@@ -31,10 +31,10 @@ contract RewardDistributor is Ownable {
     bytes32 public currentRecipientWeights;
 
     /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
-    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
+    event OwnerReceived(address indexed owner, address indexed recipient, uint256 value);
 
     /// @notice Address successfully received rewards.
-    event RecipientRecieved(address indexed recipient, uint256 value);
+    event RecipientReceived(address indexed recipient, uint256 value);
 
     /// @notice New recipients have been set
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
@@ -114,7 +114,7 @@ contract RewardDistributor is Ownable {
             // if the funds failed to send we send them to the owner for safe keeping
             // then the owner will have the opportunity to distribute them out of band
             if (success) {
-                emit RecipientRecieved(recipients[r], individualRewards);
+                emit RecipientReceived(recipients[r], individualRewards);
             } else {
                 // cache owner in memory
                 address _owner = owner();
@@ -123,9 +123,9 @@ contract RewardDistributor is Ownable {
                 // it's important that this fail in order to preserve the accounting in this contract.
                 // if we dont fail here we enable a re-entrancy attack
                 if (!ownerSuccess) {
-                    revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
+                    revert OwnerFailedReceive(_owner, recipients[r], individualRewards);
                 }
-                emit OwnerRecieved(_owner, recipients[r], individualRewards);
+                emit OwnerReceived(_owner, recipients[r], individualRewards);
             }
         }
     }
@@ -157,11 +157,11 @@ contract RewardDistributor is Ownable {
             revert InvalidTotalWeight(totalWeight);
         }
 
-        // create a committment to the recipient group and update current
+        // create a commitment to the recipient group and update current
         bytes32 recipientGroup = hashAddresses(recipients);
         currentRecipientGroup = recipientGroup;
 
-        // create a committment to the recipient weights and update current
+        // create a commitment to the recipient weights and update current
         bytes32 recipientWeights = hashWeights(weights);
         currentRecipientWeights = recipientWeights;
 
