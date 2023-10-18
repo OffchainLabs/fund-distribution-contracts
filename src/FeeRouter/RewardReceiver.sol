@@ -9,12 +9,17 @@ interface IArbSys {
 
 contract RewardReceiver {
     address immutable parentChainTarget;
+    uint256 immutable minDistributionIntervalSeconds;
+    uint256 public nextDistribution;
 
-    constructor(address _parentChainTarget) {
+    constructor(address _parentChainTarget,  uint256 _minDistributionIntervalSeconds) {
         parentChainTarget = _parentChainTarget;
+        minDistributionIntervalSeconds = _minDistributionIntervalSeconds;
     }
 
     receive() external payable {
+        require(block.timestamp >= nextDistribution, "RewardRouter: distributing too soon");
+        nextDistribution = block.timestamp + minDistributionIntervalSeconds;
         IArbSys(address(100)).withdrawEth{value: address(this).balance}(
             parentChainTarget
         );
