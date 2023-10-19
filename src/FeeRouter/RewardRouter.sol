@@ -25,17 +25,43 @@ contract RewardRouter {
 
     receive() external payable {}
 
-    function routeFounds(
+    function routeFunds(
         uint256 maxSubmissionCost,
         uint256 gasLimit,
         uint256 maxFeePerGas
     ) external payable {
-        require(maxFeePerGas * gasLimit + maxSubmissionCost <= msg.value, "INSUFFICIENT_VALUE");
+        _routeFounds(maxSubmissionCost, gasLimit, maxFeePerGas, msg.sender);
+    }
+
+    function routeFundsCustomRefund(
+        uint256 maxSubmissionCost,
+        uint256 gasLimit,
+        uint256 maxFeePerGas,
+        address excessFeeRefundAddress
+    ) external payable {
+        _routeFounds(
+            maxSubmissionCost,
+            gasLimit,
+            maxFeePerGas,
+            excessFeeRefundAddress
+        );
+    }
+
+    function _routeFounds(
+        uint256 maxSubmissionCost,
+        uint256 gasLimit,
+        uint256 maxFeePerGas,
+        address excessFeeRefundAddress
+    ) internal {
+        require(
+            maxFeePerGas * gasLimit + maxSubmissionCost <= msg.value,
+            "INSUFFICIENT_VALUE"
+        );
         inbox.createRetryableTicket{value: address(this).balance}({
             to: destination,
             l2CallValue: address(this).balance - msg.value,
             maxSubmissionCost: maxSubmissionCost,
-            excessFeeRefundAddress: msg.sender,
+            excessFeeRefundAddress: excessFeeRefundAddress,
             callValueRefundAddress: destination,
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
