@@ -30,9 +30,10 @@ contract RewardRouter {
         uint256 gasLimit,
         uint256 maxFeePerGas
     ) external payable {
-        inbox.createRetryableTicket{value: msg.value + address(this).balance}({
+        require(maxFeePerGas * gasLimit + maxSubmissionCost <= msg.value, "INSUFFICIENT_VALUE");
+        inbox.createRetryableTicket{value: address(this).balance}({
             to: destination,
-            l2CallValue: address(this).balance,
+            l2CallValue: address(this).balance - msg.value,
             maxSubmissionCost: maxSubmissionCost,
             excessFeeRefundAddress: msg.sender,
             callValueRefundAddress: destination,
