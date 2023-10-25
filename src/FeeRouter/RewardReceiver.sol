@@ -12,16 +12,21 @@ contract RewardReceiver {
     uint256 immutable minDistributionIntervalSeconds;
     uint256 public nextDistribution;
 
-    constructor(address _parentChainTarget,  uint256 _minDistributionIntervalSeconds) {
+    constructor(
+        address _parentChainTarget,
+        uint256 _minDistributionIntervalSeconds
+    ) {
         parentChainTarget = _parentChainTarget;
         minDistributionIntervalSeconds = _minDistributionIntervalSeconds;
     }
 
     receive() external payable {
-        require(block.timestamp >= nextDistribution, "RewardRouter: distributing too soon");
-        nextDistribution = block.timestamp + minDistributionIntervalSeconds;
-        IArbSys(address(100)).withdrawEth{value: address(this).balance}(
-            parentChainTarget
-        );
+        // if distributing too soon, skip withdrawal (but don't revert)
+        if (block.timestamp >= nextDistribution) {
+            nextDistribution = block.timestamp + minDistributionIntervalSeconds;
+            IArbSys(address(100)).withdrawEth{value: address(this).balance}(
+                parentChainTarget
+            );
+        }
     }
 }
