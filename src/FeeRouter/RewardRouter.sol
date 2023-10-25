@@ -47,7 +47,7 @@ contract RewardRouter {
         );
     }
 
-    function _routeFounds(
+    function _routeFunds(
         uint256 maxSubmissionCost,
         uint256 gasLimit,
         uint256 maxFeePerGas,
