@@ -30,7 +30,7 @@ contract RewardRouter {
         uint256 gasLimit,
         uint256 maxFeePerGas
     ) external payable {
-        _routeFounds(maxSubmissionCost, gasLimit, maxFeePerGas, msg.sender);
+        _routeFunds(maxSubmissionCost, gasLimit, maxFeePerGas, msg.sender);
     }
 
     function routeFundsCustomRefund(
