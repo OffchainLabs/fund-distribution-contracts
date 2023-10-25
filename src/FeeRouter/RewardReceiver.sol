@@ -21,6 +21,10 @@ contract RewardReceiver {
     }
 
     receive() external payable {
+        sendFunds();
+    }
+
+    function sendFunds() public {
         // if distributing too soon, skip withdrawal (but don't revert)
         if (block.timestamp >= nextDistribution) {
             nextDistribution = block.timestamp + minDistributionIntervalSeconds;
