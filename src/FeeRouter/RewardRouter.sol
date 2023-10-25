@@ -39,7 +39,7 @@ contract RewardRouter {
         uint256 maxFeePerGas,
         address excessFeeRefundAddress
     ) external payable {
-        _routeFounds(
+        _routeFunds(
             maxSubmissionCost,
             gasLimit,
             maxFeePerGas,
