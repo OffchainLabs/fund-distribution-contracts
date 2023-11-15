@@ -65,7 +65,7 @@ contract RewardRouter {
             callValueRefundAddress: destination,
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
-            data: bytes("0x")
+            data: ""
         });
     }
 }
