@@ -13,7 +13,7 @@ interface IInbox {
         bytes calldata data
     ) external payable returns (uint256);
 }
-error InsufficientValue(uint256 value);
+error InsufficientValue(uint256 valueRequired, uint256 valueSupplied);
 
 contract RewardRouter {
     IInbox immutable inbox;
@@ -49,7 +49,8 @@ contract RewardRouter {
     ) public payable {
         if (maxFeePerGas * gasLimit + maxSubmissionCost > msg.value) {
             revert InsufficientValue(
-                maxFeePerGas * gasLimit + maxSubmissionCost
+                maxFeePerGas * gasLimit + maxSubmissionCost,
+                msg.value
             );
         }
         uint256 amount = address(this).balance - msg.value;
