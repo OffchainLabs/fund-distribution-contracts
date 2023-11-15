@@ -30,7 +30,12 @@ contract RewardRouter {
         uint256 gasLimit,
         uint256 maxFeePerGas
     ) external payable {
-        _routeFunds(maxSubmissionCost, gasLimit, maxFeePerGas, msg.sender);
+        routeFundsCustomRefund(
+            maxSubmissionCost,
+            gasLimit,
+            maxFeePerGas,
+            msg.sender
+        );
     }
 
     function routeFundsCustomRefund(
@@ -38,21 +43,7 @@ contract RewardRouter {
         uint256 gasLimit,
         uint256 maxFeePerGas,
         address excessFeeRefundAddress
-    ) external payable {
-        _routeFunds(
-            maxSubmissionCost,
-            gasLimit,
-            maxFeePerGas,
-            excessFeeRefundAddress
-        );
-    }
-
-    function _routeFunds(
-        uint256 maxSubmissionCost,
-        uint256 gasLimit,
-        uint256 maxFeePerGas,
-        address excessFeeRefundAddress
-    ) internal {
+    ) public payable {
         require(
             maxFeePerGas * gasLimit + maxSubmissionCost <= msg.value,
             "INSUFFICIENT_VALUE"
