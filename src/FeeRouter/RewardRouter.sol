@@ -13,10 +13,13 @@ interface IInbox {
         bytes calldata data
     ) external payable returns (uint256);
 }
+error InsufficientValue(uint256 value);
 
 contract RewardRouter {
     IInbox immutable inbox;
     address immutable destination;
+
+    event FoundsRouted(address indexed refundAddress, uint256 amount);
 
     constructor(address _inbox, address _destination) {
         inbox = IInbox(_inbox);
@@ -44,13 +47,15 @@ contract RewardRouter {
         uint256 maxFeePerGas,
         address excessFeeRefundAddress
     ) public payable {
-        require(
-            maxFeePerGas * gasLimit + maxSubmissionCost <= msg.value,
-            "INSUFFICIENT_VALUE"
-        );
+        if (maxFeePerGas * gasLimit + maxSubmissionCost > msg.value) {
+            revert InsufficientValue(
+                maxFeePerGas * gasLimit + maxSubmissionCost
+            );
+        }
+        uint256 amount = address(this).balance - msg.value;
         inbox.createRetryableTicket{value: address(this).balance}({
             to: destination,
-            l2CallValue: address(this).balance - msg.value,
+            l2CallValue: amount,
             maxSubmissionCost: maxSubmissionCost,
             excessFeeRefundAddress: excessFeeRefundAddress,
             callValueRefundAddress: destination,
@@ -58,5 +63,6 @@ contract RewardRouter {
             maxFeePerGas: maxFeePerGas,
             data: ""
         });
+        emit FoundsRouted(excessFeeRefundAddress, amount);
     }
 }

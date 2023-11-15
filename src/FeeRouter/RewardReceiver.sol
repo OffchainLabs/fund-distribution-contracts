@@ -12,6 +12,8 @@ contract RewardReceiver {
     uint256 immutable minDistributionIntervalSeconds;
     uint256 public nextDistribution;
 
+    event FundsSent(uint256 amount);
+
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds
@@ -28,9 +30,11 @@ contract RewardReceiver {
         // if distributing too soon, skip withdrawal (but don't revert)
         if (block.timestamp >= nextDistribution) {
             nextDistribution = block.timestamp + minDistributionIntervalSeconds;
-            IArbSys(address(100)).withdrawEth{value: address(this).balance}(
+            uint256 value = address(this).balance;
+            IArbSys(address(100)).withdrawEth{value: value}(
                 parentChainTarget
             );
+            emit FundsSent(value);
         }
     }
 }
