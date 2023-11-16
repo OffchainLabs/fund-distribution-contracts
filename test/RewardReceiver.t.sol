@@ -29,9 +29,9 @@ contract RewardReceiverTest is Test {
 
     function testSendFunds() external {
         vm.startPrank(address(me));
-        (bool sent, bytes memory data) = payable(address(rewardReceiver)).call{
-            value: 1 ether
-        }("");
+        (bool sent, ) = payable(address(rewardReceiver)).call{value: 1 ether}(
+            ""
+        );
         assertTrue(sent, "funds sent");
         assertEq(address(rewardReceiver).balance, 0, "funds routed");
         vm.stopPrank();
@@ -39,11 +39,9 @@ contract RewardReceiverTest is Test {
 
     function testCantSendFundsTooSoon() external {
         vm.startPrank(me);
-        (bool sent, bytes memory data) = address(rewardReceiver).call{
-            value: 1 ether
-        }("");
+        (bool sent, ) = address(rewardReceiver).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
-        (sent, data) = address(rewardReceiver).call{value: 1 ether}("");
+        (sent, ) = address(rewardReceiver).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
         assertEq(
             address(rewardReceiver).balance,
