@@ -17,7 +17,7 @@ error InsufficientValue(uint256 valueRequired, uint256 valueSupplied);
 
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 contract ParentToChildRewardRouter {
-    // inbox of target Arbitrum chain
+    // inbox of target Arbitrum child chain
     IInbox immutable inbox;
     // Receiving address of funds on target Arbitrum chain
     address immutable destination;
