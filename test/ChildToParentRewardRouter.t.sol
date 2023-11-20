@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
-import "../src/FeeRouter/RewardReceiver.sol";
+import "../src/FeeRouter/ChildToParentRewardRouter.sol";
 import "./util/ArbSysMock.sol";
 import "./Empty.sol";
 
 import "forge-std/Test.sol";
 
-contract RewardReceiverTest is Test {
+contract ChildToParentRewardRouterTest is Test {
     event ArbSysL2ToL1Tx(
         address from,
         address to,
@@ -15,13 +15,13 @@ contract RewardReceiverTest is Test {
     );
 
     address me = address(111_1);
-    RewardReceiver rewardReceiver;
+    ChildToParentRewardRouter childToParentRewardRouter;
     uint256 minDistributionIntervalSeconds = 20;
 
     function setUp() public {
         vm.etch(address(100), address(new ArbSysMock()).code);
         vm.deal(address(me), 10 ether);
-        rewardReceiver = new RewardReceiver(
+        childToParentRewardRouter = new ChildToParentRewardRouter(
             address(1111_2),
             minDistributionIntervalSeconds
         );
@@ -29,36 +29,36 @@ contract RewardReceiverTest is Test {
 
     function testSendFunds() external {
         vm.startPrank(address(me));
-        (bool sent, ) = payable(address(rewardReceiver)).call{value: 1 ether}(
+        (bool sent, ) = payable(address(childToParentRewardRouter)).call{value: 1 ether}(
             ""
         );
         assertTrue(sent, "funds sent");
-        assertEq(address(rewardReceiver).balance, 0, "funds routed");
+        assertEq(address(childToParentRewardRouter).balance, 0, "funds routed");
         vm.stopPrank();
     }
 
     function testCantSendFundsTooSoon() external {
         vm.startPrank(me);
-        (bool sent, ) = address(rewardReceiver).call{value: 1 ether}("");
+        (bool sent, ) = address(childToParentRewardRouter).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
-        (sent, ) = address(rewardReceiver).call{value: 1 ether}("");
+        (sent, ) = address(childToParentRewardRouter).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
         assertEq(
-            address(rewardReceiver).balance,
+            address(childToParentRewardRouter).balance,
             1 ether,
             "funds routed only once"
         );
 
-        rewardReceiver.sendFunds();
+        childToParentRewardRouter.sendFunds();
         assertEq(
-            address(rewardReceiver).balance,
+            address(childToParentRewardRouter).balance,
             1 ether,
             "funds still routed only once"
         );
         vm.warp(block.timestamp + minDistributionIntervalSeconds);
-        rewardReceiver.sendFunds();
+        childToParentRewardRouter.sendFunds();
 
-        assertEq(address(rewardReceiver).balance, 0, "funds routed after warp");
+        assertEq(address(childToParentRewardRouter).balance, 0, "funds routed after warp");
         vm.stopPrank();
     }
 }
