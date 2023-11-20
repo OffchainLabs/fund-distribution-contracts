@@ -6,7 +6,7 @@
   "author": "dzgoldman",
   "license": "MIT",
   "scripts":{
-    "gen-recipients": "tsc && node dist/src-ts/getRecipientData.js" 
+    "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts" 
   },
   "devDependencies": {
     "@ethersproject/providers": "^5.7.2",
