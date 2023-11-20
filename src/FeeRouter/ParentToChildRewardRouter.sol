@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
+import "./DistributionInterval.sol";
 
 interface IInbox {
     function createRetryableTicket(
@@ -16,7 +17,7 @@ interface IInbox {
 error InsufficientValue(uint256 valueRequired, uint256 valueSupplied);
 
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
-contract ParentToChildRewardRouter {
+contract ParentToChildRewardRouter is DistributionInterval {
     // inbox of target Arbitrum child chain
     IInbox immutable inbox;
     // Receiving address of funds on target Arbitrum chain
@@ -24,7 +25,11 @@ contract ParentToChildRewardRouter {
 
     event FoundsRouted(address indexed refundAddress, uint256 amount);
 
-    constructor(address _inbox, address _destination) {
+    constructor(
+        address _inbox,
+        address _destination,
+        uint256 _minDistributionIntervalSeconds
+    ) DistributionInterval(_minDistributionIntervalSeconds) {
         inbox = IInbox(_inbox);
         destination = _destination;
     }
@@ -57,7 +62,7 @@ contract ParentToChildRewardRouter {
         uint256 gasLimit,
         uint256 maxFeePerGas,
         address excessFeeRefundAddress
-    ) public payable {
+    ) public payable ifCanDistribute {
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
         // (i.e., that the message doesn't consume escrowed funds as gas)
         if (maxFeePerGas * gasLimit + maxSubmissionCost > msg.value) {
@@ -67,6 +72,7 @@ contract ParentToChildRewardRouter {
             );
         }
         uint256 amount = address(this).balance - msg.value;
+        _updateDistribution();
         inbox.createRetryableTicket{value: address(this).balance}({
             to: destination,
             l2CallValue: amount,

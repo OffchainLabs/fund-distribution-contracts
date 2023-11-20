@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
+import "./DistributionInterval.sol";
+
 interface IArbSys {
     function withdrawEth(
         address destination
@@ -11,22 +13,17 @@ interface IArbSys {
 /// Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
 /// (creating many small values messages that each need to be executed in the outbox).
 /// A send is automatically attempted any time funds are receieved.
-contract ChildToParentRewardRouter {
+contract ChildToParentRewardRouter is DistributionInterval {
     // contract on this chain's parent chain funds get routed to
     address immutable parentChainTarget;
-    // minumum time between L2 to L1 messages from this contract
-    uint256 immutable minDistributionIntervalSeconds;
-    // time at which next L2 to L1 message can get sent
-    uint256 public nextDistribution;
 
     event FundsSent(uint256 amount);
 
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds
-    ) {
+    ) DistributionInterval(_minDistributionIntervalSeconds) {
         parentChainTarget = _parentChainTarget;
-        minDistributionIntervalSeconds = _minDistributionIntervalSeconds;
     }
 
     receive() external payable {
@@ -37,8 +34,8 @@ contract ChildToParentRewardRouter {
     function sendFunds() public {
         uint256 value = address(this).balance;
         // if distributing too soon, skip withdrawal (but don't revert)
-        if (block.timestamp >= nextDistribution && value > 0) {
-            nextDistribution = block.timestamp + minDistributionIntervalSeconds;
+        if (canDistribute() && value > 0) {
+            _updateDistribution();
             IArbSys(address(100)).withdrawEth{value: value}(parentChainTarget);
             emit FundsSent(value);
         }
