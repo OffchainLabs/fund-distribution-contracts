@@ -1,0 +1,68 @@
+{
+    "updatedAt": "15:46:55 GMT-0500 (Eastern Standard Time)",
+    "data": [{
+        "chain": "Arbitum One",
+        "feeType": "L1 Base",
+        "address": "0xE6ec2174539a849f9f3ec973C66b333eD08C0c18",
+        "recipients": ["0x98e4dB7e07e584F89A2F6043E7b7C89DC27769eD"],
+        "recipientGroup": "0x87a879d035a0f4dafeb8aa6e854124b828f0e542f3bdcf12d27ca6a3c7b81149",
+        "weights": [10000],
+        "recipientWeights": "0x1d460b64f7b8ba0be629afe9b4ae65333b379985d7ea823ff4c0b8c3b5102153"
+    }, {
+        "chain": "Arbitum One",
+        "feeType": "L1 Surplus",
+        "address": "0x2E041280627800801E90E9Ac83532fadb6cAd99A",
+        "recipients": ["0xbFc1FECa8B09A5c5D3EFfE7429eBE24b9c09EF58"],
+        "recipientGroup": "0x8b234bd5528a58ba7b1b14a9a0f5ef254062f2bb23b279fedc35737c44dbf537",
+        "weights": [10000],
+        "recipientWeights": "0x1d460b64f7b8ba0be629afe9b4ae65333b379985d7ea823ff4c0b8c3b5102153"
+    }, {
+        "chain": "Arbitum One",
+        "feeType": "L2 Base",
+        "address": "0xbF5041Fc07E1c866D15c749156657B8eEd0fb649",
+        "recipients": ["0xbFc1FECa8B09A5c5D3EFfE7429eBE24b9c09EF58"],
+        "recipientGroup": "0x8b234bd5528a58ba7b1b14a9a0f5ef254062f2bb23b279fedc35737c44dbf537",
+        "weights": [10000],
+        "recipientWeights": "0x1d460b64f7b8ba0be629afe9b4ae65333b379985d7ea823ff4c0b8c3b5102153"
+    }, {
+        "chain": "Arbitum One",
+        "feeType": "L2 Surplus",
+        "address": "0x32e7AF5A8151934F3787d0cD59EB6EDd0a736b1d",
+        "recipients": ["0xbFc1FECa8B09A5c5D3EFfE7429eBE24b9c09EF58"],
+        "recipientGroup": "0x8b234bd5528a58ba7b1b14a9a0f5ef254062f2bb23b279fedc35737c44dbf537",
+        "weights": [10000],
+        "recipientWeights": "0x1d460b64f7b8ba0be629afe9b4ae65333b379985d7ea823ff4c0b8c3b5102153"
+    }, {
+        "chain": "Arbitum Nova",
+        "feeType": "L1 Base",
+        "address": "0xc9722CfDDFbC6aF4E77023E8B5Bd87489EFEbf5F",
+        "recipients": ["0xD0749b3e537Ed52DE4e6a3Ae1eB6fc26059d0895"],
+        "recipientGroup": "0xd09db64a4bd23b825d09f4e68b56df8a44b27c331c136695c32fe94a2be3bab2",
+        "weights": [10000],
+        "recipientWeights": "0x1d460b64f7b8ba0be629afe9b4ae65333b379985d7ea823ff4c0b8c3b5102153"
+    }, {
+        "chain": "Arbitum Nova",
+        "feeType": "L1 Surplus",
+        "address": "0x509386DbF5C0BE6fd68Df97A05fdB375136c32De",
+        "recipients": ["0xf7951D92B0C345144506576eC13Ecf5103aC905a"],
+        "recipientGroup": "0xa4d6665ee2121503a4513275116c9cda5eaac3a8b759ff4c41fb4cc089f0b338",
+        "weights": [10000],
+        "recipientWeights": "0x1d460b64f7b8ba0be629afe9b4ae65333b379985d7ea823ff4c0b8c3b5102153"
+    }, {
+        "chain": "Arbitum Nova",
+        "feeType": "L2 Base",
+        "address": "0x9fCB6F75D99029f28F6F4a1d277bae49c5CAC79f",
+        "recipients": ["0xf7951D92B0C345144506576eC13Ecf5103aC905a", "0xD0749b3e537Ed52DE4e6a3Ae1eB6fc26059d0895", "0x41C327d5fc9e29680CcD45e5E52446E0DB3DAdFd", "0x02C2599aa929e2509741b44F3a13029745aB1AB2", "0xA221f29236996BDEfA5C585acdD407Ec84D78447", "0x0fB1f1a31429F1A90a19Ab5486a6DFb384179641", "0xb814441ed86e98e8B83d31eEC095e4a5A36Fc3c2"],
+        "recipientGroup": "0x2c40b8c2309d10d43a712b6df564ebd140153dcfe8428552d24aa294a8b34107",
+        "weights": [8000, 375, 373, 373, 373, 373, 133],
+        "recipientWeights": "0x27c5930fa5bbbf9423b2d7e7555073eb37787a62eb8ffeac867b84726ed94af8"
+    }, {
+        "chain": "Arbitum Nova",
+        "feeType": "L2 Surplus",
+        "address": "0x3B68a689c929327224dBfCe31C1bf72Ffd2559Ce",
+        "recipients": ["0xf7951D92B0C345144506576eC13Ecf5103aC905a"],
+        "recipientGroup": "0xa4d6665ee2121503a4513275116c9cda5eaac3a8b759ff4c41fb4cc089f0b338",
+        "weights": [10000],
+        "recipientWeights": "0x1d460b64f7b8ba0be629afe9b4ae65333b379985d7ea823ff4c0b8c3b5102153"
+    }]
+}
