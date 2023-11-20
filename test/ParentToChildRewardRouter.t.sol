@@ -10,11 +10,14 @@ contract ParentToChildRewardRouterTest is Test {
     InboxMock inbox;
     address me;
 
+    uint256 minDistributionIntervalSeconds = 20;
+
     function setUp() public {
         inbox = new InboxMock();
         parentToChildRewardRouter = new ParentToChildRewardRouter({
             _inbox: address(inbox),
-            _destination: address(1234)
+            _destination: address(1234),
+            _minDistributionIntervalSeconds: minDistributionIntervalSeconds
         });
         vm.deal(me, 10 ether);
     }
