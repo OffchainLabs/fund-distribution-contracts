@@ -35,10 +35,10 @@ contract ChildToParentRewardRouter {
 
     /// @notice send all funds in this contract to target contract on parent chain via L2 to L1 message
     function sendFunds() public {
+        uint256 value = address(this).balance;
         // if distributing too soon, skip withdrawal (but don't revert)
-        if (block.timestamp >= nextDistribution) {
+        if (block.timestamp >= nextDistribution && value > 0) {
             nextDistribution = block.timestamp + minDistributionIntervalSeconds;
-            uint256 value = address(this).balance;
             IArbSys(address(100)).withdrawEth{value: value}(parentChainTarget);
             emit FundsSent(value);
         }
