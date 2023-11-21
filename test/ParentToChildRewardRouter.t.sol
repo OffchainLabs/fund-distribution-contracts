@@ -17,16 +17,24 @@ contract ParentToChildRewardRouterTest is Test {
         parentToChildRewardRouter = new ParentToChildRewardRouter({
             _inbox: address(inbox),
             _destination: address(1234),
-            _minDistributionIntervalSeconds: minDistributionIntervalSeconds
+            _minDistributionIntervalSeconds: minDistributionIntervalSeconds,
+            _minGasPrice: 1,
+            _minGasLimit: 1 ether
         });
         vm.deal(me, 10 ether);
     }
 
     function testRouteFunds() external {
         vm.startPrank(me);
-        (bool sent, ) = address(parentToChildRewardRouter).call{value: 1 ether}("");
+        (bool sent, ) = address(parentToChildRewardRouter).call{value: 1 ether}(
+            ""
+        );
         assertTrue(sent, "funds sent");
-        assertEq(address(parentToChildRewardRouter).balance, 1 ether, "funds received");
+        assertEq(
+            address(parentToChildRewardRouter).balance,
+            1 ether,
+            "funds received"
+        );
         assertEq(inbox.msgNum(), 0, "inbox msg num 0");
         parentToChildRewardRouter.routeFunds{value: 2 ether}({
             maxSubmissionCost: 1 ether,
@@ -43,9 +51,8 @@ contract ParentToChildRewardRouterTest is Test {
     function testRevertsWithInsufficientValue() external {
         vm.startPrank(me);
 
-        (bool sent, bytes memory data) = address(parentToChildRewardRouter).call{
-            value: 1 ether
-        }("");
+        (bool sent, bytes memory data) = address(parentToChildRewardRouter)
+            .call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
 
         vm.expectRevert(

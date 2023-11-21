@@ -23,22 +23,34 @@ error DistributionTooSoon(
     uint256 distributionTimestamp
 );
 
+error GasPriceTooLow(uint256 gasPrice);
+
+error GasLimitTooLow(uint256 gasLimit);
+
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 contract ParentToChildRewardRouter is DistributionInterval {
     // inbox of target Arbitrum child chain
-    IInbox immutable inbox;
+    IInbox public immutable inbox;
     // Receiving address of funds on target Arbitrum chain
-    address immutable destination;
+    address public immutable destination;
+
+    uint256 public immutable minGasPrice;
+
+    uint public immutable minGasLimit;
 
     event FundsRouted(uint256 amount);
 
     constructor(
         address _inbox,
         address _destination,
-        uint256 _minDistributionIntervalSeconds
+        uint256 _minDistributionIntervalSeconds,
+        uint256 _minGasPrice,
+        uint256 _minGasLimit
     ) DistributionInterval(_minDistributionIntervalSeconds) {
         inbox = IInbox(_inbox);
         destination = _destination;
+        minGasPrice = _minGasPrice;
+        minGasLimit = _minGasLimit;
     }
 
     receive() external payable {}
@@ -54,6 +66,14 @@ contract ParentToChildRewardRouter is DistributionInterval {
     ) public payable {
         if (!canDistribute()) {
             revert DistributionTooSoon(block.timestamp, nextDistribution);
+        }
+
+        if (gasLimit < minGasLimit) {
+            revert GasLimitTooLow(gasLimit);
+        }
+
+        if (maxFeePerGas < minGasPrice) {
+            revert GasPriceTooLow(maxFeePerGas);
         }
 
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
