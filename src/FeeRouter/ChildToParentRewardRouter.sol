@@ -33,7 +33,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
     /// @notice send all funds in this contract to target contract on parent chain via L2 to L1 message
     function sendFunds() public {
         uint256 value = address(this).balance;
-        // if distributing too soon, skip withdrawal (but don't revert)
+        // if distributing too soon, or there's no value to distribute, skip withdrawal (but don't revert)
         if (canDistribute() && value > 0) {
             _updateDistribution();
             IArbSys(address(100)).withdrawEth{value: value}(parentChainTarget);
