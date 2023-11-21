@@ -18,6 +18,11 @@ interface IInbox {
 }
 error InsufficientValue(uint256 valueRequired, uint256 valueSupplied);
 
+error DistributionTooSoon(
+    uint256 currentTimestamp,
+    uint256 distributionTimestamp
+);
+
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 contract ParentToChildRewardRouter is DistributionInterval {
     // inbox of target Arbitrum child chain
@@ -46,7 +51,11 @@ contract ParentToChildRewardRouter is DistributionInterval {
         uint256 maxSubmissionCost,
         uint256 gasLimit,
         uint256 maxFeePerGas
-    ) public payable ifCanDistribute {
+    ) public payable {
+        if (!canDistribute()) {
+            revert DistributionTooSoon(block.timestamp, nextDistribution);
+        }
+
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
         // (i.e., that the message doesn't consume escrowed funds as gas)
         if (maxFeePerGas * gasLimit + maxSubmissionCost != msg.value) {

@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
-error DistributionTooSoon(
-    uint256 currentTimestamp,
-    uint256 distributionTimestamp
-);
-
 contract DistributionInterval {
     uint256 public nextDistribution;
     uint256 immutable minDistributionIntervalSeconds;
@@ -23,13 +18,6 @@ contract DistributionInterval {
 
     function canDistribute() public view returns (bool) {
         return timeToNextDistribution() == 0;
-    }
-
-    modifier ifCanDistribute() {
-        if (!canDistribute()) {
-            revert DistributionTooSoon(block.timestamp, nextDistribution);
-        }
-        _;
     }
 
     function _updateDistribution() internal {
