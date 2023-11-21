@@ -83,6 +83,6 @@ contract ParentToChildRewardRouter is DistributionInterval {
             maxFeePerGas: maxFeePerGas,
             data: ""
         });
-        emit FoundsRouted(excessFeeRefundAddress, amount);
+        emit FundsRouted(excessFeeRefundAddress, amount);
     }
 }
