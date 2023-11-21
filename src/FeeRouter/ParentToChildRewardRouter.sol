@@ -23,7 +23,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
     // Receiving address of funds on target Arbitrum chain
     address immutable destination;
 
-    event FoundsRouted(address indexed refundAddress, uint256 amount);
+    event FundsRouted(address indexed refundAddress, uint256 amount);
 
     constructor(
         address _inbox,
