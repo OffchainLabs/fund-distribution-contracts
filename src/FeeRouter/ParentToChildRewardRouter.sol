@@ -65,7 +65,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
     ) public payable ifCanDistribute {
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
         // (i.e., that the message doesn't consume escrowed funds as gas)
-        if (maxFeePerGas * gasLimit + maxSubmissionCost > msg.value) {
+        if (maxFeePerGas * gasLimit + maxSubmissionCost != msg.value) {
             revert InsufficientValue(
                 maxFeePerGas * gasLimit + maxSubmissionCost,
                 msg.value
