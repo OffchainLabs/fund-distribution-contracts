@@ -17,7 +17,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
     // contract on this chain's parent chain funds get routed to
     address immutable parentChainTarget;
 
-    event FundsSent(uint256 amount);
+    event FundsRouted(uint256 amount);
 
     constructor(
         address _parentChainTarget,
@@ -37,7 +37,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
         if (canDistribute() && value > 0) {
             _updateDistribution();
             IArbSys(address(100)).withdrawEth{value: value}(parentChainTarget);
-            emit FundsSent(value);
+            emit FundsRouted(value);
         }
     }
 }
