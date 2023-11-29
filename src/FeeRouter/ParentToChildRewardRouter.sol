@@ -27,6 +27,8 @@ error GasPriceTooLow(uint256 gasPrice);
 
 error GasLimitTooLow(uint256 gasLimit);
 
+error NoFundsToDistrubute();
+
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 contract ParentToChildRewardRouter is DistributionInterval {
     // inbox of target Arbitrum child chain
@@ -96,6 +98,9 @@ contract ParentToChildRewardRouter is DistributionInterval {
             : destination;
 
         uint256 amount = address(this).balance - msg.value;
+        if (amount == 0) {
+            revert NoFundsToDistrubute();
+        }
         _updateDistribution();
         inbox.createRetryableTicket{value: address(this).balance}({
             to: destination,
