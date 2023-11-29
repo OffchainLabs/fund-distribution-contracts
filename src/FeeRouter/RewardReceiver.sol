@@ -30,11 +30,11 @@ contract RewardReceiver {
     }
 
     receive() external payable {
-        sendFunds();
+        routeFunds();
     }
 
     /// @notice send all funds in this contract to target contract on parent chain via L2 to L1 message
-    function sendFunds() public {
+    function routeFunds() public {
         // if distributing too soon, skip withdrawal (but don't revert)
         if (block.timestamp >= nextDistribution) {
             nextDistribution = block.timestamp + minDistributionIntervalSeconds;

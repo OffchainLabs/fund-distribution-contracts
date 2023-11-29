@@ -27,11 +27,11 @@ contract ChildToParentRewardRouter is DistributionInterval {
     }
 
     receive() external payable {
-        sendFunds();
+        routeFunds();
     }
 
     /// @notice send all funds in this contract to target contract on parent chain via L2 to L1 message
-    function sendFunds() public {
+    function routeFunds() public {
         uint256 value = address(this).balance;
         // if distributing too soon, or there's no value to distribute, skip withdrawal (but don't revert)
         if (canDistribute() && value > 0) {

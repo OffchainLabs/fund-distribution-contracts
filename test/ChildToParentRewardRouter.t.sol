@@ -27,7 +27,7 @@ contract ChildToParentRewardRouterTest is Test {
         );
     }
 
-    function testSendFunds() external {
+    function testRouteFunds() external {
         vm.startPrank(address(me));
         (bool sent, ) = payable(address(childToParentRewardRouter)).call{value: 1 ether}(
             ""
@@ -37,7 +37,7 @@ contract ChildToParentRewardRouterTest is Test {
         vm.stopPrank();
     }
 
-    function testCantSendFundsTooSoon() external {
+    function testCantRouteFundsTooSoon() external {
         vm.startPrank(me);
         (bool sent, ) = address(childToParentRewardRouter).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
@@ -49,14 +49,14 @@ contract ChildToParentRewardRouterTest is Test {
             "funds routed only once"
         );
 
-        childToParentRewardRouter.sendFunds();
+        childToParentRewardRouter.routeFunds();
         assertEq(
             address(childToParentRewardRouter).balance,
             1 ether,
             "funds still routed only once"
         );
         vm.warp(block.timestamp + minDistributionIntervalSeconds);
-        childToParentRewardRouter.sendFunds();
+        childToParentRewardRouter.routeFunds();
 
         assertEq(address(childToParentRewardRouter).balance, 0, "funds routed after warp");
         vm.stopPrank();
