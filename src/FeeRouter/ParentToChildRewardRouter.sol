@@ -16,7 +16,7 @@ interface IInbox {
         bytes calldata data
     ) external payable returns (uint256);
 }
-error InsufficientValue(uint256 valueRequired, uint256 valueSupplied);
+error IncorrectValue(uint256 exactValueRequired, uint256 valueSupplied);
 
 error DistributionTooSoon(
     uint256 currentTimestamp,
@@ -81,7 +81,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
         // (i.e., that the message doesn't consume escrowed funds as gas)
         if (maxFeePerGas * gasLimit + maxSubmissionCost != msg.value) {
-            revert InsufficientValue(
+            revert IncorrectValue(
                 maxFeePerGas * gasLimit + maxSubmissionCost,
                 msg.value
             );
