@@ -17,6 +17,13 @@ const options = yargs(process.argv.slice(2))
     childToParentRewardRouterAddr: { type: "string", demandOption: true },
     blockLag: { type: "number", demandOption: false, default: 5 },
     childChainStartBlock: { type: "number", demandOption: false, default: 0 },
+    oneOff: {
+      type: "boolean",
+      demandOption: false,
+      default: false,
+      description:
+        "Runs continuously if false, runs once and terminates if true",
+    },
   })
   .parseSync() as {
   parentRPCUrl: string;
@@ -24,6 +31,7 @@ const options = yargs(process.argv.slice(2))
   childToParentRewardRouterAddr: string;
   blockLag: number;
   childChainStartBlock: number;
+  oneOff: boolean;
 };
 
 (async () => {
@@ -41,5 +49,5 @@ const options = yargs(process.argv.slice(2))
     options.blockLag,
     options.childChainStartBlock
   );
-  await redeemer.run();
+  await redeemer.run(options.oneOff);
 })();
