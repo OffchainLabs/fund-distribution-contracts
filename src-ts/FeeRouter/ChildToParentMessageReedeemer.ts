@@ -85,7 +85,7 @@ export default class ChildToParentMessageReedeemer {
 
           default:
             throw new Error(
-              "Impossible status result from waitUntilReadyToExecute"
+              `Impossible status result from waitUntilReadyToExecute: ${status}`
             );
         }
       }
