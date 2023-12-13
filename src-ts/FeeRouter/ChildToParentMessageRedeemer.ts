@@ -55,8 +55,14 @@ export default class ChildToParentMessageRedeemer {
         // Filter out any other L2 to L1 messages initiated in this transaction
         .filter(
           (l2ToL1Event) =>
-            l2ToL1Event.caller == this.childToParentRewardRouter.address
+            l2ToL1Event.caller.toLowerCase() ===
+            this.childToParentRewardRouter.address.toLowerCase()
         );
+      // sanity check
+      if (l2ToL1Events.length === 0) {
+        throw new Error("Impossible result: L2 to L1 msg not found");
+      }
+
       for (let l2ToL1Event of l2ToL1Events) {
         const l2ToL1Message = L2ToL1Message.fromEvent(
           this.parentChainSigner,
