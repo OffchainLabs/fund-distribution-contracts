@@ -14,7 +14,7 @@ import {
 } from "@arbitrum/sdk";
 const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-export default class ChildToParentMessageReedeemer {
+export default class ChildToParentMessageRedeemer {
   public startBlock: number;
   public childToParentRewardRouter: ChildToParentRewardRouter;
   constructor(

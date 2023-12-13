@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import yargs from "yargs";
-import ChildToParentMessageReedeemer from "../FeeRouter/ChildToParentMessageReedeemer";
+import ChildToParentMessageRedeemer from "../FeeRouter/ChildToParentMessageRedeemer";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet } from "ethers";
 
@@ -34,7 +34,7 @@ const options = yargs(process.argv.slice(2))
   console.log(`Signing with ${parentChildSigner.address} on parent chain 
   ${(await parentChildSigner.provider.getNetwork()).chainId}'`);
 
-  const redeemer = new ChildToParentMessageReedeemer(
+  const redeemer = new ChildToParentMessageRedeemer(
     new JsonRpcProvider(options.childRPCUrl),
     parentChildSigner,
     options.childToParentRewardRouterAddr,
