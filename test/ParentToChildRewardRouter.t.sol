@@ -56,11 +56,7 @@ contract ParentToChildRewardRouterTest is Test {
         assertTrue(sent, "funds sent");
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IncorrectValue.selector,
-                2 ether,
-                1.9 ether
-            )
+            abi.encodeWithSelector(IncorrectValue.selector, 2 ether, 1.9 ether)
         );
         parentToChildRewardRouter.routeFunds{value: 1.9 ether}({
             maxSubmissionCost: 1 ether,
@@ -69,6 +65,31 @@ contract ParentToChildRewardRouterTest is Test {
         });
         assertEq(inbox.msgNum(), 0, "create retryable ticket not called");
 
+        vm.stopPrank();
+    }
+    function testCantRouteTooSoon() public {
+        vm.startPrank(me);
+        (bool sent, ) = address(parentToChildRewardRouter).call{value: 1 ether}(
+            ""
+        );
+        assertTrue(sent, "funds sent");
+        parentToChildRewardRouter.routeFunds{value: 2 ether}({
+            maxSubmissionCost: 1 ether,
+            gasLimit: 1 ether,
+            maxFeePerGas: 1
+        });
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                DistributionTooSoon.selector,
+                block.timestamp,
+                parentToChildRewardRouter.nextDistribution()
+            )
+        );
+        parentToChildRewardRouter.routeFunds{value: 2 ether}({
+            maxSubmissionCost: 1 ether,
+            gasLimit: 1 ether,
+            maxFeePerGas: 1
+        });
         vm.stopPrank();
     }
 }
