@@ -2,20 +2,9 @@
 pragma solidity ^0.8.16;
 import "./DistributionInterval.sol";
 import "nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import "nitro-contracts/src/bridge/IInbox.sol";
 import "openzeppelin-contracts/contracts/utils/Address.sol";
 
-interface IInbox {
-    function createRetryableTicket(
-        address to,
-        uint256 l2CallValue,
-        uint256 maxSubmissionCost,
-        address excessFeeRefundAddress,
-        address callValueRefundAddress,
-        uint256 gasLimit,
-        uint256 maxFeePerGas,
-        bytes calldata data
-    ) external payable returns (uint256);
-}
 error IncorrectValue(uint256 exactValueRequired, uint256 valueSupplied);
 
 error DistributionTooSoon(

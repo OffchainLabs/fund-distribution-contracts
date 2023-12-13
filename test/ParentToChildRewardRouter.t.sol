@@ -57,7 +57,7 @@ contract ParentToChildRewardRouterTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientValue.selector,
+                IncorrectValue.selector,
                 2 ether,
                 1.9 ether
             )
