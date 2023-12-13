@@ -31,7 +31,7 @@ export default class ChildToParentMessageReedeemer {
     );
   }
 
-  public async redeemChildToParentMessages() {
+  public async redeemChildToParentMessages(oneOff = false) {
     const toBlock =
       (await this.childChainProvider.getBlockNumber()) - this.blockLag;
     const logs = await this.childChainProvider.getLogs({
@@ -62,11 +62,13 @@ export default class ChildToParentMessageReedeemer {
           this.parentChainSigner,
           l2ToL1Event
         );
-        console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`);
-        await l2ToL1Message.waitUntilReadyToExecute(
-          this.childChainProvider,
-          1000 * 60 * 30
-        );
+        if (!oneOff) {
+          console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`);
+          await l2ToL1Message.waitUntilReadyToExecute(
+            this.childChainProvider,
+            1000 * 60 * 30
+          );
+        }
 
         const status = await l2ToL1Message.status(this.childChainProvider);
         switch (status) {
@@ -82,25 +84,28 @@ export default class ChildToParentMessageReedeemer {
             console.log(`${l2ToL1Event.hash} already executed`);
             break;
           }
-
-          default:
-            throw new Error(
-              `Impossible status result from waitUntilReadyToExecute: ${status}`
-            );
+          case L2ToL1MessageStatus.UNCONFIRMED: {
+            console.log(`${l2ToL1Event.hash} not yet confirmed`);
+            break;
+          }
         }
       }
     }
     this.startBlock = toBlock;
   }
 
-  public async run() {
+  public async run(oneOff = false) {
     while (true) {
       try {
-        await this.redeemChildToParentMessages();
+        await this.redeemChildToParentMessages(oneOff);
       } catch (err) {
         console.log("err", err);
       }
-      await wait(1000 * 60 * 60);
+      if (oneOff) {
+        break;
+      } else {
+        await wait(1000 * 60 * 60);
+      }
     }
   }
 }
