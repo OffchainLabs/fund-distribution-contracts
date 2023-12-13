@@ -49,10 +49,15 @@ export default class ChildToParentMessageReedeemer {
       const arbTransactionRec = new L2TransactionReceipt(
         await this.childChainProvider.getTransactionReceipt(log.transactionHash)
       );
-      const l2ToL1Events =
-        (await arbTransactionRec.getL2ToL1Events()) as EventArgs<L2ToL1TxEvent>[];
+      const l2ToL1Events = (
+        (await arbTransactionRec.getL2ToL1Events()) as EventArgs<L2ToL1TxEvent>[]
+      )
+        // Filter out any other L2 to L1 messages initiated in this transaction
+        .filter(
+          (l2ToL1Event) =>
+            l2ToL1Event.caller == this.childToParentRewardRouter.address
+        );
       for (let l2ToL1Event of l2ToL1Events) {
-        //TODO: filter out unrelated l2-to-l1 messages?
         const l2ToL1Message = L2ToL1Message.fromEvent(
           this.parentChainSigner,
           l2ToL1Event
