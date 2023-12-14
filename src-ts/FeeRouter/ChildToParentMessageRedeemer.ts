@@ -94,6 +94,9 @@ export default class ChildToParentMessageRedeemer {
             console.log(`${l2ToL1Event.hash} not yet confirmed`);
             break;
           }
+          default: {
+            throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`);
+          }
         }
       }
     }
