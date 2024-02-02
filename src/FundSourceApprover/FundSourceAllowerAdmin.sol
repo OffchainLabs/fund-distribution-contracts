@@ -6,8 +6,8 @@ import "./FundSourceAllower/Erc20FundSourceAllower.sol";
 import "./FundSourceAllower/NativeFundSourceAllower.sol";
 
 ///@notice Creates FundSourceAllower contracts of which it is the admin of.
-/// FundSourceAllower
 contract FundSourceAllowerAdmin is Ownable {
+    // address which funds in created FundSourceAllowers get transfered to
     address immutable destination;
 
     event NewFundSourceAlowerCreated(
@@ -17,11 +17,15 @@ contract FundSourceAllowerAdmin is Ownable {
     );
     event ApprovedToggled(bool approved, address allower);
 
+    /// @param _owner initial address with affordances to create FundSourceAllowers and to toggle aprprovals
+    /// @param _destination address which funds in created FundSourceAllowers get transfered to
     constructor(address _owner, address _destination) {
         _transferOwnership(_owner);
         destination = _destination;
     }
 
+    /// @notice create fund source allower that handles the native currency
+    /// @param _sourceChainId chain ID of fund source, or other unique identifier (used for bookkeeping)
     function createNativeFundSourceAllower(
         uint256 _sourceChainId
     ) external onlyOwner {
@@ -35,6 +39,9 @@ contract FundSourceAllowerAdmin is Ownable {
         });
     }
 
+    /// @notice create fund source allower that handles an ERC20
+    /// @param _sourceChainId chain ID of fund source, or other unique identifier (used for bookkeeping)
+    /// @param _token address on this chain of token that fund source allower will handle
     function createErc20FundSourceAllower(
         uint256 _sourceChainId,
         address _token
@@ -49,6 +56,7 @@ contract FundSourceAllowerAdmin is Ownable {
         });
     }
 
+    /// @notice Toggle approved for target allower; enables/ disables transfer of funds to destination
     function toggleApprove(address payable _allower) external onlyOwner {
         bool allowed = FundSourceAllowerBase(_allower).toggleApproved();
         emit ApprovedToggled(allowed, _allower);
