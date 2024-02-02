@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/Create2.sol";
+import "openzeppelin-contracts/contracts/utils/Address.sol";
 import "./FundSourceAllower/Erc20FundSourceAllower.sol";
 import "./FundSourceAllower/NativeFundSourceAllower.sol";
 
@@ -9,6 +10,8 @@ import "./FundSourceAllower/NativeFundSourceAllower.sol";
 contract FundSourceAllowerAdmin is Ownable {
     // address which funds in created FundSourceAllowers get transfered to
     address immutable destination;
+
+    error NotAContract(address addr);
 
     event NewFundSourceAlowerCreated(
         address addr,
@@ -46,6 +49,9 @@ contract FundSourceAllowerAdmin is Ownable {
         uint256 _sourceChainId,
         address _token
     ) external onlyOwner {
+        if (!Address.isContract(_token)) {
+            revert NotAContract(_token);
+        }
         Erc20FundSourceAllower allower = new Erc20FundSourceAllower{
             salt: _getSalt(_sourceChainId, _token)
         }(_sourceChainId, destination, address(this), _token);
