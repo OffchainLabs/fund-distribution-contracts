@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/utils/Address.sol";
 import "./FundSourceAllower/Erc20FundSourceAllower.sol";
 import "./FundSourceAllower/NativeFundSourceAllower.sol";
 
-///@notice Creates FundSourceAllower contracts of which it is the admin of.
+///@notice Creates FundSourceAllower contracts of which it is the admin.
 contract FundSourceAllowerAdmin is Ownable {
     // address to which funds in created NativeFundSourceAllowers get transfered
     address immutable nativeFundDestination;
