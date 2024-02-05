@@ -74,6 +74,8 @@ contract FundSourceAllowerAdmin is Ownable {
         emit ApprovedToggled(allowed, _allower);
     }
 
+    /// @notice determine address of a native fund souce allower given an id
+    /// @param _sourceChainId ID of fund source, or other unique identifier
     function getNativeFundSourceAllowerCreate2Address(
         uint256 _sourceChainId
     ) public view returns (address) {
@@ -87,6 +89,9 @@ contract FundSourceAllowerAdmin is Ownable {
         return Create2.computeAddress(salt, bytecodeHash);
     }
 
+    /// @notice determine address of am erc20 fund souce allower given its id and token
+    /// @param _sourceChainId ID of fund source, or other unique identifier
+    /// @param _token token of erc20 fund souce allower
     function getErc20FundSourceAllowerCreate2Address(
         uint256 _sourceChainId,
         address _token
