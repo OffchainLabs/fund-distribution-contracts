@@ -8,8 +8,11 @@ import "./FundSourceAllower/NativeFundSourceAllower.sol";
 
 ///@notice Creates FundSourceAllower contracts of which it is the admin of.
 contract FundSourceAllowerAdmin is Ownable {
-    // address which funds in created FundSourceAllowers get transfered to
-    address immutable destination;
+    // address to which funds in created NativeFundSourceAllowers get transfered
+    address immutable nativeFundDestination;
+
+    // address to which funds in created Erc20FundSourceAllower get transfered
+    address immutable erc20FundDestination;
 
     error NotAContract(address addr);
 
@@ -21,10 +24,13 @@ contract FundSourceAllowerAdmin is Ownable {
     event ApprovedToggled(bool approved, address allower);
 
     /// @param _owner initial address with affordances to create FundSourceAllowers and to toggle aprprovals
-    /// @param _destination address which funds in created FundSourceAllowers get transfered to
-    constructor(address _owner, address _destination) {
+    /// @param _nativeFundDestination address to which funds in created NativeFundSourceAllowers get transfered
+    /// @param _erc20FundDestination address to which funds in created Erc20FundSourceAllower get transfered
+
+    constructor(address _owner, address _nativeFundDestination, address _erc20FundDestination) {
         _transferOwnership(_owner);
-        destination = _destination;
+        nativeFundDestination = _nativeFundDestination;
+        erc20FundDestination = _erc20FundDestination;
     }
 
     /// @notice create fund source allower that handles the native currency
@@ -34,7 +40,7 @@ contract FundSourceAllowerAdmin is Ownable {
     ) external onlyOwner {
         NativeFundSourceAllower allower = new NativeFundSourceAllower{
             salt: _getSalt(_sourceChainId, address(0))
-        }(_sourceChainId, destination, address(this));
+        }(_sourceChainId, nativeFundDestination, address(this));
         emit NewFundSourceAlowerCreated({
             addr: address(allower),
             chainId: _sourceChainId,
@@ -54,7 +60,7 @@ contract FundSourceAllowerAdmin is Ownable {
         }
         Erc20FundSourceAllower allower = new Erc20FundSourceAllower{
             salt: _getSalt(_sourceChainId, _token)
-        }(_sourceChainId, destination, address(this), _token);
+        }(_sourceChainId, erc20FundDestination, address(this), _token);
         emit NewFundSourceAlowerCreated({
             addr: address(allower),
             chainId: _sourceChainId,
@@ -75,7 +81,7 @@ contract FundSourceAllowerAdmin is Ownable {
         bytes32 bytecodeHash = keccak256(
             abi.encodePacked(
                 type(NativeFundSourceAllower).creationCode,
-                abi.encode(_sourceChainId, destination, address(this))
+                abi.encode(_sourceChainId, nativeFundDestination, address(this))
             )
         );
         return Create2.computeAddress(salt, bytecodeHash);
@@ -89,7 +95,7 @@ contract FundSourceAllowerAdmin is Ownable {
         bytes32 bytecodeHash = keccak256(
             abi.encodePacked(
                 type(Erc20FundSourceAllower).creationCode,
-                abi.encode(_sourceChainId, destination, address(this), _token)
+                abi.encode(_sourceChainId, erc20FundDestination, address(this), _token)
             )
         );
         return Create2.computeAddress(salt, bytecodeHash);
