@@ -44,7 +44,7 @@ contract ChildToParentErc20RewardRouter is DistributionInterval {
         parentChainToken = IERC20(_parentChainTokenAddress);
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
 
-        // note that _childChainTokenAddress can retrieved from _parentChainTokenAddress, but we
+        // note that _childChainTokenAddress can be retrieved from _parentChainTokenAddress, but we
         // requrie it as a paramter as an additional sanity check
         address calculatedChildChainTokenAddress =
             childChainGatewayRouter.calculateL2TokenAddress(_parentChainTokenAddress);
