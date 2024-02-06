@@ -11,12 +11,9 @@ contract Erc20FundSourceAllower is FundSourceAllowerBase {
     // Erc20 token to receieve / transfer to destination
     IERC20 public immutable token;
 
-    constructor(
-        uint256 _sourceChaindId,
-        address _destination,
-        address _admin,
-        address _token
-    ) FundSourceAllowerBase(_sourceChaindId, _destination, _admin) {
+    constructor(uint256 _sourceChaindId, address _destination, address _admin, address _token)
+        FundSourceAllowerBase(_sourceChaindId, _destination, _admin)
+    {
         token = IERC20(_token);
     }
 
