@@ -17,12 +17,19 @@ abstract contract FundSourceAllowerBase {
     error NotFromAdmin(address sender);
 
     event FundsTransfered(uint256 amount);
-    event ApprovedToggled(bool approved);
+    event ApprovedStateSet(bool approved);
 
     constructor(uint256 _sourceChaindId, address _destination, address _admin) {
         sourceChaindId = _sourceChaindId;
         destination = _destination;
         admin = _admin;
+    }
+
+    modifier onlyAdmin() {
+        if (msg.sender != admin) {
+            revert NotFromAdmin(msg.sender);
+        }
+        _;
     }
 
     function _transferFundsToDestination() internal virtual;
@@ -36,14 +43,17 @@ abstract contract FundSourceAllowerBase {
         _transferFundsToDestination();
     }
 
-    /// @notice Toggles the approved boolean to allow / disallow funds to be transferred to destination.
+    /// @notice sets approved to true
     /// Callable only by admin.
-    function toggleApproved() external returns (bool) {
-        if (msg.sender != admin) {
-            revert NotFromAdmin(msg.sender);
-        }
-        approved = !approved;
-        emit ApprovedToggled(approved);
-        return approved;
+    function setApproved() external onlyAdmin {
+        approved = true;
+        emit ApprovedStateSet(approved);
+    }
+
+    /// @notice sets approved to false
+    /// Callable only by admin.
+    function setNotApproved() external onlyAdmin {
+        approved = false;
+        emit ApprovedStateSet(approved);
     }
 }
