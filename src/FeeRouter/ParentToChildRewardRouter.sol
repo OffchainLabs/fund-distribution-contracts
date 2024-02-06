@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
+
 import "./DistributionInterval.sol";
 import "nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import "nitro-contracts/src/bridge/IInbox.sol";
@@ -7,10 +8,7 @@ import "openzeppelin-contracts/contracts/utils/Address.sol";
 
 error IncorrectValue(uint256 exactValueRequired, uint256 valueSupplied);
 
-error DistributionTooSoon(
-    uint256 currentTimestamp,
-    uint256 distributionTimestamp
-);
+error DistributionTooSoon(uint256 currentTimestamp, uint256 distributionTimestamp);
 
 error GasPriceTooLow(uint256 gasPrice);
 
@@ -27,7 +25,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
 
     uint256 public immutable minGasPrice;
 
-    uint public immutable minGasLimit;
+    uint256 public immutable minGasLimit;
 
     event FundsRouted(uint256 amount);
 
@@ -46,15 +44,11 @@ contract ParentToChildRewardRouter is DistributionInterval {
 
     receive() external payable {}
 
-    /// @notice send all native funds in this contract to destination. Users sender's address for fee refund
+    /// @notice send all native funds in this contract to destination. Uses sender's address for fee refund
     /// @param maxSubmissionCost submission cost for retryable ticket
     /// @param gasLimit gas limit for l2 execution of retryable ticket
     /// @param maxFeePerGas max gas l2 gas price for retryable ticket
-    function routeFunds(
-        uint256 maxSubmissionCost,
-        uint256 gasLimit,
-        uint256 maxFeePerGas
-    ) public payable {
+    function routeFunds(uint256 maxSubmissionCost, uint256 gasLimit, uint256 maxFeePerGas) public payable {
         if (!canDistribute()) {
             revert DistributionTooSoon(block.timestamp, nextDistribution);
         }
@@ -70,10 +64,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
         // (i.e., that the message doesn't consume escrowed funds as gas)
         if (maxFeePerGas * gasLimit + maxSubmissionCost != msg.value) {
-            revert IncorrectValue(
-                maxFeePerGas * gasLimit + maxSubmissionCost,
-                msg.value
-            );
+            revert IncorrectValue(maxFeePerGas * gasLimit + maxSubmissionCost, msg.value);
         }
 
         /// In the Inbox, callValueRefundAddress is converted to its alias if ParentChain(callValueRefundAddress) is a contract;
@@ -82,9 +73,8 @@ contract ParentToChildRewardRouter is DistributionInterval {
         /// the l2 callvalue will be refunded to callValueRefundAddress / destination, which is the intent of this method anyway.
         /// Thus, we preemptively perform the reverse operation here.
         /// Note that even a malicious ParentChain(desintationAddress) contract gets no dangerous affordances.
-        address callValueRefundAddress = Address.isContract(destination)
-            ? AddressAliasHelper.undoL1ToL2Alias(destination)
-            : destination;
+        address callValueRefundAddress =
+            Address.isContract(destination) ? AddressAliasHelper.undoL1ToL2Alias(destination) : destination;
 
         uint256 amount = address(this).balance - msg.value;
         if (amount == 0) {

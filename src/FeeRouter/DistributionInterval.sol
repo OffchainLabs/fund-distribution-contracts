@@ -10,10 +10,7 @@ contract DistributionInterval {
     }
 
     function timeToNextDistribution() public view returns (uint256) {
-        return
-            block.timestamp >= nextDistribution
-                ? 0
-                : nextDistribution - block.timestamp;
+        return block.timestamp >= nextDistribution ? 0 : nextDistribution - block.timestamp;
     }
 
     function canDistribute() public view returns (bool) {
