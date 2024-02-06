@@ -17,6 +17,8 @@ error GasLimitTooLow(uint256 gasLimit);
 
 error NoFundsToDistrubute();
 
+error TokenNotRegisteredToGateway();
+
 interface IParentChainGatewayRouter {
     function outboundTransferCustomRefund(
         address _token,
@@ -57,6 +59,11 @@ contract ParentToChildErc20RewardRouter is DistributionInterval {
         destination = _destination;
         minGasPrice = _minGasPrice;
         minGasLimit = _minGasLimit;
+
+        if (parentChainGatewayRouter.getGateway(_parentChainTokenAddress) == address(0)) {
+            revert TokenNotRegisteredToGateway();
+        }
+        approveGateway();
     }
 
     /// @notice send full token balance in this contract to destination. Uses sender's address for fee refund
@@ -103,7 +110,7 @@ contract ParentToChildErc20RewardRouter is DistributionInterval {
     }
 
     ///@notice Approve token's gateway; can be recalled to approve the new gateway if it ever changes.
-    function approveGateway() external {
+    function approveGateway() public {
         // get gateway from gateway router
         address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddress));
         IERC20(parentChainTokenAddress).approve(gateway, 2 ** 256 - 1);
