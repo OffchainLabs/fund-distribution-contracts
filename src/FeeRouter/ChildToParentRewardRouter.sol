@@ -4,9 +4,7 @@ pragma solidity ^0.8.16;
 import "./DistributionInterval.sol";
 
 interface IArbSys {
-    function withdrawEth(
-        address destination
-    ) external payable returns (uint256);
+    function withdrawEth(address destination) external payable returns (uint256);
 }
 
 /// @notice Receives native funds on an Arbitrum chain and sends them to a target contract on its parent chain.
@@ -19,10 +17,9 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     event FundsRouted(uint256 amount);
 
-    constructor(
-        address _parentChainTarget,
-        uint256 _minDistributionIntervalSeconds
-    ) DistributionInterval(_minDistributionIntervalSeconds) {
+    constructor(address _parentChainTarget, uint256 _minDistributionIntervalSeconds)
+        DistributionInterval(_minDistributionIntervalSeconds)
+    {
         parentChainTarget = _parentChainTarget;
     }
 
