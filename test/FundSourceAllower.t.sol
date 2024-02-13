@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 import "forge-std/Test.sol";
 
 import "../src/FundSourceApprover/FundSourceAllower.sol";
+import "./util/TestToken.sol";
 
 contract FundSourceAllowerTest is Test {
     uint256 sourceChainId = 123456;
@@ -13,10 +14,21 @@ contract FundSourceAllowerTest is Test {
     address funder = address(1111_4);
     FundSourceAllower fundSourceAllower;
 
+    TestToken token;
+    address tokenWhale = address(1111_5);
+
+    address tokenDestination = address(1111_6);
+
     function setUp() external {
-        fundSourceAllower =
-            new FundSourceAllower({_sourceChaindId: sourceChainId, _ethDestination: ethDestination, _tokenDestination: address(1), _admin: admin});
+        fundSourceAllower = new FundSourceAllower({
+            _sourceChaindId: sourceChainId,
+            _ethDestination: ethDestination,
+            _tokenDestination: tokenDestination,
+            _admin: admin
+        });
         vm.deal(funder, 1 ether);
+
+        token = new TestToken(tokenWhale, 1000);
     }
 
     function testConstructor() external {
@@ -39,6 +51,44 @@ contract FundSourceAllowerTest is Test {
         fundSourceAllower.transferEthToDestination();
     }
 
+    function testTransferTokenToDestinationNotApproved() external {
+        vm.prank(tokenWhale);
+        token.transfer(address(fundSourceAllower), 10);
+        vm.expectRevert(abi.encodeWithSelector(FundSourceAllower.NotApproved.selector));
+        fundSourceAllower.transferTokenToDestination(address(token));
+    }
+
+    function testApproveAndReceiveNative() external {
+        vm.prank(admin);
+        fundSourceAllower.setApproved();
+        vm.prank(funder);
+        address(fundSourceAllower).call{value: 1 ether}("");
+        assertEq(address(fundSourceAllower).balance, 0, "ether tranfered out of allower");
+        assertEq(address(ethDestination).balance, 1 ether, "ether sent to destination");
+    }
+
+    function testApproveAndTransferNativeFundsToDestination() external {
+        vm.prank(funder);
+        address(fundSourceAllower).call{value: 1 ether}("");
+        vm.prank(admin);
+        fundSourceAllower.setApproved();
+        assertEq(address(fundSourceAllower).balance, 1 ether, "ether still in allower");
+        fundSourceAllower.transferEthToDestination();
+        assertEq(address(fundSourceAllower).balance, 0, "ether tranfered out of allower");
+        assertEq(address(ethDestination).balance, 1 ether, "ether sent to destination");
+    }
+
+    function testApproveAndTransferTokenToDestination() external {
+        vm.prank(tokenWhale);
+        token.transfer(address(fundSourceAllower), 10);
+        vm.prank(admin);
+        fundSourceAllower.setApproved();
+        assertEq(token.balanceOf(address(fundSourceAllower)), 10, "token still in allower");
+        fundSourceAllower.transferTokenToDestination(address(token));
+        assertEq(token.balanceOf(address(fundSourceAllower)), 0, "token tranfered out of allower");
+        assertEq(token.balanceOf(tokenDestination), 10, "token tranfered out of allower");
+    }
+
     function testOnlyAdminCanSetApproved() external {
         vm.prank(rando);
         vm.expectRevert(abi.encodeWithSelector(FundSourceAllower.NotFromAdmin.selector, rando));
@@ -55,25 +105,5 @@ contract FundSourceAllowerTest is Test {
         vm.prank(admin);
         fundSourceAllower.setApproved();
         assertTrue(fundSourceAllower.approved(), "approved set");
-    }
-
-    function testApproveAndReceiveNative() external {
-        vm.prank(admin);
-        fundSourceAllower.setApproved();
-        vm.prank(funder);
-        address(fundSourceAllower).call{value: 1 ether}("");
-        assertEq(address(fundSourceAllower).balance, 0, "ether tranfered out of allower");
-        assertEq(address(ethDestination).balance, 1 ether, "ether sent to destination");
-    }
-
-    function testApproveAndTransferNateiveFundsToDestination() external {
-        vm.prank(funder);
-        address(fundSourceAllower).call{value: 1 ether}("");
-        vm.prank(admin);
-        fundSourceAllower.setApproved();
-        assertEq(address(fundSourceAllower).balance, 1 ether, "ether still in allower");
-        fundSourceAllower.transferEthToDestination();
-        assertEq(address(fundSourceAllower).balance, 0, "ether tranfered out of allower");
-        assertEq(address(ethDestination).balance, 1 ether, "ether sent to destination");
     }
 }
