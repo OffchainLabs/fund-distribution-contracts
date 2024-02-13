@@ -77,9 +77,9 @@ contract FundSourceAllower {
         }
         emit EthTransfered(value);
     }
+
     /// @notice sets approved to true
     /// Callable only by admin.
-
     function setApproved() external onlyAdmin {
         approved = true;
         emit ApprovedStateSet(approved);
