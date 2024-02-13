@@ -10,10 +10,10 @@ import "./FundSourceAllower.sol";
 contract FundSourceAllowerAdmin is Ownable {
     bytes32 constant SALT_CONSTANT = keccak256("ARB_AEP");
     // address to which eth funds in fundSourceAllowers get transfered
-    address immutable ethDestination;
+    address public immutable ethDestination;
 
     // address to which tokens in fundSourceAllowers get transfered
-    address immutable tokenDestination;
+    address public immutable tokenDestination;
 
     error NotAContract(address addr);
 
