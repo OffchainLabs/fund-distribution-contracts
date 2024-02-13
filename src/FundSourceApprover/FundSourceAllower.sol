@@ -89,6 +89,6 @@ contract FundSourceAllower {
     /// Callable only by admin.
     function setNotApproved() external onlyAdmin {
         approved = false;
-        emit ApprovedStateSet(approved);
+        emit ApprovedStateSet(false);
     }
 }
