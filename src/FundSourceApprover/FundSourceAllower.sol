@@ -82,7 +82,7 @@ contract FundSourceAllower {
     /// Callable only by admin.
     function setApproved() external onlyAdmin {
         approved = true;
-        emit ApprovedStateSet(approved);
+        emit ApprovedStateSet(true);
     }
 
     /// @notice sets approved to false
