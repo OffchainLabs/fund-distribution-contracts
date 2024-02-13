@@ -8,8 +8,7 @@ import "./FundSourceAllower.sol";
 
 ///@notice Creates FundSourceAllower contracts of which it is the admin.
 contract FundSourceAllowerAdmin is Ownable {
-
-    bytes32 constant SALT_CONSTANT =  keccak256("ARB_AEP");
+    bytes32 constant SALT_CONSTANT = keccak256("ARB_AEP");
     // address to which eth funds in fundSourceAllowers get transfered
     address immutable ethDestination;
 

@@ -22,7 +22,7 @@ contract FundSourceAllower {
     error NotFromAdmin(address sender);
 
     event EthTransfered(uint256 amount);
-    event TokensTransfered( address indexed token, uint256 amount);
+    event TokensTransfered(address indexed token, uint256 amount);
     event ApprovedStateSet(bool approved);
 
     constructor(uint256 _sourceChaindId, address _ethDestination, address _tokenDestination, address _admin) {
@@ -48,6 +48,7 @@ contract FundSourceAllower {
     }
     /// @notice Send full balance of native funds in contract to destination; only if approved.
     /// Permissionlessly callable.
+
     function transferEthToDestination() public {
         if (!approved) {
             revert NotApproved();
@@ -55,8 +56,8 @@ contract FundSourceAllower {
         _transferEthToDestination();
     }
 
-        /// @notice Send full balance of tokens in contract to destination; only if approved.
-        /// @param  _tokenAddr address of token to transfer
+    /// @notice Send full balance of tokens in contract to destination; only if approved.
+    /// @param  _tokenAddr address of token to transfer
     function transferTokenToDestination(address _tokenAddr) public {
         if (!approved) {
             revert NotApproved();
@@ -78,6 +79,7 @@ contract FundSourceAllower {
     }
     /// @notice sets approved to true
     /// Callable only by admin.
+
     function setApproved() external onlyAdmin {
         approved = true;
         emit ApprovedStateSet(approved);
