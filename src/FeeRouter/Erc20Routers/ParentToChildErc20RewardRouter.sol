@@ -63,7 +63,6 @@ contract ParentToChildErc20RewardRouter is DistributionInterval {
         if (parentChainGatewayRouter.getGateway(_parentChainTokenAddress) == address(0)) {
             revert TokenNotRegisteredToGateway();
         }
-        approveGateway();
     }
 
     /// @notice send full token balance in this contract to destination. Uses sender's address for fee refund
@@ -84,13 +83,17 @@ contract ParentToChildErc20RewardRouter is DistributionInterval {
         }
 
         uint256 amount = IERC20(parentChainTokenAddress).balanceOf(address(this));
+        if (amount == 0) {
+            revert NoFundsToDistrubute();
+        }
+        // get gateway from gateway router
+        address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddress));
+        // approve amount on gatewa
+        IERC20(parentChainTokenAddress).approve(gateway, amount);
 
         // encode max submission cost (and empty callhook data) for gateway router
         bytes memory _data = abi.encode(maxSubmissionCost, bytes(""));
 
-        if (amount == 0) {
-            revert NoFundsToDistrubute();
-        }
         _updateDistribution();
         // As the caller of outboundTransferCustomRefund, this contract's alias is set as the callValueRfundAddress,
         // given it affordance to cancel and receive callvalue refund. Since this contract can't call cancel, cancellation
@@ -107,12 +110,5 @@ contract ParentToChildErc20RewardRouter is DistributionInterval {
         });
 
         emit FundsRouted(amount);
-    }
-
-    ///@notice Approve token's gateway; can be recalled to approve the new gateway if it ever changes.
-    function approveGateway() public {
-        // get gateway from gateway router
-        address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddress));
-        IERC20(parentChainTokenAddress).approve(gateway, 2 ** 256 - 1);
     }
 }

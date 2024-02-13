@@ -45,7 +45,7 @@ contract ChildToParentErc20RewardRouter is DistributionInterval {
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
 
         // note that _childChainTokenAddress can be retrieved from _parentChainTokenAddress, but we
-        // requrie it as a paramter as an additional sanity check
+        // require it as a parameter as an additional sanity check
         address calculatedChildChainTokenAddress =
             childChainGatewayRouter.calculateL2TokenAddress(_parentChainTokenAddress);
         if (_childChainTokenAddress != calculatedChildChainTokenAddress) {
@@ -58,21 +58,15 @@ contract ChildToParentErc20RewardRouter is DistributionInterval {
         if (gateway == address(0)) {
             revert TokenNotRegisteredToGateway();
         }
-
-        // approve on gateway
-        approveGateway();
     }
-
-    ///@notice Approve token's gateway; can be recalled to approve the new gateway if it ever changes.
-    function approveGateway() public {
-        // get gateway from gateway router
-        address gateway = childChainGatewayRouter.getGateway(address(parentChainToken));
-        IERC20(childChainTokenAddress).approve(gateway, 2 ** 256 - 1);
-    }
-    /// @notice withdraw full token balance to parentChainTarget; only callable once per distribution internal
+    /// @notice withdraw full token balance to parentChainTarget; only callable once per distribution interval
 
     function routeFunds() public {
         uint256 value = parentChainToken.balanceOf(address(this));
+        // get gateway from gateway router
+        address gateway = childChainGatewayRouter.getGateway(address(parentChainToken));
+        // approve for transfer
+        IERC20(childChainTokenAddress).approve(gateway, value);
         if (canDistribute() && value > 0) {
             _updateDistribution();
             childChainGatewayRouter.outboundTransfer(address(parentChainToken), parentChainTarget, value, "");
