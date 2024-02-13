@@ -8,6 +8,8 @@ import "./FundSourceAllower.sol";
 
 ///@notice Creates FundSourceAllower contracts of which it is the admin.
 contract FundSourceAllowerAdmin is Ownable {
+
+    bytes32 constant SALT_CONSTANT =  keccak256("ARB_AEP");
     // address to which eth funds in fundSourceAllowers get transfered
     address immutable ethDestination;
 
@@ -32,7 +34,7 @@ contract FundSourceAllowerAdmin is Ownable {
     /// @notice create fund source allower
     /// @param _sourceChainId chain ID of fund source, or other unique identifier (used for bookkeeping)
     function createFundSourceAllower(uint256 _sourceChainId) external onlyOwner returns (address) {
-        FundSourceAllower allower = new FundSourceAllower{salt: _getSalt(_sourceChainId, address(0))}(
+        FundSourceAllower allower = new FundSourceAllower{salt: _getSalt(_sourceChainId)}(
             _sourceChainId, ethDestination, tokenDestination, address(this)
         );
         emit NewFundSourceAlowerCreated({addr: address(allower), chainId: _sourceChainId});
@@ -54,7 +56,7 @@ contract FundSourceAllowerAdmin is Ownable {
     /// @notice determine address of a fund souce allower given an id
     /// @param _sourceChainId ID of fund source, or other unique identifier
     function getFundSourceAllowerCreate2Address(uint256 _sourceChainId) public view returns (address) {
-        bytes32 salt = _getSalt(_sourceChainId, address(0));
+        bytes32 salt = _getSalt(_sourceChainId);
         bytes32 bytecodeHash = keccak256(
             abi.encodePacked(
                 type(FundSourceAllower).creationCode,
@@ -64,7 +66,7 @@ contract FundSourceAllowerAdmin is Ownable {
         return Create2.computeAddress(salt, bytecodeHash);
     }
 
-    function _getSalt(uint256 _sourceChainId, address token) internal pure returns (bytes32) {
-        return keccak256(abi.encode(_sourceChainId, token));
+    function _getSalt(uint256 _sourceChainId) internal pure returns (bytes32) {
+        return keccak256(abi.encode(_sourceChainId, SALT_CONSTANT));
     }
 }
