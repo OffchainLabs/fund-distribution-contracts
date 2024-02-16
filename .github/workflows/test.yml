@@ -26,6 +26,8 @@ jobs:
         uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           nitro-testnode-ref: release
+          l3-node: true
+          args: --l3-fee-token
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
