@@ -11,9 +11,9 @@ function getEnv(name: string): string {
   return value
 }
 
-const l1Signer = new Wallet(getEnv('LOCAL_L1_KEY'), new ethers.providers.JsonRpcProvider(getEnv('LOCAL_L1_RPC')))
-const l2Signer = new Wallet(getEnv('LOCAL_L2_KEY'), new ethers.providers.JsonRpcProvider(getEnv('LOCAL_L2_RPC')))
-const l3Signer = new Wallet(getEnv('LOCAL_L3_KEY'), new ethers.providers.JsonRpcProvider(getEnv('LOCAL_L3_RPC')))
+const l1Signer = new Wallet(getEnv('LOCAL_L1_KEY'), new ethers.providers.JsonRpcProvider(getEnv('LOCAL_L1_URL')))
+const l2Signer = new Wallet(getEnv('LOCAL_L2_KEY'), new ethers.providers.JsonRpcProvider(getEnv('LOCAL_L2_URL')))
+const l3Signer = new Wallet(getEnv('LOCAL_L3_KEY'), new ethers.providers.JsonRpcProvider(getEnv('LOCAL_L3_URL')))
 
 describe('E2E Sample', () => {
   let l1Network: L1Network

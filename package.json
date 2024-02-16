@@ -8,8 +8,8 @@
   "scripts":{
     "prepare": "forge install && yarn prepare-sdk",
     "prepare-sdk": "cd lib/arbitrum-sdk && yarn",
-    "gen:network": "cd lib/arbitrum-sdk && yarn && yarn gen:network",
-    "test:e2e": "yarn hardhat compile && mocha test/e2e/ --timeout 30000000 --bail",
+    "gen:network": "cd lib/arbitrum-sdk && ORBIT_TEST=\"1\" yarn gen:network",
+    "test:e2e": "yarn hardhat compile && ORBIT_TEST=\"1\" mocha test/e2e/ --timeout 30000000 --bail",
     "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts"
   },
   "devDependencies": {

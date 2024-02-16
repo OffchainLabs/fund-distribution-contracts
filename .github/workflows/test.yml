@@ -10,8 +10,8 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  test-e2e:
-    name: Test E2E
+  test-e2e-custom-fee:
+    name: Test E2E with Custom Fee L3
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
