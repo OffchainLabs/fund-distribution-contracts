@@ -55,6 +55,12 @@ contract RewardDistributorTest is Test {
     }
 
     function testConstructor() public withContext(3) {
+        vm.expectEmit(true, true, false, false);
+        emit OwnershipTransferred(zero, owner);
+        vm.expectEmit(true, true, false, false);
+        emit RecipientsUpdated(
+            keccak256(abi.encodePacked(recipients)), recipients, keccak256(abi.encodePacked(weights)), weights
+        );
         RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(recipients)));
@@ -176,12 +182,6 @@ contract RewardDistributorTest is Test {
         // see testLowSend
         vm.assume(reward >= BASIS_POINTS);
 
-        vm.expectEmit(true, true, false, false);
-        emit OwnershipTransferred(zero, owner);
-        vm.expectEmit(true, true, false, false);
-        emit RecipientsUpdated(
-            keccak256(abi.encodePacked(recipients)), recipients, keccak256(abi.encodePacked(weights)), weights
-        );
         RewardDistributor rd = new RewardDistributor(recipients, weights);
 
         // increase the balance of rd
