@@ -6,7 +6,11 @@
   "author": "dzgoldman",
   "license": "MIT",
   "scripts":{
-    "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts" 
+    "prepare": "forge install && yarn prepare-sdk",
+    "prepare-sdk": "cd lib/arbitrum-sdk && yarn",
+    "gen:network": "cd lib/arbitrum-sdk && yarn && yarn gen:network",
+    "test:e2e": "yarn hardhat compile && mocha test/e2e/ --timeout 30000000 --bail",
+    "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts"
   },
   "devDependencies": {
     "@ethersproject/providers": "^5.7.2",

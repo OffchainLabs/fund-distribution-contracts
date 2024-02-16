@@ -10,6 +10,31 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
+  test-e2e:
+    name: Test E2E
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Set up the local node
+        uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          nitro-testnode-ref: release
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - run: yarn && yarn gen:network
+      - run: cp .env.example .env && yarn test:e2e
+
   check:
     strategy:
       fail-fast: true
