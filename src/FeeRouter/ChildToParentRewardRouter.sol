@@ -2,39 +2,86 @@
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IArbSys {
     function withdrawEth(address destination) external payable returns (uint256);
 }
 
-/// @notice Receives native funds on an Arbitrum chain and sends them to a target contract on its parent chain.
+interface IChildChainGatewayRouter {
+    function outboundTransfer(address _parentChainTokenAddress, address _to, uint256 _amount, bytes calldata _data)
+        external
+        payable
+        returns (bytes memory);
+
+    function getGateway(address _parentChainTokenAddress) external view returns (address gateway);
+
+    // outdated name; read this as "calculateChildChainTokenAddress"
+    function calculateL2TokenAddress(address _parentChainTokenAddress) external returns (address);
+}
+
+/// @notice Receives native and ERC20 funds on an Arbitrum chain and sends them to a target contract on its parent chain.
 /// Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
 /// (creating many small values messages that each need to be executed in the outbox).
 /// A send is automatically attempted any time funds are receieved.
 contract ChildToParentRewardRouter is DistributionInterval {
     // contract on this chain's parent chain funds get routed to
     address immutable parentChainTarget;
+    IChildChainGatewayRouter public immutable childChainGatewayRouter;
 
     event FundsRouted(uint256 amount);
 
-    constructor(address _parentChainTarget, uint256 _minDistributionIntervalSeconds)
-        DistributionInterval(_minDistributionIntervalSeconds)
-    {
+    constructor(
+        address _parentChainTarget,
+        IChildChainGatewayRouter _childChainGatewayRouter,
+        uint256 _minDistributionIntervalSeconds
+    ) DistributionInterval(_minDistributionIntervalSeconds) {
         parentChainTarget = _parentChainTarget;
+        childChainGatewayRouter = _childChainGatewayRouter;
     }
 
     receive() external payable {
-        routeFunds();
+        // automatically attempt to send native funds upon receiving
+        routeNativeFunds();
     }
 
-    /// @notice send all funds in this contract to target contract on parent chain via L2 to L1 message
-    function routeFunds() public {
+    /// @notice send all native funds in this contract to target contract on parent chain via L2 to L1 message
+    function routeNativeFunds() public {
         uint256 value = address(this).balance;
         // if distributing too soon, or there's no value to distribute, skip withdrawal (but don't revert)
-        if (canDistribute() && value > 0) {
-            _updateDistribution();
+        if (canDistribute(NATIVE_CURRENCY) && value > 0) {
+            _updateDistribution(NATIVE_CURRENCY);
             IArbSys(address(100)).withdrawEth{value: value}(parentChainTarget);
             emit FundsRouted(value);
         }
+    }
+
+    /// @notice send all of provided token in this contract to destination on parent chain
+    /// @param _parentChainTokenAddr parent chain (i.e., chaun underlying this one) address of token to route
+    function routeToken(address _parentChainTokenAddr) external {
+        address gateway = childChainGatewayRouter.getGateway(_parentChainTokenAddr);
+
+        // TODO: goran's note
+        if (gateway == address(0)) {
+            // revert token not bridgeable
+        }
+        address childChainTokenAddress = childChainGatewayRouter.calculateL2TokenAddress(_parentChainTokenAddr);
+
+        uint256 value = IERC20(childChainTokenAddress).balanceOf(address(this));
+        // TODO: child or parent?
+        // can we revert instead?
+
+        if (!canDistribute(_parentChainTokenAddr)) {
+            // revert()
+        }
+        if (value == 0) {
+            // revert()
+        }
+        IERC20(childChainTokenAddress).approve(gateway, value);
+
+        childChainGatewayRouter.outboundTransfer(_parentChainTokenAddr, parentChainTarget, value, "");
+
+        // TODO: child or parent?
+        _updateDistribution(_parentChainTokenAddr);
     }
 }

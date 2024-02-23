@@ -5,6 +5,22 @@ import "./DistributionInterval.sol";
 import "nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import "nitro-contracts/src/bridge/IInbox.sol";
 import "openzeppelin-contracts/contracts/utils/Address.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
+interface IParentChainGatewayRouter {
+    function outboundTransferCustomRefund(
+        address _token,
+        address _refundTo,
+        address _to,
+        uint256 _amount,
+        uint256 _maxGas,
+        uint256 _gasPriceBid,
+        bytes calldata _data
+    ) external payable returns (bytes memory);
+
+    function getGateway(address _parentChainTokenAddress) external view returns (address gateway);
+    function inbox() external view returns (address);
+}
 
 error IncorrectValue(uint256 exactValueRequired, uint256 valueSupplied);
 
@@ -27,16 +43,19 @@ contract ParentToChildRewardRouter is DistributionInterval {
 
     uint256 public immutable minGasLimit;
 
+    IParentChainGatewayRouter public immutable parentChainGatewayRouter;
+
     event FundsRouted(uint256 amount);
 
     constructor(
-        address _inbox,
+        IParentChainGatewayRouter _parentChainGatewayRouter,
         address _destination,
         uint256 _minDistributionIntervalSeconds,
         uint256 _minGasPrice,
         uint256 _minGasLimit
     ) DistributionInterval(_minDistributionIntervalSeconds) {
-        inbox = IInbox(_inbox);
+        parentChainGatewayRouter = _parentChainGatewayRouter;
+        inbox = IInbox(parentChainGatewayRouter.inbox());
         destination = _destination;
         minGasPrice = _minGasPrice;
         minGasLimit = _minGasLimit;
@@ -48,9 +67,9 @@ contract ParentToChildRewardRouter is DistributionInterval {
     /// @param maxSubmissionCost submission cost for retryable ticket
     /// @param gasLimit gas limit for l2 execution of retryable ticket
     /// @param maxFeePerGas max gas l2 gas price for retryable ticket
-    function routeFunds(uint256 maxSubmissionCost, uint256 gasLimit, uint256 maxFeePerGas) public payable {
-        if (!canDistribute()) {
-            revert DistributionTooSoon(block.timestamp, nextDistribution);
+    function routeNativeFunds(uint256 maxSubmissionCost, uint256 gasLimit, uint256 maxFeePerGas) public payable {
+        if (!canDistribute(NATIVE_CURRENCY)) {
+            revert DistributionTooSoon(block.timestamp, nextDistributions[NATIVE_CURRENCY]);
         }
 
         if (gasLimit < minGasLimit) {
@@ -80,7 +99,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         if (amount == 0) {
             revert NoFundsToDistrubute();
         }
-        _updateDistribution();
+        _updateDistribution(NATIVE_CURRENCY);
         inbox.createRetryableTicket{value: address(this).balance}({
             to: destination,
             l2CallValue: amount,
@@ -91,6 +110,57 @@ contract ParentToChildRewardRouter is DistributionInterval {
             maxFeePerGas: maxFeePerGas,
             data: ""
         });
+        emit FundsRouted(amount);
+    }
+
+    /// @notice send full token balance in this contract to destination. Uses sender's address for fee refund
+    /// @param parentChainTokenAddr todor
+    /// @param maxSubmissionCost submission cost for retryable ticket
+    /// @param gasLimit gas limit for l2 execution of retryable ticket
+    /// @param maxFeePerGas max gas l2 gas price for retryable ticket
+    function routeToken(address parentChainTokenAddr, uint256 maxSubmissionCost, uint256 gasLimit, uint256 maxFeePerGas)
+        public
+        payable
+    {
+        if (!canDistribute(parentChainTokenAddr)) {
+            revert DistributionTooSoon(block.timestamp, nextDistributions[parentChainTokenAddr]);
+        }
+
+        if (gasLimit < minGasLimit) {
+            revert GasLimitTooLow(gasLimit);
+        }
+
+        if (maxFeePerGas < minGasPrice) {
+            revert GasPriceTooLow(maxFeePerGas);
+        }
+
+        uint256 amount = IERC20(parentChainTokenAddr).balanceOf(address(this));
+        if (amount == 0) {
+            revert NoFundsToDistrubute();
+        }
+        // get gateway from gateway router
+        address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddr));
+        // approve amount on gateway
+        IERC20(parentChainTokenAddr).approve(gateway, amount);
+
+        // encode max submission cost (and empty callhook data) for gateway router
+        bytes memory _data = abi.encode(maxSubmissionCost, bytes(""));
+
+        _updateDistribution(parentChainTokenAddr);
+        // As the caller of outboundTransferCustomRefund, this contract's alias is set as the callValueRfundAddress,
+        // given it affordance to cancel and receive callvalue refund. Since this contract can't call cancel, cancellation
+        // can't be performed. Generally calls to outboundTransferCustomRefund will create retryables with zero callValue
+        // (and even if there is callvalue, the refund would only take effect if the retryable expires).
+        parentChainGatewayRouter.outboundTransferCustomRefund{value: msg.value}({
+            _token: parentChainTokenAddr,
+            _refundTo: msg.sender, // send excess fees to the sender's address on the child chain
+            _to: destination,
+            _amount: amount,
+            _maxGas: gasLimit,
+            _gasPriceBid: maxFeePerGas,
+            _data: _data
+        });
+
         emit FundsRouted(amount);
     }
 }
