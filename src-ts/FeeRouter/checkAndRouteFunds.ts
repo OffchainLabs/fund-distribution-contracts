@@ -4,6 +4,8 @@ import {
   ParentToChildRewardRouter,
 } from "../../typechain-types";
 import { Inbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory";
+import { ERC20__factory } from "@arbitrum/sdk/dist/lib/abi/factories/ERC20__factory";
+
 import { L1TransactionReceipt, L1ToL2MessageStatus } from "@arbitrum/sdk";
 
 export const checkAndRouteFunds = async (
@@ -24,7 +26,17 @@ export const checkAndRouteFunds = async (
     return;
   }
 
-  // TODO check token bal
+  if (
+    !isEth &&
+    (
+      await ERC20__factory.connect(
+        ethOrTokenAddress,
+        parentChainSigner
+      ).balanceOf(parentToChildRewardRouterAddr)
+    ).lt(minBalance)
+  ) {
+    return;
+  }
 
   const parentToChildRewardRouter: ParentToChildRewardRouter =
     ParentToChildRewardRouter__factory.connect(
@@ -47,13 +59,12 @@ export const checkAndRouteFunds = async (
     parentChainSigner.provider
   );
   // for ETH, retryable has 0 calldata (simple transfer)
-// For token,  it sens data abi.encode(maxSubmissionCost, bytes("")) (length of 96)
-  const dataLength = isEth ? 0 : 96; 
-
+  // For token,  it sens data abi.encode(maxSubmissionCost, bytes("")) (length of 96)
+  const dataLength = isEth ? 0 : 96;
 
   const _submissionFee = await inbox.calculateRetryableSubmissionFee(
     dataLength,
-    await parentChainSigner.getGasPrice() // TODO: ??
+    await parentChainSigner.getGasPrice() // NOTE: I'm not sure why 0 doesn't work here, but it doesn't (on sepolia)
   );
   // add a 20% increase for insurance
   const submissionFee = _submissionFee.mul(120).div(100);
