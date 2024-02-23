@@ -35,7 +35,6 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     error TokenDisabled(address tokenAddr);
 
-
     constructor(
         address _parentChainTarget,
         IChildChainGatewayRouter _childChainGatewayRouter,
