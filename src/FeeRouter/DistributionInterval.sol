@@ -6,6 +6,8 @@ abstract contract DistributionInterval {
     mapping(address => uint256) public nextDistributions;
     uint256 immutable minDistributionIntervalSeconds;
 
+    error DistributionTooSoon(uint256 currentTimestamp, uint256 distributionTimestamp);
+
     constructor(uint256 _minDistributionIntervalSeconds) {
         minDistributionIntervalSeconds = _minDistributionIntervalSeconds;
     }

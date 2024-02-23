@@ -31,6 +31,11 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     event FundsRouted(uint256 amount);
 
+    error NoValue(address tokenAddr);
+
+    error TokenDisabled(address tokenAddr);
+
+
     constructor(
         address _parentChainTarget,
         IChildChainGatewayRouter _childChainGatewayRouter,
@@ -61,27 +66,23 @@ contract ChildToParentRewardRouter is DistributionInterval {
     function routeToken(address _parentChainTokenAddr) external {
         address gateway = childChainGatewayRouter.getGateway(_parentChainTokenAddr);
 
-        // TODO: goran's note
         if (gateway == address(0)) {
-            // revert token not bridgeable
+            revert TokenDisabled(_parentChainTokenAddr);
         }
         address childChainTokenAddress = childChainGatewayRouter.calculateL2TokenAddress(_parentChainTokenAddr);
 
         uint256 value = IERC20(childChainTokenAddress).balanceOf(address(this));
-        // TODO: child or parent?
-        // can we revert instead?
 
         if (!canDistribute(_parentChainTokenAddr)) {
-            // revert()
+            revert DistributionTooSoon(block.timestamp, nextDistributions[_parentChainTokenAddr]);
         }
         if (value == 0) {
-            // revert()
+            revert NoValue(_parentChainTokenAddr);
         }
         IERC20(childChainTokenAddress).approve(gateway, value);
 
         childChainGatewayRouter.outboundTransfer(_parentChainTokenAddr, parentChainTarget, value, "");
 
-        // TODO: child or parent?
         _updateDistribution(_parentChainTokenAddr);
     }
 }

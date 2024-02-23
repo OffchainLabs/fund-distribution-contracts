@@ -24,8 +24,6 @@ interface IParentChainGatewayRouter {
 
 error IncorrectValue(uint256 exactValueRequired, uint256 valueSupplied);
 
-error DistributionTooSoon(uint256 currentTimestamp, uint256 distributionTimestamp);
-
 error GasPriceTooLow(uint256 gasPrice);
 
 error GasLimitTooLow(uint256 gasLimit);
