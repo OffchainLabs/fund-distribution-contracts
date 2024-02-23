@@ -30,6 +30,8 @@ error GasLimitTooLow(uint256 gasLimit);
 
 error NoFundsToDistrubute();
 
+error WrongMethod();
+
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 contract ParentToChildRewardRouter is DistributionInterval {
     // inbox of target Arbitrum child chain
@@ -120,6 +122,10 @@ contract ParentToChildRewardRouter is DistributionInterval {
         public
         payable
     {
+        // use routeNativeFunds for native currency, not this method
+        if (parentChainTokenAddr == NATIVE_CURRENCY) {
+            revert WrongMethod();
+        }
         if (!canDistribute(parentChainTokenAddr)) {
             revert DistributionTooSoon(block.timestamp, nextDistributions[parentChainTokenAddr]);
         }
