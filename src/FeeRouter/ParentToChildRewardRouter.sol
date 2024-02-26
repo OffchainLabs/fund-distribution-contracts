@@ -90,16 +90,16 @@ contract ParentToChildRewardRouter is DistributionInterval {
         // 1. check msg.value supplied equals gas required for retryable execution
         // 2. Conditionally alias excessFeeRefundAddress
         // 3. Conditionally alias callValueRefundAddress
-        // The rationale for including, modifying, or excluding these things is as follows
+        // The rationale for including, modifying, or excluding these things is as follows:
 
-        // #1 we include in slightly modified form; we ensure the msg.value covers the cost of execution, tho not including the L2 callvalue.
-        // (the L2Callue will be the funds alreday escrowed in this contract)
+        // #1 we include in slightly modified form; we ensure the msg.value covers the cost of execution, though not including the L2 callvalue.
+        // (the L2Callue will be the funds already escrowed in this contract)
         if (maxFeePerGas * gasLimit + maxSubmissionCost != msg.value) {
             revert IncorrectValue(maxFeePerGas * gasLimit + maxSubmissionCost, msg.value);
         }
 
-        // #2 we include identically to how it appears in the createRetryableTicket path, and for the same rationale
-        // (gives smart contract wallets the opportunity to access funds on the child chain)
+        // #2 we include identically to how it appears in the createRetryableTicket path, and for the same rationale:
+        // gives smart contract wallets the opportunity to access excess fee funds on the child chain
         address excessFeeRefundAddress = msg.sender;
         if (Address.isContract(excessFeeRefundAddress)) {
             excessFeeRefundAddress = AddressAliasHelper.applyL1ToL2Alias(excessFeeRefundAddress);
@@ -112,7 +112,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
             maxSubmissionCost: maxSubmissionCost,
             excessFeeRefundAddress: excessFeeRefundAddress,
             // #3 we leave out; i.e., we don't alias the callValueRefundAddress, we simply set it to the destination.
-            // This meansf the retryable ticket expires or is cancelled, the L2CallValue is sent to the destination, which
+            // This means if the retryable ticket expires or is cancelled, the l2CallValue is sent to the destination, which
             // is the intended result anyway.
             callValueRefundAddress: destination,
             gasLimit: gasLimit,
@@ -131,7 +131,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         public
         payable
     {
-        // use routeNativeFunds, not this method,  for native currency,
+        // use routeNativeFunds, not this method, for native currency,
         if (parentChainTokenAddr == NATIVE_CURRENCY) {
             revert WrongMethod();
         }
