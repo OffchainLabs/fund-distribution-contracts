@@ -20,19 +20,19 @@ interface IChildChainGatewayRouter {
     function calculateL2TokenAddress(address _parentChainTokenAddress) external returns (address);
 }
 
-// TODO update comments
-/// @notice Receives native and ERC20 funds on an Arbitrum chain and sends them to a target contract on its parent chain.
+/// @notice Receives native funds and a signle ERC20 funds (set on deployment) on an Arbitrum chain and sends them to a target contract on its parent chain.
 ///         Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
 ///         (creating many small values messages that each need to be executed in the outbox).
 ///         A send is automatically attempted when native funds are receieved in the receive function.
+/// @dev    For native only (i.e., no token), deploy with parentChainTokenAddress == address(1).
 contract ChildToParentRewardRouter is DistributionInterval {
-       // contract on this chain's parent chain funds get routed to
+       // contract on this chain's parent chain funds (native and token) get routed to
     address public immutable parentChainTarget;
-    // address of token on parent chain
+    // address of token on parent chain; set to address(1) for only-native support.
     address public immutable parentChainTokenAddress;
-    // address of token on this child
+    // address of token on this chain
     address public immutable childChainTokenAddress;
-
+    // address of gateway router on this chain
     IChildChainGatewayRouter public immutable childChainGatewayRouter;
 
     event FundsRouted(address indexed token, uint256 amount);
@@ -43,8 +43,8 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     error TokenNotRegisteredToGateway(address tokenAddr);
 
+    error NativeOnly();
 
-  
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds,
@@ -55,21 +55,25 @@ contract ChildToParentRewardRouter is DistributionInterval {
         parentChainTarget = _parentChainTarget;
         parentChainTokenAddress = _parentChainTokenAddress;
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
+        childChainTokenAddress = _childChainTokenAddress;   
 
-        // note that _childChainTokenAddress can be retrieved from _parentChainTokenAddress, but we
-        // require it as a parameter as an additional sanity check
-        address calculatedChildChainTokenAddress =
-            childChainGatewayRouter.calculateL2TokenAddress(parentChainTokenAddress);
-        if (_childChainTokenAddress != calculatedChildChainTokenAddress) {
-            revert TokenNotRegisteredToGateway(parentChainTokenAddress);
+        // If a token is enabled, include token sanity checks 
+        if(parentChainTokenAddress != address(1)){
+            // note that _childChainTokenAddress can be retrieved from _parentChainTokenAddress, but we
+            // require it as a parameter as an additional sanity check
+            address calculatedChildChainTokenAddress =
+                childChainGatewayRouter.calculateL2TokenAddress(parentChainTokenAddress);
+            if (_childChainTokenAddress != calculatedChildChainTokenAddress) {
+                revert TokenNotRegisteredToGateway(parentChainTokenAddress);
+            }
+            // check if token is disabled
+            address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
+
+            if (gateway == address(0)) {
+                revert TokenDisabled(parentChainTokenAddress);
+            }
         }
-        childChainTokenAddress = _childChainTokenAddress;
-
-        address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
-
-        if (gateway == address(0)) {
-            revert TokenDisabled(parentChainTokenAddress);
-        }
+  
     }
 
     /// @dev This receive function should NEVER revert
@@ -90,14 +94,17 @@ contract ChildToParentRewardRouter is DistributionInterval {
     }
 
     /// @notice withdraw full token balance to parentChainTarget; only callable once per distribution interval
-
     function routeFunds() public {
+        // revert if contract deployed to be native-only
+        if(parentChainTokenAddress == address(1)){
+            revert NativeOnly();
+        }
         uint256 value = IERC20(childChainTokenAddress).balanceOf(address(this));
         // get gateway from gateway router
         address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
-        // approve for transfer
         if (canDistribute(parentChainTokenAddress) && value > 0) {
             _updateDistribution(parentChainTokenAddress);
+            // approve for transfer
             IERC20(childChainTokenAddress).approve(gateway, value);
             childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, value, "");
             emit FundsRouted(parentChainTokenAddress,value);

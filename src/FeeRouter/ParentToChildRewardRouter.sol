@@ -33,16 +33,17 @@ error NoFundsToDistribute();
 error WrongMethod();
 
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
+/// @dev supports native currency and any number of arbitrary ERC20s. 
 contract ParentToChildRewardRouter is DistributionInterval {
     // inbox of target Arbitrum child chain
     IInbox public immutable inbox;
     // Receiving address of funds on target Arbitrum chain
     address public immutable destination;
-
+    // minimum child chain gas price for retryable ticket execution, to prevent spam
     uint256 public immutable minGasPrice;
-
+    // minimum child chain gas limit for retryable ticket execution, to prevent spam
     uint256 public immutable minGasLimit;
-
+    // address of token gateway router on this chain.
     IParentChainGatewayRouter public immutable parentChainGatewayRouter;
 
     event FundsRouted(address indexed token, uint256 amount);
@@ -85,21 +86,21 @@ contract ParentToChildRewardRouter is DistributionInterval {
             revert NoFundsToDistribute();
         }
 
-        // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
-        // (i.e., that the message doesn't consume escrowed funds as gas)
+        // This method uses unsafeCreateRetryableTicket. Compared to createRetryableTicket, unsafeCreateRetryableTicket leaves out 3 things:
+        // 1. check msg.value supplied equals gas required for retryable execution
+        // 2. Conditionally alias excessFeeRefundAddress
+        // 3. Conditionally alias callValueRefundAddress
+        // The rationale for including, modifying, or excluding these things is as follows
+
+        // #1 we include in slightly modified form; we ensure the msg.value covers the cost of execution, tho not including the L2 callvalue.
+        // (the L2Callue will be the funds alreday escrowed in this contract) 
         if (maxFeePerGas * gasLimit + maxSubmissionCost != msg.value) {
             revert IncorrectValue(maxFeePerGas * gasLimit + maxSubmissionCost, msg.value);
         }
 
-        // TODO update
-        /// In the Inbox, callValueRefundAddress is converted to its alias if ParentChain(callValueRefundAddress) is a contract;
-        /// this is intended to prevent footguns. In this case, however, callValueRefundAddress should ultimately be the
-        /// destination address regardless. This is because if the retryable ticket expires or is cancelled,
-        /// the l2 callvalue will be refunded to callValueRefundAddress / destination, which is the intent of this method anyway.
-        /// Thus, we preemptively perform the reverse operation here.
-        /// Note that even a malicious ParentChain(desintationAddress) contract gets no dangerous affordances.
-
-        // TODO: comment
+     
+        // #2 we include identically to how it appears in the createRetryableTicket path, and for the same rationale
+        // (gives smart contract wallets the opportunity to access funds on the child chain)
         address excessFeeRefundAddress = msg.sender;
         if (Address.isContract(excessFeeRefundAddress)) {
             excessFeeRefundAddress = AddressAliasHelper.applyL1ToL2Alias(excessFeeRefundAddress);
@@ -111,7 +112,10 @@ contract ParentToChildRewardRouter is DistributionInterval {
             l2CallValue: amount,
             maxSubmissionCost: maxSubmissionCost,
             excessFeeRefundAddress: excessFeeRefundAddress,
-            callValueRefundAddress: destination, // TODO comment
+            // #3 we leave out; i.e., we don't alias the callValueRefundAddress, we simply set it to the destination.
+            // This meansf the retryable ticket expires or is cancelled, the L2CallValue is sent to the destination, which
+            // is the intended result anyway. 
+            callValueRefundAddress: destination, 
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
             data: ""
@@ -120,7 +124,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
     }
 
     /// @notice send full token balance in this contract to destination. Uses sender's address for fee refund
-    /// @param parentChainTokenAddr TODO
+    /// @param parentChainTokenAddr address of token on this chain to route
     /// @param maxSubmissionCost submission cost for retryable ticket
     /// @param gasLimit gas limit for l2 execution of retryable ticket
     /// @param maxFeePerGas max gas l2 gas price for retryable ticket
@@ -128,7 +132,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         public
         payable
     {
-        // use routeNativeFunds for native currency, not this method
+        // use routeNativeFunds, not this method,  for native currency, 
         if (parentChainTokenAddr == NATIVE_CURRENCY) {
             revert WrongMethod();
         }
@@ -158,7 +162,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         bytes memory _data = abi.encode(maxSubmissionCost, bytes(""));
 
         // As the caller of outboundTransferCustomRefund, this contract's alias is set as the callValueRfundAddress,
-        // given it affordance to cancel and receive callvalue refund. Since this contract can't call cancel, cancellation
+        // giving it affordance to cancel and receive callvalue refund. Since this contract can't call cancel, cancellation
         // can't be performed. Generally calls to outboundTransferCustomRefund will create retryables with zero callValue
         // (and even if there is callvalue, the refund would only take effect if the retryable expires).
         parentChainGatewayRouter.outboundTransferCustomRefund{value: msg.value}({
