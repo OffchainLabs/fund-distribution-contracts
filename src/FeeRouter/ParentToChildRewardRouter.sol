@@ -28,7 +28,7 @@ error GasPriceTooLow(uint256 gasPrice);
 
 error GasLimitTooLow(uint256 gasLimit);
 
-error NoFundsToDistrubute();
+error NoFundsToDistribute();
 
 error WrongMethod();
 
@@ -82,7 +82,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
 
         uint256 amount = address(this).balance - msg.value;
         if (amount == 0) {
-            revert NoFundsToDistrubute();
+            revert NoFundsToDistribute();
         }
 
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
@@ -146,7 +146,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
 
         uint256 amount = IERC20(parentChainTokenAddr).balanceOf(address(this));
         if (amount == 0) {
-            revert NoFundsToDistrubute();
+            revert NoFundsToDistribute();
         }
         _updateDistribution(parentChainTokenAddr);
         // get gateway from gateway router
