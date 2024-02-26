@@ -35,7 +35,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     IChildChainGatewayRouter public immutable childChainGatewayRouter;
 
-    event FundsRouted(uint256 amount);
+    event FundsRouted(address indexed token, uint256 amount);
 
     error NoValue(address tokenAddr);
 
@@ -84,7 +84,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
         if (canDistribute(NATIVE_CURRENCY) && value > 0) {
             _updateDistribution(NATIVE_CURRENCY);
             IArbSys(address(100)).withdrawEth{value: value}(parentChainTarget);
-            emit FundsRouted(value);
+            emit FundsRouted(NATIVE_CURRENCY,value);
         }
     }
 
@@ -99,7 +99,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
             _updateDistribution(parentChainTokenAddress);
             IERC20(childChainTokenAddress).approve(gateway, value);
             childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, value, "");
-            emit FundsRouted(value);
+            emit FundsRouted(parentChainTokenAddress,value);
         }
     }
 }

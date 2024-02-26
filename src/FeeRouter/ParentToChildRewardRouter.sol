@@ -45,7 +45,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
 
     IParentChainGatewayRouter public immutable parentChainGatewayRouter;
 
-    event FundsRouted(uint256 amount);
+    event FundsRouted(address indexed token, uint256 amount);
 
     constructor(
         IParentChainGatewayRouter _parentChainGatewayRouter,
@@ -116,7 +116,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
             maxFeePerGas: maxFeePerGas,
             data: ""
         });
-        emit FundsRouted(amount);
+        emit FundsRouted(NATIVE_CURRENCY, amount);
     }
 
     /// @notice send full token balance in this contract to destination. Uses sender's address for fee refund
@@ -171,6 +171,6 @@ contract ParentToChildRewardRouter is DistributionInterval {
             _data: _data
         });
 
-        emit FundsRouted(amount);
+        emit FundsRouted(parentChainTokenAddr, amount);
     }
 }
