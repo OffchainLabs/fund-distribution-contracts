@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 contract InboxMock {
     uint256 public msgNum = 0;
-    function createRetryableTicket(
+    function unsafeCreateRetryableTicket(
         address to,
         uint256 l2CallValue,
         uint256 maxSubmissionCost,

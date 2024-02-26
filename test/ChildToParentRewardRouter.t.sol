@@ -23,8 +23,10 @@ contract ChildToParentRewardRouterTest is Test {
         vm.deal(address(me), 10 ether);
         childToParentRewardRouter = new ChildToParentRewardRouter(
             address(1111_2),
-            IChildChainGatewayRouter(address(111_3)),
-            minDistributionIntervalSeconds
+            minDistributionIntervalSeconds,
+            address(1),
+            address(1),
+            address(1)
         );
     }
 
