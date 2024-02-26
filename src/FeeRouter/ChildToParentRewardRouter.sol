@@ -41,7 +41,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     error TokenDisabled(address tokenAddr);
 
-    error TokenNotRegisteredToGateway();
+    error TokenNotRegisteredToGateway(address tokenAddr);
 
 
   
@@ -61,7 +61,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
         address calculatedChildChainTokenAddress =
             childChainGatewayRouter.calculateL2TokenAddress(parentChainTokenAddress);
         if (_childChainTokenAddress != calculatedChildChainTokenAddress) {
-            revert TokenNotRegisteredToGateway();
+            revert TokenNotRegisteredToGateway(parentChainTokenAddress);
         }
         childChainTokenAddress = _childChainTokenAddress;
 
@@ -95,9 +95,9 @@ contract ChildToParentRewardRouter is DistributionInterval {
         // get gateway from gateway router
         address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
         // approve for transfer
-        IERC20(childChainTokenAddress).approve(gateway, value);
         if (canDistribute(parentChainTokenAddress) && value > 0) {
             _updateDistribution(parentChainTokenAddress);
+            IERC20(childChainTokenAddress).approve(gateway, value);
             childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, value, "");
             emit FundsRouted(value);
         }

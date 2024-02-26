@@ -148,6 +148,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         if (amount == 0) {
             revert NoFundsToDistrubute();
         }
+        _updateDistribution(parentChainTokenAddr);
         // get gateway from gateway router
         address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddr));
         // approve amount on gateway
@@ -156,7 +157,6 @@ contract ParentToChildRewardRouter is DistributionInterval {
         // encode max submission cost (and empty callhook data) for gateway router
         bytes memory _data = abi.encode(maxSubmissionCost, bytes(""));
 
-        _updateDistribution(parentChainTokenAddr);
         // As the caller of outboundTransferCustomRefund, this contract's alias is set as the callValueRfundAddress,
         // given it affordance to cancel and receive callvalue refund. Since this contract can't call cancel, cancellation
         // can't be performed. Generally calls to outboundTransferCustomRefund will create retryables with zero callValue
