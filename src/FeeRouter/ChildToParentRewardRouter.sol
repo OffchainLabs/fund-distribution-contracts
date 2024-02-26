@@ -20,11 +20,11 @@ interface IChildChainGatewayRouter {
     function calculateL2TokenAddress(address _parentChainTokenAddress) external returns (address);
 }
 
-/// @notice Receives native funds and a signle ERC20 funds (set on deployment) on an Arbitrum chain and sends them to a target contract on its parent chain.
+/// @notice Receives native funds and a single ERC20 funds (set on deployment) on an Arbitrum chain and sends them to a target contract on its parent chain.
 ///         Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
 ///         (creating many small values messages that each need to be executed in the outbox).
 ///         A send is automatically attempted when native funds are receieved in the receive function.
-/// @dev    For native only (i.e., no token), deploy with parentChainTokenAddress == address(1).
+/// @dev    For native only (i.e., no token), deploy with parentChainTokenAddress, childChainTokenAddress, and childChainGatewayRouter == address(1).
 contract ChildToParentRewardRouter is DistributionInterval {
     // contract on this chain's parent chain funds (native and token) get routed to
     address public immutable parentChainTarget;
@@ -93,7 +93,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
     }
 
     /// @notice withdraw full token balance to parentChainTarget; only callable once per distribution interval
-    function routeFunds() public {
+    function routeToken() public {
         // revert if contract deployed to be native-only
         if (parentChainTokenAddress == address(1)) {
             revert NativeOnly();
