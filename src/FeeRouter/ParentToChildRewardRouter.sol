@@ -80,6 +80,11 @@ contract ParentToChildRewardRouter is DistributionInterval {
             revert GasPriceTooLow(maxFeePerGas);
         }
 
+        uint256 amount = address(this).balance - msg.value;
+        if (amount == 0) {
+            revert NoFundsToDistrubute();
+        }
+
         // while a similar check is performed in the Inbox, this is necessary to ensure only value sent in the transaction is used as gas
         // (i.e., that the message doesn't consume escrowed funds as gas)
         if (maxFeePerGas * gasLimit + maxSubmissionCost != msg.value) {
@@ -93,11 +98,6 @@ contract ParentToChildRewardRouter is DistributionInterval {
         /// the l2 callvalue will be refunded to callValueRefundAddress / destination, which is the intent of this method anyway.
         /// Thus, we preemptively perform the reverse operation here.
         /// Note that even a malicious ParentChain(desintationAddress) contract gets no dangerous affordances.
-
-        uint256 amount = address(this).balance - msg.value;
-        if (amount == 0) {
-            revert NoFundsToDistrubute();
-        }
 
         // TODO: comment
         address excessFeeRefundAddress = msg.sender;
@@ -120,7 +120,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
     }
 
     /// @notice send full token balance in this contract to destination. Uses sender's address for fee refund
-    /// @param parentChainTokenAddr todor
+    /// @param parentChainTokenAddr TODO
     /// @param maxSubmissionCost submission cost for retryable ticket
     /// @param gasLimit gas limit for l2 execution of retryable ticket
     /// @param maxFeePerGas max gas l2 gas price for retryable ticket
