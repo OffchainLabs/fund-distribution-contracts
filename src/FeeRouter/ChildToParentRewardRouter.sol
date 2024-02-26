@@ -72,6 +72,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
         }
     }
 
+    /// @dev This receive function should NEVER revert
     receive() external payable {
         // automatically attempt to send native funds upon receiving
         routeNativeFunds();
