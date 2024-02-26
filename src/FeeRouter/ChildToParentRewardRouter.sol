@@ -26,7 +26,7 @@ interface IChildChainGatewayRouter {
 ///         A send is automatically attempted when native funds are receieved in the receive function.
 /// @dev    For native only (i.e., no token), deploy with parentChainTokenAddress == address(1).
 contract ChildToParentRewardRouter is DistributionInterval {
-       // contract on this chain's parent chain funds (native and token) get routed to
+    // contract on this chain's parent chain funds (native and token) get routed to
     address public immutable parentChainTarget;
     // address of token on parent chain; set to address(1) for only-native support.
     address public immutable parentChainTokenAddress;
@@ -55,10 +55,10 @@ contract ChildToParentRewardRouter is DistributionInterval {
         parentChainTarget = _parentChainTarget;
         parentChainTokenAddress = _parentChainTokenAddress;
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
-        childChainTokenAddress = _childChainTokenAddress;   
+        childChainTokenAddress = _childChainTokenAddress;
 
-        // If a token is enabled, include token sanity checks 
-        if(parentChainTokenAddress != address(1)){
+        // If a token is enabled, include token sanity checks
+        if (parentChainTokenAddress != address(1)) {
             // note that _childChainTokenAddress can be retrieved from _parentChainTokenAddress, but we
             // require it as a parameter as an additional sanity check
             address calculatedChildChainTokenAddress =
@@ -73,7 +73,6 @@ contract ChildToParentRewardRouter is DistributionInterval {
                 revert TokenDisabled(parentChainTokenAddress);
             }
         }
-  
     }
 
     /// @dev This receive function should NEVER revert
@@ -89,14 +88,14 @@ contract ChildToParentRewardRouter is DistributionInterval {
         if (canDistribute(NATIVE_CURRENCY) && value > 0) {
             _updateDistribution(NATIVE_CURRENCY);
             IArbSys(address(100)).withdrawEth{value: value}(parentChainTarget);
-            emit FundsRouted(NATIVE_CURRENCY,value);
+            emit FundsRouted(NATIVE_CURRENCY, value);
         }
     }
 
     /// @notice withdraw full token balance to parentChainTarget; only callable once per distribution interval
     function routeFunds() public {
         // revert if contract deployed to be native-only
-        if(parentChainTokenAddress == address(1)){
+        if (parentChainTokenAddress == address(1)) {
             revert NativeOnly();
         }
         uint256 value = IERC20(childChainTokenAddress).balanceOf(address(this));
@@ -107,7 +106,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
             // approve for transfer
             IERC20(childChainTokenAddress).approve(gateway, value);
             childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, value, "");
-            emit FundsRouted(parentChainTokenAddress,value);
+            emit FundsRouted(parentChainTokenAddress, value);
         }
     }
 }
