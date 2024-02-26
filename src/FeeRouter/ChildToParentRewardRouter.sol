@@ -20,13 +20,19 @@ interface IChildChainGatewayRouter {
     function calculateL2TokenAddress(address _parentChainTokenAddress) external returns (address);
 }
 
+// TODO update comments
 /// @notice Receives native and ERC20 funds on an Arbitrum chain and sends them to a target contract on its parent chain.
 /// Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
 /// (creating many small values messages that each need to be executed in the outbox).
 /// A send is automatically attempted any time funds are receieved.
 contract ChildToParentRewardRouter is DistributionInterval {
-    // contract on this chain's parent chain funds get routed to
-    address immutable parentChainTarget;
+       // contract on this chain's parent chain funds get routed to
+    address public immutable parentChainTarget;
+    // address of token on parent chain
+    address public immutable parentChainTokenAddress;
+    // address of token on this child
+    address public immutable childChainTokenAddress;
+
     IChildChainGatewayRouter public immutable childChainGatewayRouter;
 
     event FundsRouted(uint256 amount);
@@ -35,13 +41,35 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     error TokenDisabled(address tokenAddr);
 
+    error TokenNotRegisteredToGateway();
+
+
+  
     constructor(
         address _parentChainTarget,
-        IChildChainGatewayRouter _childChainGatewayRouter,
-        uint256 _minDistributionIntervalSeconds
+        uint256 _minDistributionIntervalSeconds,
+        address _parentChainTokenAddress,
+        address _childChainTokenAddress,
+        address _childChainGatewayRouter
     ) DistributionInterval(_minDistributionIntervalSeconds) {
         parentChainTarget = _parentChainTarget;
-        childChainGatewayRouter = _childChainGatewayRouter;
+        parentChainTokenAddress = _parentChainTokenAddress;
+        childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
+
+        // note that _childChainTokenAddress can be retrieved from _parentChainTokenAddress, but we
+        // require it as a parameter as an additional sanity check
+        address calculatedChildChainTokenAddress =
+            childChainGatewayRouter.calculateL2TokenAddress(parentChainTokenAddress);
+        if (_childChainTokenAddress != calculatedChildChainTokenAddress) {
+            revert TokenNotRegisteredToGateway();
+        }
+        childChainTokenAddress = _childChainTokenAddress;
+
+        address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
+
+        if (gateway == address(0)) {
+            revert TokenDisabled(parentChainTokenAddress);
+        }
     }
 
     receive() external payable {
@@ -60,28 +88,18 @@ contract ChildToParentRewardRouter is DistributionInterval {
         }
     }
 
-    /// @notice send all of provided token in this contract to destination on parent chain
-    /// @param _parentChainTokenAddr parent chain (i.e., chaun underlying this one) address of token to route
-    function routeToken(address _parentChainTokenAddr) external {
-        address gateway = childChainGatewayRouter.getGateway(_parentChainTokenAddr);
+    /// @notice withdraw full token balance to parentChainTarget; only callable once per distribution interval
 
-        if (gateway == address(0)) {
-            revert TokenDisabled(_parentChainTokenAddr);
-        }
-        address childChainTokenAddress = childChainGatewayRouter.calculateL2TokenAddress(_parentChainTokenAddr);
-
+    function routeFunds() public {
         uint256 value = IERC20(childChainTokenAddress).balanceOf(address(this));
-
-        if (!canDistribute(_parentChainTokenAddr)) {
-            revert DistributionTooSoon(block.timestamp, nextDistributions[_parentChainTokenAddr]);
-        }
-        if (value == 0) {
-            revert NoValue(_parentChainTokenAddr);
-        }
+        // get gateway from gateway router
+        address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
+        // approve for transfer
         IERC20(childChainTokenAddress).approve(gateway, value);
-
-        childChainGatewayRouter.outboundTransfer(_parentChainTokenAddr, parentChainTarget, value, "");
-
-        _updateDistribution(_parentChainTokenAddr);
+        if (canDistribute(parentChainTokenAddress) && value > 0) {
+            _updateDistribution(parentChainTokenAddress);
+            childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, value, "");
+            emit FundsRouted(value);
+        }
     }
 }

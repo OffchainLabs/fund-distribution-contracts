@@ -86,26 +86,32 @@ contract ParentToChildRewardRouter is DistributionInterval {
             revert IncorrectValue(maxFeePerGas * gasLimit + maxSubmissionCost, msg.value);
         }
 
+        // TODO update
         /// In the Inbox, callValueRefundAddress is converted to its alias if ParentChain(callValueRefundAddress) is a contract;
         /// this is intended to prevent footguns. In this case, however, callValueRefundAddress should ultimately be the
         /// destination address regardless. This is because if the retryable ticket expires or is cancelled,
         /// the l2 callvalue will be refunded to callValueRefundAddress / destination, which is the intent of this method anyway.
         /// Thus, we preemptively perform the reverse operation here.
         /// Note that even a malicious ParentChain(desintationAddress) contract gets no dangerous affordances.
-        address callValueRefundAddress =
-            Address.isContract(destination) ? AddressAliasHelper.undoL1ToL2Alias(destination) : destination;
 
         uint256 amount = address(this).balance - msg.value;
         if (amount == 0) {
             revert NoFundsToDistrubute();
         }
+
+        // TODO: comment
+        address excessFeeRefundAddress = msg.sender;
+        if (Address.isContract(excessFeeRefundAddress)) {
+            excessFeeRefundAddress = AddressAliasHelper.applyL1ToL2Alias(excessFeeRefundAddress);
+        }
+
         _updateDistribution(NATIVE_CURRENCY);
-        inbox.createRetryableTicket{value: address(this).balance}({
+        inbox.unsafeCreateRetryableTicket{value: address(this).balance}({
             to: destination,
             l2CallValue: amount,
             maxSubmissionCost: maxSubmissionCost,
-            excessFeeRefundAddress: msg.sender,
-            callValueRefundAddress: callValueRefundAddress,
+            excessFeeRefundAddress: excessFeeRefundAddress,
+            callValueRefundAddress: destination, // TODO comment
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
             data: ""
