@@ -22,9 +22,9 @@ interface IChildChainGatewayRouter {
 
 // TODO update comments
 /// @notice Receives native and ERC20 funds on an Arbitrum chain and sends them to a target contract on its parent chain.
-/// Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
-/// (creating many small values messages that each need to be executed in the outbox).
-/// A send is automatically attempted any time funds are receieved.
+///         Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
+///         (creating many small values messages that each need to be executed in the outbox).
+///         A send is automatically attempted when native funds are receieved in the receive function.
 contract ChildToParentRewardRouter is DistributionInterval {
        // contract on this chain's parent chain funds get routed to
     address public immutable parentChainTarget;
