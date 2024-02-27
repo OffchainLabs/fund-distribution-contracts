@@ -22,7 +22,7 @@ contract ChildToParentRewardRouterTest is Test {
         );
     }
 
-    function testrouteNativeFunds() external {
+    function testRouteNativeFunds() external {
         vm.startPrank(address(me));
         (bool sent,) = payable(address(childToParentRewardRouter)).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
@@ -45,5 +45,10 @@ contract ChildToParentRewardRouterTest is Test {
 
         assertEq(address(childToParentRewardRouter).balance, 0, "funds routed after warp");
         vm.stopPrank();
+    }
+
+    function testCantRouteTokensWhenSetToNativeOnly() external {
+        vm.expectRevert(abi.encodeWithSelector(ChildToParentRewardRouter.NativeOnly.selector));
+        childToParentRewardRouter.routeToken();
     }
 }
