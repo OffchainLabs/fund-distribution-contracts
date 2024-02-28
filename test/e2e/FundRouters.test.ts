@@ -33,7 +33,7 @@ describe("Router e2e test", () => {
         setup.l2Network.tokenBridge.l1GatewayRouter,
         destination,
         10,
-        utils.formatUnits(0.1, "gwei"),
+        100000000,
         300000
       );
 
