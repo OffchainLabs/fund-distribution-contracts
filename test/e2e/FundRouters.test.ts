@@ -3,17 +3,77 @@ import { TestSetup, testSetup } from "./testSetup";
 import { BigNumber, utils } from "ethers";
 import {
   ParentToChildRewardRouter__factory,
+  ParentToChildRewardRouter,
   ChildToParentRewardRouter__factory,
+  ChildToParentRewardRouter,
   RewardDistributor__factory,
+  RewardDistributor,
 } from "../../typechain-types";
 import ChildToParentMessageRedeemer from "../../src-ts/FeeRouter/ChildToParentMessageRedeemer";
 import { checkAndRouteFunds } from "../../src-ts/FeeRouter/checkAndRouteFunds";
-
+import { TestERC20__factory } from "../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory";
+import { TestERC20 } from "../../lib/arbitrum-sdk/src/lib/abi/TestERC20";
+import { Erc20Bridger } from "../../lib/arbitrum-sdk/src";
 describe("Router e2e test", () => {
   let setup: TestSetup;
+  let parentToChildRewardRouter: ParentToChildRewardRouter;
+  let childToParentRewardRouter: ChildToParentRewardRouter;
+  let rewardDistributor: RewardDistributor;
+  let testToken: TestERC20;
+  let l2TokenAddress: string;
+
+  const destination = "0x0000000000000000000000000000000000000002";
 
   before(async () => {
     setup = await testSetup();
+
+    testToken = await new TestERC20__factory().connect(setup.l1Signer).deploy();
+    await testToken.deployed();
+
+    await (await testToken.mint()).wait();
+
+    const erc20Bridger = new Erc20Bridger(setup.l2Network);
+    const depositRes = await erc20Bridger.deposit({
+      l1Signer: setup.l1Signer,
+      amount: BigNumber.from(1000),
+      l2Provider: setup.l2Provider,
+
+      erc20L1Address: testToken.address,
+    });
+    const depositRec = await depositRes.wait();
+    const waitRes = await depositRec.waitForL2(setup.l2Signer);
+
+    l2TokenAddress = await erc20Bridger.getL2ERC20Address(
+      testToken.address,
+      setup.l1Provider
+    );
+
+    // deploy parent to child
+    parentToChildRewardRouter = await new ParentToChildRewardRouter__factory(
+      setup.l1Signer
+    ).deploy(
+      setup.l2Network.tokenBridge.l1GatewayRouter,
+      destination,
+      10,
+      100000000,
+      300000
+    );
+
+    // deploy child to parent
+    childToParentRewardRouter = await new ChildToParentRewardRouter__factory(
+      setup.l2Signer
+    ).deploy(
+      parentToChildRewardRouter.address,
+      10,
+      testToken.address,
+      l2TokenAddress,
+      setup.l2Network.tokenBridge.l2GatewayRouter
+    );
+
+    // deploy fund distributor
+    rewardDistributor = await new RewardDistributor__factory(
+      setup.l2Signer
+    ).deploy([childToParentRewardRouter.address], [1000]);
   });
 
   it("should have the correct network information", async () => {
@@ -23,41 +83,14 @@ describe("Router e2e test", () => {
   });
 
   it("e2e eth routing test", async () => {
-    const destination = "0x0000000000000000000000000000000000000002";
     const initialBal = await setup.l2Provider.getBalance(destination);
     expect(initialBal.eq(0)).to.be.true;
 
-    // deploy parent to child
-    const parentToChildRewardRouter =
-      await new ParentToChildRewardRouter__factory(setup.l1Signer).deploy(
-        setup.l2Network.tokenBridge.l1GatewayRouter,
-        destination,
-        10,
-        100000000,
-        300000
-      );
-
-    // deploy child to parent
-    const childToParentRewardRouter =
-      await new ChildToParentRewardRouter__factory(setup.l2Signer).deploy(
-        parentToChildRewardRouter.address,
-        10,
-        "0x0000000000000000000000000000000000000001",
-        "0x0000000000000000000000000000000000000001",
-        "0x0000000000000000000000000000000000000001"
-      );
-
-    // deploy fund distributor
-    const rewardDistributor = await new RewardDistributor__factory(
-      setup.l2Signer
-    ).deploy([childToParentRewardRouter.address], [1000]);
-
-    const value = utils.parseEther(".23");
-
+    const ethValue = utils.parseEther(".23");
     // fund reward distributor
     const sendRec = await (
       await setup.l2Signer.sendTransaction({
-        value: value,
+        value: ethValue,
         to: rewardDistributor.address,
       })
     ).wait();
@@ -91,7 +124,7 @@ describe("Router e2e test", () => {
     // funds should be in parentToChildRewardRouter now
     expect(
       (await setup.l1Provider.getBalance(parentToChildRewardRouter.address)).eq(
-        value
+        ethValue
       )
     ).to.be.true;
 
@@ -102,7 +135,7 @@ describe("Router e2e test", () => {
       parentToChildRewardRouter.address,
       BigNumber.from(0)
     );
-    expect((await setup.l1Provider.getBalance(destination)).eq(value)).to.be
+    expect((await setup.l1Provider.getBalance(destination)).eq(ethValue)).to.be
       .true;
   });
 });
