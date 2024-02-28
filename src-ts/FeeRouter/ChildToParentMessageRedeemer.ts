@@ -4,14 +4,14 @@ import {
   ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
 } from "../../typechain-types";
-import { L2ToL1TxEvent } from "../../lib/arbitrum-sdk/dist/lib/abi/ArbSys";
-import { EventArgs } from "../../lib/arbitrum-sdk/dist/lib/dataEntities/event";
+import { L2ToL1TxEvent } from "../../lib/arbitrum-sdk/src/lib/abi/ArbSys";
+import { EventArgs } from "../../lib/arbitrum-sdk/src/lib/dataEntities/event";
 
 import {
   L2TransactionReceipt,
   L2ToL1Message,
   L2ToL1MessageStatus,
-} from "../../lib/arbitrum-sdk";
+} from "../../lib/arbitrum-sdk/src";
 const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export default class ChildToParentMessageRedeemer {
