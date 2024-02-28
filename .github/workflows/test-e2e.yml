@@ -1,0 +1,59 @@
+name: Test E2E
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-e2e:
+    name: Test E2E with ETH fee L3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Set up the local node
+        uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          nitro-testnode-ref: release
+          l3-node: true
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - run: yarn
+      - run: cp .env.example .env && yarn test:e2e
+
+  test-e2e-custom-fee:
+    name: Test E2E with Custom Fee L3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Set up the local node
+        uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          nitro-testnode-ref: release
+          l3-node: true
+          args: --l3-fee-token
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - run: yarn
+      - run: cp .env.example .env && yarn test:e2e
