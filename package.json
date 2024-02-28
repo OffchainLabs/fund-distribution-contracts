@@ -6,6 +6,7 @@
   "author": "dzgoldman",
   "license": "MIT",
   "scripts": {
+    "prepare": "forge install && cd lib/arbitrum-sdk && yarn",
     "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts",
     "test:e2e": "./test/e2e/test-e2e.bash"
   },
@@ -31,7 +32,6 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@arbitrum/sdk": "^3.1.13",
     "@openzeppelin/contracts": "^5.0.0",
     "@types/yargs": "^17.0.32",
     "dotenv": "^16.3.1",
