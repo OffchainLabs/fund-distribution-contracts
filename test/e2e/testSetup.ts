@@ -1,4 +1,6 @@
-import { JsonRpcProvider, Wallet } from 'ethers'
+import {  Wallet } from 'ethers'
+import { JsonRpcProvider } from '@ethersproject/providers'
+
 import { testSetup as sdkTestSetup } from '../../lib/arbitrum-sdk/scripts/testSetup'
 import { L2Network, getL1Network } from '../../lib/arbitrum-sdk/src'
 import { Unwrap, getEnv } from '../util/util'

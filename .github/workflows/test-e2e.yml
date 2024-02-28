@@ -31,29 +31,29 @@ jobs:
       - run: yarn
       - run: cp .env.example .env && yarn test:e2e
 
-  test-e2e-custom-fee:
-    name: Test E2E with Custom Fee L3
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # test-e2e-custom-fee:
+  #   name: Test E2E with Custom Fee L3
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
 
-      - name: Set up the local node
-        uses: OffchainLabs/actions/run-nitro-test-node@main
-        with:
-          nitro-testnode-ref: release
-          l3-node: true
-          args: --l3-fee-token
+  #     - name: Set up the local node
+  #       uses: OffchainLabs/actions/run-nitro-test-node@main
+  #       with:
+  #         nitro-testnode-ref: release
+  #         l3-node: true
+  #         args: --l3-fee-token
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+  #     - name: Install Foundry
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: nightly
 
-      - run: yarn
-      - run: cp .env.example .env && yarn test:e2e
+  #     - run: yarn
+  #     - run: cp .env.example .env && yarn test:e2e

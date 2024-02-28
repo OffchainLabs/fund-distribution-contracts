@@ -31,6 +31,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "@arbitrum/sdk": "^3.1.13",
     "@openzeppelin/contracts": "^5.0.0",
     "@types/yargs": "^17.0.32",
     "dotenv": "^16.3.1",

@@ -3,9 +3,9 @@
 
 
 "@arbitrum/sdk@^3.1.13":
-  version "3.1.13"
-  resolved "https://registry.yarnpkg.com/@arbitrum/sdk/-/sdk-3.1.13.tgz#a0d3d9a7b387f42547c63f6f066d8a6c4dd945cc"
-  integrity sha512-oE/j8ThWWEdFfV0helmR8lD0T67/CY1zMCt6RVslaCLrytFdbg3QsrHs/sQE3yiCXgisQlsx3qomCgh8PfBo8Q==
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@arbitrum/sdk/-/sdk-3.3.0.tgz#b4f70a45ee883cfe86e981b304567dc8debd2a88"
+  integrity sha512-0sqyjcZgf+6Y4XWi0GQdHxjFR+FMh1i7NdjW1KPHSM1iRk21ChdkCm028m75pk1CRtkrxhc9BdMDzV5heoy3/A==
   dependencies:
     "@ethersproject/address" "^5.0.8"
     "@ethersproject/bignumber" "^5.1.1"
@@ -1216,9 +1216,9 @@ astral-regex@^2.0.0:
   integrity sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==
 
 async-mutex@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/async-mutex/-/async-mutex-0.4.0.tgz#ae8048cd4d04ace94347507504b3cf15e631c25f"
-  integrity sha512-eJFZ1YhRR8UN8eBLoNzcDPcy/jqjsg6I1AP+KvWQX80BqOSW1oJPJXDylPUEeMr2ZQvHgnQ//Lp6f3RQ1zI7HA==
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/async-mutex/-/async-mutex-0.4.1.tgz#bccf55b96f2baf8df90ed798cb5544a1f6ee4c2c"
+  integrity sha512-WfoBo4E/TbCX1G95XTjbWTE3X2XLG0m1Xbv2cwOtuPdyH9CZvnaA5nCt1ucjaKEgW2A5IF71hxrRhr83Je5xjA==
   dependencies:
     tslib "^2.4.0"
 
