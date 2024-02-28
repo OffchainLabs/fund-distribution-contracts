@@ -3,10 +3,10 @@ import {
   ParentToChildRewardRouter__factory,
   ParentToChildRewardRouter,
 } from "../../typechain-types";
-import { Inbox__factory } from "@arbitrum/sdk/dist/lib/abi/factories/Inbox__factory";
-import { ERC20__factory } from "@arbitrum/sdk/dist/lib/abi/factories/ERC20__factory";
+import { Inbox__factory } from "../../lib/arbitrum-sdk/dist/lib/abi/factories/Inbox__factory";
+import { ERC20__factory } from "../../lib/arbitrum-sdk/dist/lib/abi/factories/ERC20__factory";
 
-import { L1TransactionReceipt, L1ToL2MessageStatus } from "@arbitrum/sdk";
+import { L1TransactionReceipt, L1ToL2MessageStatus } from "../../lib/arbitrum-sdk";
 
 export const checkAndRouteFunds = async (
   ethOrTokenAddress: string,
