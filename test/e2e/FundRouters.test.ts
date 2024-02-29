@@ -169,10 +169,11 @@ describe("Router e2e test", () => {
       expect(
         (
           await setup.l1Provider.getBalance(parentToChildRewardRouter.address)
-        ).toNumber()
-      ).to.eq(ethValue.toNumber());
+        ).toHexString()
+      ).to.eq(ethValue.toHexString());
     });
-    it("route runds to destination ", async () => {
+
+    it("routes runds to destination ", async () => {
       await checkAndRouteFunds(
         "ETH",
         setup.l1Signer,
@@ -180,8 +181,8 @@ describe("Router e2e test", () => {
         parentToChildRewardRouter.address,
         BigNumber.from(0)
       );
-      expect((await setup.l1Provider.getBalance(destination)).toNumber()).to.eq(
-        ethValue.toNumber()
+      expect((await setup.l1Provider.getBalance(destination)).toHexString()).to.eq(
+        ethValue.toHexString()
       );
     });
   });
