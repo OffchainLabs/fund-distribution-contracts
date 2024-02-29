@@ -22,16 +22,26 @@ describe("Router e2e test", () => {
   let rewardDistributor: RewardDistributor;
   let testToken: TestERC20;
   let l2TokenAddress: string;
-  const noTokenAddress = "0x0000000000000000000000000000000000000001"
+  const noTokenAddress = "0x0000000000000000000000000000000000000001";
   const destination = "0x0000000000000000000000000000000000000002";
 
   before(async () => {
     setup = await testSetup();
 
-    testToken = await new TestERC20__factory().connect(setup.l1Signer).deploy();
-    await testToken.deployed();
+    // testToken = await new TestERC20__factory().connect(setup.l1Signer).deploy();
+    // await testToken.deployed();
 
-    await (await testToken.mint()).wait();
+    // await (await testToken.mint()).wait();
+    console.log(
+      "using L1 wallet",
+      setup.l1Signer.address,
+      await setup.l1Signer.getBalance()
+    );
+    console.log(
+      "using L2 wallet",
+      setup.l2Signer.address,
+      await setup.l2Signer.getBalance()
+    );
 
     // const erc20Bridger = new Erc20Bridger(setup.l2Network);
     // const depositRes = await erc20Bridger.deposit({
@@ -50,6 +60,8 @@ describe("Router e2e test", () => {
     // );
 
     // deploy parent to child
+    console.log("Deploying parentToChildRewardRouter:");
+
     parentToChildRewardRouter = await new ParentToChildRewardRouter__factory(
       setup.l1Signer
     ).deploy(
@@ -58,6 +70,10 @@ describe("Router e2e test", () => {
       10,
       100000000,
       300000
+    );
+    console.log(
+      "ParentToChildRewardRouter deployed",
+      parentToChildRewardRouter.address
     );
 
     // // deploy child to parent
@@ -70,8 +86,9 @@ describe("Router e2e test", () => {
     //   l2TokenAddress,
     //   setup.l2Network.tokenBridge.l2GatewayRouter
     // );
+    console.log("Deploying childToParentRewardRouter:");
 
-        childToParentRewardRouter = await new ChildToParentRewardRouter__factory(
+    childToParentRewardRouter = await new ChildToParentRewardRouter__factory(
       setup.l2Signer
     ).deploy(
       parentToChildRewardRouter.address,
@@ -80,11 +97,18 @@ describe("Router e2e test", () => {
       noTokenAddress,
       noTokenAddress
     );
+    console.log(
+      "childToParentRewardRouter deployed:",
+      childToParentRewardRouter.address
+    );
 
     // deploy fund distributor
+    console.log("Deploying rewardDistributor:");
+
     rewardDistributor = await new RewardDistributor__factory(
       setup.l2Signer
     ).deploy([childToParentRewardRouter.address], [1000]);
+    console.log("Reward Distributor deployed:", rewardDistributor.address);
   });
 
   it("should have the correct network information", async () => {
