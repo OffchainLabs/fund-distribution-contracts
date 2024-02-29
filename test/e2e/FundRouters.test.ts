@@ -181,7 +181,7 @@ describe("Router e2e test", () => {
         parentToChildRewardRouter.address,
         BigNumber.from(0)
       );
-      expect((await setup.l1Provider.getBalance(destination)).toHexString()).to.eq(
+      expect((await setup.l2Provider.getBalance(destination)).toHexString()).to.eq(
         ethValue.toHexString()
       );
     });
