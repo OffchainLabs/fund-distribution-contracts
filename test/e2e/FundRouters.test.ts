@@ -117,63 +117,72 @@ describe("Router e2e test", () => {
     expect(setup.l3Network.chainID).to.eq(333333);
   });
 
-  it("e2e eth routing test", async () => {
-    const initialBal = await setup.l2Provider.getBalance(destination);
-    
-    expect(initialBal.toNumber()).to.eq(0);
-
+  describe("e2e eth routing test", async () => {
     const ethValue = utils.parseEther(".23");
+    it("destination has initial balance of 0", async () => {
+      const initialBal = await setup.l2Provider.getBalance(destination);
+
+      expect(initialBal.toNumber()).to.eq(0);
+    });
+
     // fund reward distributor
-    const sendRec = await (
-      await setup.l2Signer.sendTransaction({
-        value: ethValue,
-        to: rewardDistributor.address,
-      })
-    ).wait();
+    it("funds and pokes reward distributor", async () => {
+      const sendRec = await (
+        await setup.l2Signer.sendTransaction({
+          value: ethValue,
+          to: rewardDistributor.address,
+        })
+      ).wait();
 
-    // poke reward distributor
-    const distributeRec = await (
-      await rewardDistributor.distributeRewards(
-        [childToParentRewardRouter.address],
-        [10000]
-      )
-    ).wait();
+      // poke reward distributor
+      const distributeRec = await (
+        await rewardDistributor.distributeRewards(
+          [childToParentRewardRouter.address],
+          [10000]
+        )
+      ).wait();
 
-    // fund should be distributed and auto-routed
-    expect(
-      (await setup.l2Provider.getBalance(rewardDistributor.address)).toNumber()
-    ).to.equal(0);
+      // fund should be distributed and auto-routed
+      expect(
+        (
+          await setup.l2Provider.getBalance(rewardDistributor.address)
+        ).toNumber()
+      ).to.equal(0);
 
-    expect(
-      (
-        await setup.l2Provider.getBalance(childToParentRewardRouter.address)
-      ).toNumber()
-    ).to.equal(0);
+      expect(
+        (
+          await setup.l2Provider.getBalance(childToParentRewardRouter.address)
+        ).toNumber()
+      ).to.equal(0);
+    });
 
-    await new ChildToParentMessageRedeemer(
-      setup.l2Provider,
-      setup.l1Signer,
-      childToParentRewardRouter.address,
-      0,
-      0
-    ).redeemChildToParentMessages();
+    it("redeems l2 to l1 message", async () => {
+      await new ChildToParentMessageRedeemer(
+        setup.l2Provider,
+        setup.l1Signer,
+        childToParentRewardRouter.address,
+        0,
+        0
+      ).redeemChildToParentMessages();
 
-    // funds should be in parentToChildRewardRouter now
-    expect(
-      (
-        await setup.l1Provider.getBalance(parentToChildRewardRouter.address)
-      ).toNumber()
-    ).to.eq(ethValue.toNumber());
-
-    await checkAndRouteFunds(
-      "ETH",
-      setup.l1Signer,
-      setup.l2Signer,
-      parentToChildRewardRouter.address,
-      BigNumber.from(0)
-    );
-    expect((await setup.l1Provider.getBalance(destination)).toNumber()).to.eq(
-      ethValue.toNumber()
-    );
+      // funds should be in parentToChildRewardRouter now
+      expect(
+        (
+          await setup.l1Provider.getBalance(parentToChildRewardRouter.address)
+        ).toNumber()
+      ).to.eq(ethValue.toNumber());
+    });
+    it("route runds to destination ", async () => {
+      await checkAndRouteFunds(
+        "ETH",
+        setup.l1Signer,
+        setup.l2Signer,
+        parentToChildRewardRouter.address,
+        BigNumber.from(0)
+      );
+      expect((await setup.l1Provider.getBalance(destination)).toNumber()).to.eq(
+        ethValue.toNumber()
+      );
+    });
   });
 });
