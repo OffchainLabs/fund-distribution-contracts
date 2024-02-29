@@ -134,7 +134,7 @@ describe("Router e2e test", () => {
     const distributeRec = await (
       await rewardDistributor.distributeRewards(
         [childToParentRewardRouter.address],
-        [1000]
+        [10000]
       )
     ).wait();
 
