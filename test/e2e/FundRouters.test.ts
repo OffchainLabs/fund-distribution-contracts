@@ -14,6 +14,7 @@ import { checkAndRouteFunds } from "../../src-ts/FeeRouter/checkAndRouteFunds";
 import { TestERC20__factory } from "../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory";
 import { TestERC20 } from "../../lib/arbitrum-sdk/src/lib/abi/TestERC20";
 import { Erc20Bridger } from "../../lib/arbitrum-sdk/src";
+
 describe("Router e2e test", () => {
   let setup: TestSetup;
   let parentToChildRewardRouter: ParentToChildRewardRouter;
@@ -21,7 +22,7 @@ describe("Router e2e test", () => {
   let rewardDistributor: RewardDistributor;
   let testToken: TestERC20;
   let l2TokenAddress: string;
-
+  const noTokenAddress = "0x0000000000000000000000000000000000000001"
   const destination = "0x0000000000000000000000000000000000000002";
 
   before(async () => {
@@ -32,21 +33,21 @@ describe("Router e2e test", () => {
 
     await (await testToken.mint()).wait();
 
-    const erc20Bridger = new Erc20Bridger(setup.l2Network);
-    const depositRes = await erc20Bridger.deposit({
-      l1Signer: setup.l1Signer,
-      amount: BigNumber.from(1000),
-      l2Provider: setup.l2Provider,
+    // const erc20Bridger = new Erc20Bridger(setup.l2Network);
+    // const depositRes = await erc20Bridger.deposit({
+    //   l1Signer: setup.l1Signer,
+    //   amount: BigNumber.from(1000),
+    //   l2Provider: setup.l2Provider,
 
-      erc20L1Address: testToken.address,
-    });
-    const depositRec = await depositRes.wait();
-    const waitRes = await depositRec.waitForL2(setup.l2Signer);
+    //   erc20L1Address: testToken.address,
+    // });
+    // const depositRec = await depositRes.wait();
+    // const waitRes = await depositRec.waitForL2(setup.l2Signer);
 
-    l2TokenAddress = await erc20Bridger.getL2ERC20Address(
-      testToken.address,
-      setup.l1Provider
-    );
+    // l2TokenAddress = await erc20Bridger.getL2ERC20Address(
+    //   testToken.address,
+    //   setup.l1Provider
+    // );
 
     // deploy parent to child
     parentToChildRewardRouter = await new ParentToChildRewardRouter__factory(
@@ -59,15 +60,25 @@ describe("Router e2e test", () => {
       300000
     );
 
-    // deploy child to parent
-    childToParentRewardRouter = await new ChildToParentRewardRouter__factory(
+    // // deploy child to parent
+    // childToParentRewardRouter = await new ChildToParentRewardRouter__factory(
+    //   setup.l2Signer
+    // ).deploy(
+    //   parentToChildRewardRouter.address,
+    //   10,
+    //   testToken.address,
+    //   l2TokenAddress,
+    //   setup.l2Network.tokenBridge.l2GatewayRouter
+    // );
+
+        childToParentRewardRouter = await new ChildToParentRewardRouter__factory(
       setup.l2Signer
     ).deploy(
       parentToChildRewardRouter.address,
       10,
-      testToken.address,
-      l2TokenAddress,
-      setup.l2Network.tokenBridge.l2GatewayRouter
+      noTokenAddress,
+      noTokenAddress,
+      noTokenAddress
     );
 
     // deploy fund distributor
