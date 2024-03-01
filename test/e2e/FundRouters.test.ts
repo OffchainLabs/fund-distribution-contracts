@@ -43,9 +43,9 @@ describe("Router e2e test", () => {
       await setup.l2Signer.getBalance()
     );
 
+    ////////////////////////////////////////////////////////////////
 
-
-    //// Initial token deposit:
+    // Initial token deposit:
     const erc20Bridger = new Erc20Bridger(setup.l2Network);
 
     console.log("starting deposit");
@@ -57,27 +57,29 @@ describe("Router e2e test", () => {
     //     base: 3000000,
     //   },
     // };
-    console.log("depositing");
-
+    console.log("depositing:");
     const depositRes = await erc20Bridger.deposit({
       amount: BigNumber.from(1000),
       erc20L1Address: testToken.address,
       l1Signer: setup.l1Signer,
       l2Provider: setup.l2Provider,
     });
+    console.log(depositRes);
 
-
-    console.log("depsit res");
+    console.log("getting deposit receipt");
 
     const depositRec = await depositRes.wait();
-    console.log("depositrece", depositRec);
+    console.log(depositRec);
+
+    console.log("waiting for retryables");
 
     const waitRes = await depositRec.waitForL2(setup.l2Signer);
     l2TokenAddress = await erc20Bridger.getL2ERC20Address(
       testToken.address,
       setup.l1Provider
     );
-    ////
+
+    ////////////////////////////////////////////////////////////////
 
     // deploy parent to child
     console.log("Deploying parentToChildRewardRouter:");
