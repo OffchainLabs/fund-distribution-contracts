@@ -8,21 +8,21 @@ contract DeployScript is Script {
     function setUp() public {}
 
     function run() public {
-        address arbSepoliaInbox = 0xaAe29B0366299461418F5324a79Afc425BE5ae21;
+        address parentChainGatewayRouter = address(0xcE18836b233C83325Cc8848CA4487e94C6288264);
 
         // this is just an EOA:
         address arbSepoliaDestination = 0x7E43B9cE022f6127c739957550F94c64EC2A604A;
 
         uint256 minDistributionIntervalSeconds = 60;
         uint256 minGasPrice = 0.1 gwei;
-        uint minGasLimit = 100_000;
+        uint256 minGasLimit = 100_000;
         vm.startBroadcast();
         ParentToChildRewardRouter router = new ParentToChildRewardRouter({
-            _inbox: arbSepoliaInbox,
             _destination: arbSepoliaDestination,
             _minDistributionIntervalSeconds: minDistributionIntervalSeconds,
             _minGasPrice: minGasPrice,
-            _minGasLimit: minGasLimit
+            _minGasLimit: minGasLimit,
+            _parentChainGatewayRouter: IParentChainGatewayRouter(parentChainGatewayRouter)
         });
 
         console.log("Deployed ParentToChildRewardRouter onto Sepolia at");
