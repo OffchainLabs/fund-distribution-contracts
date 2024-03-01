@@ -188,7 +188,7 @@ describe("Router e2e test", () => {
         childToParentRewardRouter.address,
         0,
         0
-      ).redeemChildToParentMessages();
+      ).redeemChildToParentMessages(false, 100);
 
       // funds should be in parentToChildRewardRouter now
       expect(

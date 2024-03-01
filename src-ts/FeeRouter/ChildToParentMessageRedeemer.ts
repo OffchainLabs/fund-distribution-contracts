@@ -31,7 +31,7 @@ export default class ChildToParentMessageRedeemer {
     );
   }
 
-  public async redeemChildToParentMessages(oneOff = false) {
+  public async redeemChildToParentMessages(oneOff = false, l1l2MessageRetryInterval?: number) {
     const toBlock =
       (await this.childChainProvider.getBlockNumber()) - this.blockLag;
     const logs = await this.childChainProvider.getLogs({
@@ -72,7 +72,7 @@ export default class ChildToParentMessageRedeemer {
           console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`);
           await l2ToL1Message.waitUntilReadyToExecute(
             this.childChainProvider,
-            1000 * 60 * 30
+            l1l2MessageRetryInterval || 1000 * 60 * 30
           );
         }
 
