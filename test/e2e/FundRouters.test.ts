@@ -58,6 +58,10 @@ describe("Router e2e test", () => {
     //   },
     // };
     console.log("depositing:");
+    await (await erc20Bridger.approveToken({
+      erc20L1Address: testToken.address,
+      l1Signer: setup.l1Signer,
+    })).wait()
     const depositRes = await erc20Bridger.deposit({
       amount: BigNumber.from(1000),
       erc20L1Address: testToken.address,
