@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { TestSetup, testSetup } from "./testSetup";
-import { BigNumber, utils } from "ethers";
+import { BigNumber, utils, Wallet } from "ethers";
 import {
   ParentToChildRewardRouter__factory,
   ParentToChildRewardRouter,
@@ -13,7 +13,7 @@ import ChildToParentMessageRedeemer from "../../src-ts/FeeRouter/ChildToParentMe
 import { checkAndRouteFunds } from "../../src-ts/FeeRouter/checkAndRouteFunds";
 import { TestERC20__factory } from "../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory";
 import { TestERC20 } from "../../lib/arbitrum-sdk/src/lib/abi/TestERC20";
-import { Erc20Bridger } from "../../lib/arbitrum-sdk/src";
+import { Erc20Bridger, RetryableDataTools } from "../../lib/arbitrum-sdk/src";
 
 describe("Router e2e test", () => {
   let setup: TestSetup;
@@ -23,41 +23,61 @@ describe("Router e2e test", () => {
   let testToken: TestERC20;
   let l2TokenAddress: string;
   const noTokenAddress = "0x0000000000000000000000000000000000000001";
-  const destination = "0x0000000000000000000000000000000000000002";
+  const destination = Wallet.createRandom().address;
 
   before(async () => {
     setup = await testSetup();
 
-    // testToken = await new TestERC20__factory().connect(setup.l1Signer).deploy();
-    // await testToken.deployed();
+    testToken = await new TestERC20__factory().connect(setup.l1Signer).deploy();
+    await testToken.deployed();
 
-    // await (await testToken.mint()).wait();
+    await (await testToken.mint()).wait();
     console.log(
-      "using L1 wallet",
+      "using L1 wallet:",
       setup.l1Signer.address,
       await setup.l1Signer.getBalance()
     );
     console.log(
-      "using L2 wallet",
+      "using L2 wallet:",
       setup.l2Signer.address,
       await setup.l2Signer.getBalance()
     );
 
-    // const erc20Bridger = new Erc20Bridger(setup.l2Network);
-    // const depositRes = await erc20Bridger.deposit({
-    //   l1Signer: setup.l1Signer,
-    //   amount: BigNumber.from(1000),
-    //   l2Provider: setup.l2Provider,
 
-    //   erc20L1Address: testToken.address,
-    // });
-    // const depositRec = await depositRes.wait();
-    // const waitRes = await depositRec.waitForL2(setup.l2Signer);
 
-    // l2TokenAddress = await erc20Bridger.getL2ERC20Address(
-    //   testToken.address,
-    //   setup.l1Provider
-    // );
+    //// Initial token deposit:
+    const erc20Bridger = new Erc20Bridger(setup.l2Network);
+
+    console.log("starting deposit");
+    // const retryableOverrides = {
+    //   maxFeePerGas: {
+    //     base: utils.parseUnits("10", "gwei"),
+    //   },
+    //   gasLimit: {
+    //     base: 3000000,
+    //   },
+    // };
+    console.log("depositing");
+
+    const depositRes = await erc20Bridger.deposit({
+      amount: BigNumber.from(1000),
+      erc20L1Address: testToken.address,
+      l1Signer: setup.l1Signer,
+      l2Provider: setup.l2Provider,
+    });
+
+
+    console.log("depsit res");
+
+    const depositRec = await depositRes.wait();
+    console.log("depositrece", depositRec);
+
+    const waitRes = await depositRec.waitForL2(setup.l2Signer);
+    l2TokenAddress = await erc20Bridger.getL2ERC20Address(
+      testToken.address,
+      setup.l1Provider
+    );
+    ////
 
     // deploy parent to child
     console.log("Deploying parentToChildRewardRouter:");
@@ -114,7 +134,6 @@ describe("Router e2e test", () => {
   it("should have the correct network information", async () => {
     expect(setup.l1Network.chainID).to.eq(1337);
     expect(setup.l2Network.chainID).to.eq(412346);
-    expect(setup.l3Network.chainID).to.eq(333333);
   });
 
   describe("e2e eth routing test", async () => {
@@ -181,9 +200,9 @@ describe("Router e2e test", () => {
         parentToChildRewardRouter.address,
         BigNumber.from(0)
       );
-      expect((await setup.l2Provider.getBalance(destination)).toHexString()).to.eq(
-        ethValue.toHexString()
-      );
+      expect(
+        (await setup.l2Provider.getBalance(destination)).toHexString()
+      ).to.eq(ethValue.toHexString());
     });
   });
 });
