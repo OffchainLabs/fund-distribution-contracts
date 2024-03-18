@@ -34,7 +34,6 @@ error WrongMethod();
 
 error ZeroAddress();
 
-
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 /// @dev supports native currency and any number of arbitrary ERC20s.
 contract ParentToChildRewardRouter is DistributionInterval {
@@ -58,7 +57,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         uint256 _minGasPrice,
         uint256 _minGasLimit
     ) DistributionInterval(_minDistributionIntervalSeconds) {
-        if(_destination == address(0)){
+        if (_destination == address(0)) {
             revert ZeroAddress();
         }
         parentChainGatewayRouter = _parentChainGatewayRouter;
@@ -161,7 +160,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         // get gateway from gateway router
         address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddr));
         // approve amount on gateway, adding 1 so storage slot doesn't get set to 0, saving gas.
-        IERC20(parentChainTokenAddr).approve(gateway, amount +1);
+        IERC20(parentChainTokenAddr).approve(gateway, amount + 1);
 
         // encode max submission cost (and empty callhook data) for gateway router
         bytes memory _data = abi.encode(maxSubmissionCost, bytes(""));

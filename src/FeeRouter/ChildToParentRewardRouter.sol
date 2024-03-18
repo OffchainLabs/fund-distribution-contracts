@@ -54,7 +54,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
         address _childChainTokenAddress,
         address _childChainGatewayRouter
     ) DistributionInterval(_minDistributionIntervalSeconds) {
-        if(_parentChainTarget == address(0)){
+        if (_parentChainTarget == address(0)) {
             revert ZeroAddress();
         }
         parentChainTarget = _parentChainTarget;
@@ -109,7 +109,7 @@ contract ChildToParentRewardRouter is DistributionInterval {
         if (canDistribute(parentChainTokenAddress) && value > 0) {
             _updateDistribution(parentChainTokenAddress);
             // approve for transfer, adding 1 so storage slot doesn't get set to 0, saving gas.
-            IERC20(childChainTokenAddress).approve(gateway, value +1);
+            IERC20(childChainTokenAddress).approve(gateway, value + 1);
             childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, value, "");
             emit FundsRouted(parentChainTokenAddress, value);
         }
