@@ -45,6 +45,8 @@ contract ChildToParentRewardRouter is DistributionInterval {
 
     error NativeOnly();
 
+    error ZeroAddress();
+
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds,
@@ -52,6 +54,9 @@ contract ChildToParentRewardRouter is DistributionInterval {
         address _childChainTokenAddress,
         address _childChainGatewayRouter
     ) DistributionInterval(_minDistributionIntervalSeconds) {
+        if(_parentChainTarget == address(0)){
+            revert ZeroAddress();
+        }
         parentChainTarget = _parentChainTarget;
         parentChainTokenAddress = _parentChainTokenAddress;
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);

@@ -32,6 +32,9 @@ error NoFundsToDistribute();
 
 error WrongMethod();
 
+error ZeroAddress();
+
+
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 /// @dev supports native currency and any number of arbitrary ERC20s.
 contract ParentToChildRewardRouter is DistributionInterval {
@@ -55,6 +58,9 @@ contract ParentToChildRewardRouter is DistributionInterval {
         uint256 _minGasPrice,
         uint256 _minGasLimit
     ) DistributionInterval(_minDistributionIntervalSeconds) {
+        if(_destination == address(0)){
+            revert ZeroAddress();
+        }
         parentChainGatewayRouter = _parentChainGatewayRouter;
         inbox = IInbox(parentChainGatewayRouter.inbox());
         destination = _destination;
