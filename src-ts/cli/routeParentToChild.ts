@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet, utils } from "ethers";
-import { checkAndRouteFunds } from "../FeeRouter/ParentToChildRouter";
+import { checkAndRouteFunds } from "../FeeRouter/checkAndRouteFunds";
 
 dotenv.config();
 
@@ -16,10 +16,12 @@ const options = yargs(process.argv.slice(2))
   .options({
     parentRPCUrl: { type: "string", demandOption: true },
     childRPCUrl: { type: "string", demandOption: true },
+    ETHorTokenAddress: { type: "string", demandOption: true},
     parentToChildRewardRouterAddr: { type: "string", demandOption: true },
     minBalanceEther: { type: "number", demandOption: false, default: 0 },
   })
   .parseSync() as {
+  ETHorTokenAddress: string,
   parentRPCUrl: string;
   childRPCUrl: string;
   parentToChildRewardRouterAddr: string;
@@ -42,6 +44,7 @@ const options = yargs(process.argv.slice(2))
   console.log(`Signing with ${childChainSigner.address} on child chain 
   ${(await childChainSigner.provider.getNetwork()).chainId}'`);
   await checkAndRouteFunds(
+    options.ETHorTokenAddress,
     parentChildSigner,
     childChainSigner,
     options.parentToChildRewardRouterAddr,

@@ -8,24 +8,25 @@ contract DeployScript is Script {
     function setUp() public {}
 
     function run() public {
-        address parentChainGatewayRouter = address(0xcE18836b233C83325Cc8848CA4487e94C6288264);
+        // on L1:
+        address parentChainGatewayRouter = address(0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef);
 
-        // this is just an EOA:
-        address arbSepoliaDestination = 0x7E43B9cE022f6127c739957550F94c64EC2A604A;
+        // on Arb One:
+        address daoTreasuryTimelock = 0xbFc1FECa8B09A5c5D3EFfE7429eBE24b9c09EF58;
 
-        uint256 minDistributionIntervalSeconds = 60;
+        uint256 minDistributionIntervalSeconds = 7 days;
         uint256 minGasPrice = 0.1 gwei;
-        uint256 minGasLimit = 100_000;
+        uint256 minGasLimit = 120_000;
         vm.startBroadcast();
         ParentToChildRewardRouter router = new ParentToChildRewardRouter({
-            _destination: arbSepoliaDestination,
+            _parentChainGatewayRouter: IParentChainGatewayRouter(parentChainGatewayRouter),
+            _destination: daoTreasuryTimelock,
             _minDistributionIntervalSeconds: minDistributionIntervalSeconds,
             _minGasPrice: minGasPrice,
-            _minGasLimit: minGasLimit,
-            _parentChainGatewayRouter: IParentChainGatewayRouter(parentChainGatewayRouter)
+            _minGasLimit: minGasLimit
         });
 
-        console.log("Deployed ParentToChildRewardRouter onto Sepolia at");
+        console.log("Deployed ParentToChildRewardRouter onto Ethereum at");
         console.log(address(router));
         vm.stopBroadcast();
     }

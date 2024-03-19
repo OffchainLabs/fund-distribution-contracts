@@ -4,31 +4,34 @@ import {
   ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
 } from "../../typechain-types";
-import { L2ToL1TxEvent } from "@arbitrum/sdk/dist/lib/abi/ArbSys";
-import { EventArgs } from "@arbitrum/sdk/dist/lib/dataEntities/event";
+import { L2ToL1TxEvent } from "../../lib/arbitrum-sdk/src/lib/abi/ArbSys";
+import { EventArgs } from "../../lib/arbitrum-sdk/src/lib/dataEntities/event";
 
 import {
   L2TransactionReceipt,
   L2ToL1Message,
   L2ToL1MessageStatus,
-} from "@arbitrum/sdk";
+} from "../../lib/arbitrum-sdk/src";
 const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export default class ChildToParentMessageRedeemer {
   public startBlock: number;
   public childToParentRewardRouter: ChildToParentRewardRouter;
+  public readonly retryDelay: number;
   constructor(
     public readonly childChainProvider: JsonRpcProvider,
     public readonly parentChainSigner: Wallet,
     public readonly childToParentRewardRouterAddr: string,
     public readonly blockLag: number,
-    initialStartBlock: number
+    initialStartBlock: number,
+    retryDelay = 1000 * 60 * 10
   ) {
     this.startBlock = initialStartBlock;
     this.childToParentRewardRouter = ChildToParentRewardRouter__factory.connect(
       childToParentRewardRouterAddr,
       childChainProvider
     );
+    this.retryDelay = retryDelay;
   }
 
   public async redeemChildToParentMessages(oneOff = false) {
@@ -49,18 +52,11 @@ export default class ChildToParentMessageRedeemer {
       const arbTransactionRec = new L2TransactionReceipt(
         await this.childChainProvider.getTransactionReceipt(log.transactionHash)
       );
-      const l2ToL1Events = (
-        (await arbTransactionRec.getL2ToL1Events()) as EventArgs<L2ToL1TxEvent>[]
-      )
-        // Filter out any other L2 to L1 messages initiated in this transaction
-        .filter(
-          (l2ToL1Event) =>
-            l2ToL1Event.caller.toLowerCase() ===
-            this.childToParentRewardRouter.address.toLowerCase()
-        );
-      // sanity check
-      if (l2ToL1Events.length === 0) {
-        throw new Error("Impossible result: L2 to L1 msg not found");
+      let l2ToL1Events =
+        (await arbTransactionRec.getL2ToL1Events()) as EventArgs<L2ToL1TxEvent>[];
+
+      if (l2ToL1Events.length != 1) {
+        throw new Error("Only 1 l2 to l1 message per tx supported");
       }
 
       for (let l2ToL1Event of l2ToL1Events) {
@@ -72,7 +68,7 @@ export default class ChildToParentMessageRedeemer {
           console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`);
           await l2ToL1Message.waitUntilReadyToExecute(
             this.childChainProvider,
-            1000 * 60 * 30
+            this.retryDelay
           );
         }
 
