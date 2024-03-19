@@ -6,6 +6,7 @@
   "author": "dzgoldman",
   "license": "MIT",
   "scripts": {
+    "distribute": "ts-node ./src-ts/cli/distributeRewards.ts",
     "prepare": "forge install && cd lib/arbitrum-sdk && yarn",
     "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts",
     "test:e2e": "./test/e2e/test-e2e.bash"

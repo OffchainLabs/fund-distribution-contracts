@@ -32,6 +32,7 @@ const main = async () => {
     }
     recAndWeightsJsonData.push({
       chain: chain.name,
+      chainId: chain.id,
       feeType: feeType,
       address,
       ...recAndWeightData,
