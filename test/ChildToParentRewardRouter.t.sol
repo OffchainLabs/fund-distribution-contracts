@@ -48,7 +48,7 @@ contract ChildToParentRewardRouterTest is Test {
     }
 
     function testCantRouteTokensWhenSetToNativeOnly() external {
-        vm.expectRevert(abi.encodeWithSelector(ChildToParentRewardRouter.NativeOnly.selector));
+        vm.expectRevert(abi.encodeWithSelector(BaseChildToParentRewardRouter.NativeOnly.selector));
         childToParentRewardRouter.routeToken();
     }
 }
