@@ -69,6 +69,10 @@ abstract contract BaseChildToParentRewardRouter is DistributionInterval {
         }
     }
 
+    /// @notice Send native funds to parentChainTarget
+    /// @dev    This function should NEVER revert
     function _sendNative(uint256 amount) internal virtual;
+
+    /// @notice Send token funds to parentChainTarget
     function _sendToken(uint256 amount) internal virtual;
 }
