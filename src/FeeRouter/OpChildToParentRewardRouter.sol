@@ -6,6 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "./ChildToParentRewardRouter.sol";
 
 interface IOpStandardBridge {
+    function MESSENGER() external view returns (address);
     function bridgeETHTo(address _to, uint32 _minGasLimit, bytes calldata _extraData) external payable;
     function bridgeERC20To(
         address _localToken,
@@ -19,14 +20,15 @@ interface IOpStandardBridge {
 
 /// @notice Child to Parent Reward Router deployed to OP Stack chains
 contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
-    IOpStandardBridge public immutable opStandardBridge;
+    IOpStandardBridge public constant opStandardBridge = IOpStandardBridge(0x4200000000000000000000000000000000000010);
+
+    error NotOpStack();
 
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds,
         address _parentChainTokenAddress,
-        address _childChainTokenAddress,
-        address _opStandardBridge
+        address _childChainTokenAddress
     )
         ChildToParentRewardRouter(
             _parentChainTarget,
@@ -35,7 +37,9 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
             _childChainTokenAddress
         )
     {
-        opStandardBridge = IOpStandardBridge(_opStandardBridge);
+        if (opStandardBridge.MESSENGER() != 0x4200000000000000000000000000000000000007) {
+            revert NotOpStack();
+        }
     }
 
     function _sendNative(uint256 amount) internal override {
