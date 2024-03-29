@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
-import "../src/FeeRouter/ChildToParentRewardRouter.sol";
+import "../src/FeeRouter/ArbChildToParentRewardRouter.sol";
 import "./util/ArbSysMock.sol";
 import "./Empty.sol";
 
@@ -17,7 +17,7 @@ contract ChildToParentRewardRouterTest is Test {
     function setUp() public {
         vm.etch(address(100), address(new ArbSysMock()).code);
         vm.deal(address(me), 10 ether);
-        childToParentRewardRouter = new ChildToParentRewardRouter(
+        childToParentRewardRouter = new ArbChildToParentRewardRouter(
             address(1111_2), minDistributionIntervalSeconds, address(1), address(1), address(1)
         );
     }
@@ -48,7 +48,7 @@ contract ChildToParentRewardRouterTest is Test {
     }
 
     function testCantRouteTokensWhenSetToNativeOnly() external {
-        vm.expectRevert(abi.encodeWithSelector(BaseChildToParentRewardRouter.NativeOnly.selector));
+        vm.expectRevert(abi.encodeWithSelector(ChildToParentRewardRouter.NativeOnly.selector));
         childToParentRewardRouter.routeToken();
     }
 }

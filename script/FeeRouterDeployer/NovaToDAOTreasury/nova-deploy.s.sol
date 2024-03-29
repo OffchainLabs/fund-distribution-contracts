@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 
 import "forge-std/Script.sol";
-import "../../../src/FeeRouter/ChildToParentRewardRouter.sol";
+import "../../../src/FeeRouter/ArbChildToParentRewardRouter.sol";
 
 contract DeployScript is Script {
     function run() public {
@@ -11,7 +11,7 @@ contract DeployScript is Script {
         uint256 minDistributionIntervalSeconds = 7 days;
 
         vm.startBroadcast();
-        ChildToParentRewardRouter router = new ChildToParentRewardRouter({
+        ChildToParentRewardRouter router = new ArbChildToParentRewardRouter({
             _parentChainTarget: parentChainTarget,
             _minDistributionIntervalSeconds: minDistributionIntervalSeconds,
             _parentChainTokenAddress: address(1),

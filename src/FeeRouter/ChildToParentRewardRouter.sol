@@ -3,76 +3,76 @@ pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "./BaseChildToParentRewardRouter.sol";
 
-interface IArbSys {
-    function withdrawEth(address destination) external payable returns (uint256);
-}
+/// @notice Receives native funds and a single ERC20 funds (set on deployment) and sends them to a target contract on its parent chain.
+///         Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
+///         (creating many small values messages that each need to be executed on the parent chain).
+///         A send is automatically attempted when native funds are receieved in the receive function.
+/// @dev    For native only (i.e., no token), deploy with parentChainTokenAddress and childChainTokenAddress == address(1).
+abstract contract ChildToParentRewardRouter is DistributionInterval {
+    // contract on this chain's parent chain funds (native and token) get routed to
+    address public immutable parentChainTarget;
+    // address of token on parent chain; set to address(1) for only-native support.
+    address public immutable parentChainTokenAddress;
+    // address of token on this chain
+    address public immutable childChainTokenAddress;
 
-interface IChildChainGatewayRouter {
-    function outboundTransfer(address _parentChainTokenAddress, address _to, uint256 _amount, bytes calldata _data)
-        external
-        payable
-        returns (bytes memory);
+    event FundsRouted(address indexed token, uint256 amount);
 
-    function getGateway(address _parentChainTokenAddress) external view returns (address gateway);
+    error NativeOnly();
 
-    // outdated name; read this as "calculateChildChainTokenAddress"
-    function calculateL2TokenAddress(address _parentChainTokenAddress) external returns (address);
-}
-
-/// @notice Child to Parent Reward Router deployed to Arbitrum chains
-contract ChildToParentRewardRouter is BaseChildToParentRewardRouter {
-    // address of gateway router on this chain
-    IChildChainGatewayRouter public immutable childChainGatewayRouter;
-
-    error TokenDisabled(address tokenAddr);
-
-    error TokenNotRegisteredToGateway(address tokenAddr);
+    error ZeroAddress();
 
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds,
         address _parentChainTokenAddress,
-        address _childChainTokenAddress,
-        address _childChainGatewayRouter
-    )
-        BaseChildToParentRewardRouter(
-            _parentChainTarget,
-            _minDistributionIntervalSeconds,
-            _parentChainTokenAddress,
-            _childChainTokenAddress
-        )
-    {
-        childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
+        address _childChainTokenAddress
+    ) DistributionInterval(_minDistributionIntervalSeconds) {
+        if (_parentChainTarget == address(0)) {
+            revert ZeroAddress();
+        }
+        parentChainTarget = _parentChainTarget;
+        parentChainTokenAddress = _parentChainTokenAddress;
+        childChainTokenAddress = _childChainTokenAddress;
+    }
 
-        // If a token is enabled, include token sanity checks
-        if (_parentChainTokenAddress != address(1)) {
-            // note that _childChainTokenAddress can be retrieved from _parentChainTokenAddress, but we
-            // require it as a parameter as an additional sanity check
-            address calculatedChildChainTokenAddress =
-                childChainGatewayRouter.calculateL2TokenAddress(_parentChainTokenAddress);
-            if (_childChainTokenAddress != calculatedChildChainTokenAddress) {
-                revert TokenNotRegisteredToGateway(_parentChainTokenAddress);
-            }
-            // check if token is disabled
-            address gateway = childChainGatewayRouter.getGateway(_parentChainTokenAddress);
+    /// @dev This receive function should NEVER revert
+    receive() external payable {
+        // automatically attempt to send native funds upon receiving
+        routeNativeFunds();
+    }
 
-            if (gateway == address(0)) {
-                revert TokenDisabled(_parentChainTokenAddress);
-            }
+    /// @notice send all native funds in this contract to target contract on parent chain via L2 to L1 message
+    function routeNativeFunds() public {
+        uint256 value = address(this).balance;
+        // if distributing too soon, or there's no value to distribute, skip withdrawal (but don't revert)
+        if (canDistribute(NATIVE_CURRENCY) && value > 0) {
+            _updateDistribution(NATIVE_CURRENCY);
+            _sendNative(value);
+            emit FundsRouted(NATIVE_CURRENCY, value);
         }
     }
 
-    function _sendNative(uint256 amount) internal override {
-        IArbSys(address(100)).withdrawEth{value: amount}(parentChainTarget);
+    /// @notice withdraw full token balance to parentChainTarget; only callable once per distribution interval
+    function routeToken() public {
+        // revert if contract deployed to be native-only
+        if (parentChainTokenAddress == address(1)) {
+            revert NativeOnly();
+        }
+        uint256 value = IERC20(childChainTokenAddress).balanceOf(address(this));
+        // get gateway from gateway router
+        if (canDistribute(parentChainTokenAddress) && value > 0) {
+            _updateDistribution(parentChainTokenAddress);
+            _sendToken(value);
+            emit FundsRouted(parentChainTokenAddress, value);
+        }
     }
 
-    function _sendToken(uint256 amount) internal override {
-        // get gateway from gateway router
-        address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
-        // approve for transfer, adding 1 so storage slot doesn't get set to 0, saving gas.
-        IERC20(childChainTokenAddress).approve(gateway, amount + 1);
-        childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, amount, "");
-    }
+    /// @notice Send native funds to parentChainTarget
+    /// @dev    This function should NEVER revert
+    function _sendNative(uint256 amount) internal virtual;
+
+    /// @notice Send token funds to parentChainTarget
+    function _sendToken(uint256 amount) internal virtual;
 }

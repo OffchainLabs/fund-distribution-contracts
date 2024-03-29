@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "./BaseChildToParentRewardRouter.sol";
+import "./ChildToParentRewardRouter.sol";
 
 interface IOpStandardBridge {
     function bridgeETHTo(address _to, uint32 _minGasLimit, bytes calldata _extraData) external payable;
@@ -18,7 +18,7 @@ interface IOpStandardBridge {
 }
 
 /// @notice Child to Parent Reward Router deployed to OP Stack chains
-contract OpChildToParentRewardRouter is BaseChildToParentRewardRouter {
+contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
     IOpStandardBridge public immutable opStandardBridge;
 
     constructor(
@@ -28,7 +28,7 @@ contract OpChildToParentRewardRouter is BaseChildToParentRewardRouter {
         address _childChainTokenAddress,
         address _opStandardBridge
     )
-        BaseChildToParentRewardRouter(
+        ChildToParentRewardRouter(
             _parentChainTarget,
             _minDistributionIntervalSeconds,
             _parentChainTokenAddress,
