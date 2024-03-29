@@ -37,7 +37,9 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
             _childChainTokenAddress
         )
     {
-        if (opStandardBridge.MESSENGER() != 0x4200000000000000000000000000000000000007) {
+        // ensure this is an OP Stack chain
+        (bool success, bytes memory data) = address(opStandardBridge).staticcall(abi.encodeWithSignature("MESSENGER()"));
+        if (!success || data.length != 32 || abi.decode(data, (address)) != 0x4200000000000000000000000000000000000007) {
             revert NotOpStack();
         }
     }

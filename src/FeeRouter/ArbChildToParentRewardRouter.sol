@@ -30,6 +30,8 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
 
     error TokenNotRegisteredToGateway(address tokenAddr);
 
+    error NotArbitrum();
+
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds,
@@ -45,6 +47,12 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
         )
     {
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
+
+        // ensure this is an Arbitrum chain
+        (bool success, bytes memory data) = address(100).staticcall(abi.encodeWithSignature("arbOSVersion()"));
+        if (!success || data.length != 32 || abi.decode(data, (uint256)) == 0) {
+            revert NotArbitrum();
+        }
 
         // If a token is enabled, include token sanity checks
         if (_parentChainTokenAddress != address(1)) {
