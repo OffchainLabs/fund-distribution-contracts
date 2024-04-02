@@ -8,6 +8,7 @@ import {
   ChildToParentRewardRouter,
   RewardDistributor__factory,
   RewardDistributor,
+  ArbChildToParentRewardRouter__factory,
 } from "../../typechain-types";
 import ChildToParentMessageRedeemer from "../../src-ts/FeeRouter/ChildToParentMessageRedeemer";
 import { checkAndRouteFunds } from "../../src-ts/FeeRouter/checkAndRouteFunds";
@@ -95,7 +96,7 @@ describe("Router e2e test", () => {
     console.log("Deploying childToParentRewardRouter:");
 
     // deploy child to parent
-    childToParentRewardRouter = await new ChildToParentRewardRouter__factory(
+    childToParentRewardRouter = await new ArbChildToParentRewardRouter__factory(
       setup.l2Signer
     ).deploy(
       parentToChildRewardRouter.address,

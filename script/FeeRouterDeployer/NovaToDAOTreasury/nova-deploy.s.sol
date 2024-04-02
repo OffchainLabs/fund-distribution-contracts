@@ -11,14 +11,14 @@ contract DeployScript is Script {
         uint256 minDistributionIntervalSeconds = 7 days;
 
         vm.startBroadcast();
-        ChildToParentRewardRouter router = new ArbChildToParentRewardRouter({
+        ArbChildToParentRewardRouter router = new ArbChildToParentRewardRouter({
             _parentChainTarget: parentChainTarget,
             _minDistributionIntervalSeconds: minDistributionIntervalSeconds,
             _parentChainTokenAddress: address(1),
              _childChainTokenAddress: address(1),
             _childChainGatewayRouter: address(1)
         });
-        console.log("Deployed ChildToParentRewardRouter onto nova at");
+        console.log("Deployed ArbChildToParentRewardRouter onto nova at");
         console.log(address(router));
         vm.stopBroadcast();
     }
