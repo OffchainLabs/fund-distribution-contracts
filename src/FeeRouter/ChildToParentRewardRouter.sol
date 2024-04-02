@@ -29,7 +29,10 @@ abstract contract ChildToParentRewardRouter is DistributionInterval {
         address _parentChainTokenAddress,
         address _childChainTokenAddress
     ) DistributionInterval(_minDistributionIntervalSeconds) {
-        if (_parentChainTarget == address(0)) {
+        if (
+            _parentChainTarget == address(0) || _parentChainTokenAddress == address(0)
+                || _childChainTokenAddress == address(0)
+        ) {
             revert ZeroAddress();
         }
         parentChainTarget = _parentChainTarget;

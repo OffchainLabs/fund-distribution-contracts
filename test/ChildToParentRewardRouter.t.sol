@@ -7,7 +7,7 @@ import "./Empty.sol";
 
 import "forge-std/Test.sol";
 
-contract MockChildToParentRewardRouter is ChildToParentRewardRouter {
+contract TestChildToParentRewardRouter is ChildToParentRewardRouter {
     constructor(
         address _parentChainTarget,
         uint256 _minDistributionIntervalSeconds,
@@ -35,8 +35,8 @@ contract ChildToParentRewardRouterTest is Test {
     address parentToken = address(0x202020);
     TestToken token;
     address me = address(111_1);
-    MockChildToParentRewardRouter childToParentRewardRouter;
-    MockChildToParentRewardRouter nativeOnlyChildToParentRewardRouter;
+    TestChildToParentRewardRouter childToParentRewardRouter;
+    TestChildToParentRewardRouter nativeOnlyChildToParentRewardRouter;
     uint256 minDistributionIntervalSeconds = 20;
 
     function setUp() public {
@@ -45,12 +45,21 @@ contract ChildToParentRewardRouterTest is Test {
         vm.prank(me);
         token = new TestToken(100 ether);
 
-        childToParentRewardRouter = new MockChildToParentRewardRouter(
+        childToParentRewardRouter = new TestChildToParentRewardRouter(
             address(1111_2), minDistributionIntervalSeconds, parentToken, address(token)
         );
-        nativeOnlyChildToParentRewardRouter = new MockChildToParentRewardRouter(
+        nativeOnlyChildToParentRewardRouter = new TestChildToParentRewardRouter(
             address(1111_3), minDistributionIntervalSeconds, address(1), address(1)
         );
+    }
+
+    function testZeroAddressConstructorCheck() public {
+        vm.expectRevert(abi.encodeWithSelector(ChildToParentRewardRouter.ZeroAddress.selector));
+        new TestChildToParentRewardRouter(address(0), minDistributionIntervalSeconds, parentToken, address(token));
+        vm.expectRevert(abi.encodeWithSelector(ChildToParentRewardRouter.ZeroAddress.selector));
+        new TestChildToParentRewardRouter(address(1111_2), minDistributionIntervalSeconds, address(0), address(token));
+        vm.expectRevert(abi.encodeWithSelector(ChildToParentRewardRouter.ZeroAddress.selector));
+        new TestChildToParentRewardRouter(address(1111_2), minDistributionIntervalSeconds, parentToken, address(0));
     }
 
     function testRouteNativeFunds() external {
