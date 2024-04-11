@@ -15,11 +15,7 @@ const options = yargs(process.argv.slice(2))
     rewardDistAddr: { type: "string", demandOption: true },
     minBalanceEther: { type: "number", demandOption: false, default: 0 },
   })
-  .parseSync() as {
-  rpcURL: string;
-  rewardDistAddr: string;
-  minBalanceEther: number;
-};
+  .parseSync();
 
 (async () => {
   await distributeRewards(
