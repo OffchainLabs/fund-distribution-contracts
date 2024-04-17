@@ -25,14 +25,7 @@ const options = yargs(process.argv.slice(2))
         "Runs continuously if false, runs once and terminates if true",
     },
   })
-  .parseSync() as {
-  parentRPCUrl: string;
-  childRPCUrl: string;
-  childToParentRewardRouterAddr: string;
-  blockLag: number;
-  childChainStartBlock: number;
-  oneOff: boolean;
-};
+  .parseSync();
 
 (async () => {
   const parentChildSigner = new Wallet(

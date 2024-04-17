@@ -20,13 +20,7 @@ const options = yargs(process.argv.slice(2))
     parentToChildRewardRouterAddr: { type: "string", demandOption: true },
     minBalanceEther: { type: "number", demandOption: false, default: 0 },
   })
-  .parseSync() as {
-  ETHorTokenAddress: string,
-  parentRPCUrl: string;
-  childRPCUrl: string;
-  parentToChildRewardRouterAddr: string;
-  minBalanceEther: number;
-};
+  .parseSync();
 
 (async () => {
   const parentChildSigner = new Wallet(
