@@ -96,7 +96,7 @@ contract ArbChildToParentRewardRouterTest is Test {
         token.transfer(address(childToParentRewardRouter), 2*amount);
 
         vm.expectEmit(true, true, false, true, address(token));
-        emit IERC20.Approval(address(childToParentRewardRouter), address(gateway), amount + 1);
+        emit IERC20.Approval(address(childToParentRewardRouter), address(gateway), amount);
         vm.expectEmit(true, false, false, true, address(gatewayRouter));
         emit ChildToParentGatewayRouterMock.OutboundTransfer(parentToken, parentTarget, amount, "");
         childToParentRewardRouter.triggerSendToken(amount);

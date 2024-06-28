@@ -72,7 +72,7 @@ contract OpChildToParentRewardRouterTest is Test {
         token.transfer(address(childToParentRewardRouter), 2*amount);
 
         vm.expectEmit(true, true, false, true, address(token));
-        emit IERC20.Approval(address(childToParentRewardRouter), 0x4200000000000000000000000000000000000010, amount + 1);
+        emit IERC20.Approval(address(childToParentRewardRouter), 0x4200000000000000000000000000000000000010, amount);
         vm.expectEmit(false, false, false, true, 0x4200000000000000000000000000000000000010);
         emit OpStandardBridgeMock.BridgeERC20To(address(token), parentToken, parentTarget, amount, 0, "");
         childToParentRewardRouter.triggerSendToken(amount);

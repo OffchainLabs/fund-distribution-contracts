@@ -79,8 +79,8 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
     function _sendToken(uint256 amount) internal override {
         // get gateway from gateway router
         address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
-        // approve for transfer, adding 1 so storage slot doesn't get set to 0, saving gas.
-        IERC20(childChainTokenAddress).approve(gateway, amount + 1);
+        // approve for transfer
+        IERC20(childChainTokenAddress).approve(gateway, amount);
         childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, amount, "");
     }
 }
