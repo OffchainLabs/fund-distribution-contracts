@@ -159,8 +159,8 @@ contract ParentToChildRewardRouter is DistributionInterval {
         _updateDistribution(parentChainTokenAddr);
         // get gateway from gateway router
         address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddr));
-        // approve amount on gateway, adding 1 so storage slot doesn't get set to 0, saving gas.
-        IERC20(parentChainTokenAddr).approve(gateway, amount + 1);
+        // approve amount on gateway
+        IERC20(parentChainTokenAddr).approve(gateway, amount);
 
         // encode max submission cost (and empty callhook data) for gateway router
         bytes memory _data = abi.encode(maxSubmissionCost, bytes(""));
