@@ -19,4 +19,8 @@ contract ArbSysMock {
         emit ArbSysL2ToL1Tx(msg.sender, destination, msg.value, "");
         return exitNum;
     }
+
+    function arbOSVersion() external pure returns (uint256) {
+        return 1;
+    }
 }
