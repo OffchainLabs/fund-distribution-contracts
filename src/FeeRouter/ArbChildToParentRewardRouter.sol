@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ChildToParentRewardRouter.sol";
 
 interface IArbSys {
@@ -23,6 +23,8 @@ interface IChildChainGatewayRouter {
 
 /// @notice Child to Parent Reward Router deployed to Arbitrum chains
 contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
+    using SafeERC20 for IERC20;
+
     // address of gateway router on this chain
     IChildChainGatewayRouter public immutable childChainGatewayRouter;
 
@@ -80,7 +82,7 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
         // get gateway from gateway router
         address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
         // approve for transfer
-        IERC20(childChainTokenAddress).approve(gateway, amount);
+        IERC20(childChainTokenAddress).safeApprove(gateway, amount);
         childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, amount, "");
     }
 }

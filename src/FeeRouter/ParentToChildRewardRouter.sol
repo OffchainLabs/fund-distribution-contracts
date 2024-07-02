@@ -5,7 +5,7 @@ import "./DistributionInterval.sol";
 import "nitro-contracts/src/libraries/AddressAliasHelper.sol";
 import "nitro-contracts/src/bridge/IInbox.sol";
 import "openzeppelin-contracts/contracts/utils/Address.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IParentChainGatewayRouter {
     function outboundTransferCustomRefund(
@@ -37,6 +37,8 @@ error ZeroAddress();
 /// @notice Accepts funds on a parent chain and routes them to a target contract on a target Arbitrum chain.
 /// @dev supports native currency and any number of arbitrary ERC20s.
 contract ParentToChildRewardRouter is DistributionInterval {
+    using SafeERC20 for IERC20;
+    
     // inbox of target Arbitrum child chain
     IInbox public immutable inbox;
     // Receiving address of funds on target Arbitrum chain
@@ -160,7 +162,7 @@ contract ParentToChildRewardRouter is DistributionInterval {
         // get gateway from gateway router
         address gateway = parentChainGatewayRouter.getGateway(address(parentChainTokenAddr));
         // approve amount on gateway
-        IERC20(parentChainTokenAddr).approve(gateway, amount);
+        IERC20(parentChainTokenAddr).safeApprove(gateway, amount);
 
         // encode max submission cost (and empty callhook data) for gateway router
         bytes memory _data = abi.encode(maxSubmissionCost, bytes(""));

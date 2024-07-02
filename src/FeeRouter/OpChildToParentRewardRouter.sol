@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ChildToParentRewardRouter.sol";
 
 interface IOpStandardBridge {
@@ -20,6 +20,8 @@ interface IOpStandardBridge {
 
 /// @notice Child to Parent Reward Router deployed to OP Stack chains
 contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
+    using SafeERC20 for IERC20;
+    
     IOpStandardBridge public constant opStandardBridge = IOpStandardBridge(0x4200000000000000000000000000000000000010);
 
     error NotOpStack();
@@ -52,7 +54,7 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
     function _sendToken(uint256 amount) internal override {
         // approve for transfer
         // (not actually necessary for non-native tokens)
-        IERC20(childChainTokenAddress).approve(address(opStandardBridge), amount);
+        IERC20(childChainTokenAddress).safeApprove(address(opStandardBridge), amount);
 
         opStandardBridge.bridgeERC20To(
             childChainTokenAddress, parentChainTokenAddress, parentChainTarget, amount, 0, ""
