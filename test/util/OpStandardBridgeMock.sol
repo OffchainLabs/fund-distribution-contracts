@@ -5,11 +5,14 @@ contract OpStandardBridgeMock {
     address public constant MESSENGER = 0x4200000000000000000000000000000000000007;
 
     event BridgeEthTo(address to, uint256 amount, uint32 minGasLimit, bytes extraData);
-    event BridgeERC20To(address localToken, address remoteToken, address to, uint256 amount, uint32 minGasLimit, bytes extraData);
+    event BridgeERC20To(
+        address localToken, address remoteToken, address to, uint256 amount, uint32 minGasLimit, bytes extraData
+    );
 
     function bridgeETHTo(address _to, uint32 _minGasLimit, bytes calldata _extraData) external payable {
         emit BridgeEthTo(_to, msg.value, _minGasLimit, _extraData);
     }
+
     function bridgeERC20To(
         address _localToken,
         address _remoteToken,

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
-
 import "forge-std/Script.sol";
 import "../../../src/FeeRouter/ArbChildToParentRewardRouter.sol";
 
@@ -15,7 +14,7 @@ contract DeployScript is Script {
             _parentChainTarget: parentChainTarget,
             _minDistributionIntervalSeconds: minDistributionIntervalSeconds,
             _parentChainTokenAddress: address(1),
-             _childChainTokenAddress: address(1),
+            _childChainTokenAddress: address(1),
             _childChainGatewayRouter: address(1)
         });
         console.log("Deployed ArbChildToParentRewardRouter onto nova at");
