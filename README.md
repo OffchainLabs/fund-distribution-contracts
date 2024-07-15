@@ -1,6 +1,6 @@
 # Fund Distribution Contracts
 
-
+A set of smart contracts that handle fund distribution across multiple chains.
 
 ## Reward Distributor
 
