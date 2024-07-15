@@ -41,7 +41,7 @@ contract RewardDistributorTest is Test {
         return recps;
     }
 
-    function makeRecipientWeights(uint256 count) private returns (uint256[] memory) {
+    function makeRecipientWeights(uint256 count) private pure returns (uint256[] memory) {
         uint256[] memory weig = new uint256[](count);
         if (count == 0) {
             return weig;

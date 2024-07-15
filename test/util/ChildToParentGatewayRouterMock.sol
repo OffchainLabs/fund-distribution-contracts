@@ -20,5 +20,6 @@ contract ChildToParentGatewayRouterMock {
         returns (bytes memory)
     {
         emit OutboundTransfer(token, to, amount, data);
+        return bytes("");
     }
 }

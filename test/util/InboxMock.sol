@@ -5,14 +5,14 @@ contract InboxMock {
     uint256 public msgNum = 0;
 
     function unsafeCreateRetryableTicket(
-        address to,
-        uint256 l2CallValue,
-        uint256 maxSubmissionCost,
-        address excessFeeRefundAddress,
-        address callValueRefundAddress,
-        uint256 gasLimit,
-        uint256 maxFeePerGas,
-        bytes calldata data
+        address, // to,
+        uint256, // l2CallValue,
+        uint256, // maxSubmissionCost,
+        address, // excessFeeRefundAddress,
+        address, // callValueRefundAddress,
+        uint256, // gasLimit,
+        uint256, // maxFeePerGas,
+        bytes calldata // data
     ) external payable returns (uint256) {
         return msgNum++;
     }
