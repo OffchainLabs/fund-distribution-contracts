@@ -398,7 +398,7 @@ contract RewardDistributorTest is Test {
         assertEq(actual, expected, "incorrect max recipients hash");
     }
 
-    function testUncheckedInc() public {
+    function testUncheckedInc() pure public {
         uint256 expected;
         uint256 actual;
 

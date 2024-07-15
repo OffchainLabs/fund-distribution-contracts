@@ -156,7 +156,7 @@ contract ChildToParentRewardRouterTest is Test {
         _assertDistribution(native, 0, true, block.timestamp - minDistributionIntervalSeconds);
     }
 
-    function _assertDistribution(address addr, uint256 timeToNext, bool canDistribute, uint256 next) internal {
+    function _assertDistribution(address addr, uint256 timeToNext, bool canDistribute, uint256 next) view internal  {
         assertEq(childToParentRewardRouter.timeToNextDistribution(addr), timeToNext, "time to next distribution");
         assertEq(childToParentRewardRouter.canDistribute(addr), canDistribute, "can distribute");
         assertEq(childToParentRewardRouter.nextDistributions(addr), next, "next distribution time");
