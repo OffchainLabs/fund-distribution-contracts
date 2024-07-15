@@ -40,9 +40,9 @@ contract OpChildToParentRewardRouterTest is Test {
     TestOpChildToParentRewardRouter childToParentRewardRouter;
     uint256 minDistributionIntervalSeconds = 20;
 
-    event Approval(address, address, uint256);
-    event BridgeEthTo(address, uint64, uint64, bytes);
-    event BridgeERC20To(address, address, address, uint256, uint256, bytes);
+    event Approval(address indexed, address indexed, uint256);
+    event BridgeEthTo(address, uint256, uint32, bytes);
+    event BridgeERC20To(address, address, address, uint256, uint32, bytes);
 
     function setUp() public {
         vm.deal(me, 10 ether);

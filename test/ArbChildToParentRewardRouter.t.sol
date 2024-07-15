@@ -46,7 +46,7 @@ contract ArbChildToParentRewardRouterTest is Test {
     uint256 minDistributionIntervalSeconds = 20;
 
     event ArbSysL2ToL1Tx(address from, address to, uint256 value, bytes indexed data);
-    event Approval(address, address, uint256);
+    event Approval(address indexed, address indexed, uint256);
     event OutboundTransfer(address token, address to, uint256 amount, bytes data);
 
     function setUp() public {
