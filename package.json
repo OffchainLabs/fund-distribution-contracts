@@ -28,6 +28,7 @@
     "route-parent-to-child": "ts-node src-ts/cli/routeParentToChild.ts",
     "redeem-child-to-parent": "ts-node src-ts/cli/childToParentRedeemer.ts",
     "prepare": "forge install && cd lib/arbitrum-sdk && yarn",
+    "prepublishOnly": "make clean && make build",
     "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts",
     "test:e2e": "./test/e2e/test-e2e.bash"
   },
