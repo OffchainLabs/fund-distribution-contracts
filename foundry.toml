@@ -7,9 +7,6 @@ optimizer = true
 optimizer_runs = 20000
 via_ir = false
 
-[profile.optimized]
-via_ir = true
-
 [rpc_endpoints]
 arb1 = "https://arb1.arbitrum.io/rpc"
 arbgoerli = "https://goerli-rollup.arbitrum.io/rpc"
