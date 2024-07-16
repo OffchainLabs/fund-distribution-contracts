@@ -1,6 +1,6 @@
 {
   "name": "@offchainlabs/fund-distribution-contracts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A set of smart contracts that handle fund distribution across multiple chains.",
   "author": "Offchain Labs, Inc.",
   "license": "MIT",
