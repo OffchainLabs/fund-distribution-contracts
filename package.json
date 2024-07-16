@@ -1,18 +1,38 @@
 {
-  "name": "fund-distribution-contracts",
-  "version": "1.0.0",
-  "main": "index.js",
-  "repository": "git@github.com:OffchainLabs/fund-distribution-contracts.git",
-  "author": "dzgoldman",
+  "name": "@offchainlabs/fund-distribution-contracts",
+  "version": "1.0.1",
+  "description": "A set of smart contracts that handle fund distribution across multiple chains.",
+  "author": "Offchain Labs, Inc.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/offchainlabs/fund-distribution-contracts.git"
+  },
+  "files": [
+    "/src",
+    "/out",
+    "!/out/**/*.s.sol",
+    "!/out/**/*.t.sol",
+    "!/out/build-info",
+    "!/out/console.sol",
+    "!/out/console2.sol",
+    "!/out/Script.sol",
+    "!/out/test.sol",
+    "!/out/Vm.sol"
+  ],
+  "bugs": {
+    "url": "https://github.com/offchainlabs/fund-distribution-contracts/issues"
+  },
   "scripts": {
     "distribute": "ts-node ./src-ts/cli/distributeRewards.ts",
     "route-parent-to-child": "ts-node src-ts/cli/routeParentToChild.ts",
     "redeem-child-to-parent": "ts-node src-ts/cli/childToParentRedeemer.ts",
     "prepare": "forge install && cd lib/arbitrum-sdk && yarn",
+    "prepublishOnly": "make clean && make build",
     "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts",
     "test:e2e": "./test/e2e/test-e2e.bash"
   },
+  "private": false,
   "devDependencies": {
     "@ethersproject/providers": "^5.7.2",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
@@ -35,7 +55,6 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.0",
     "@types/yargs": "^17.0.32",
     "dotenv": "^16.3.1",
     "yargs": "^17.7.2"

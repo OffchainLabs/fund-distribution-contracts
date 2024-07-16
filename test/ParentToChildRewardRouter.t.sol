@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
@@ -58,7 +58,7 @@ contract ParentToChildRewardRouterTest is Test {
     function testRevertsWithInsufficientValue() external {
         vm.startPrank(me);
 
-        (bool sent, bytes memory data) = address(parentToChildRewardRouter).call{value: 1 ether}("");
+        (bool sent,) = address(parentToChildRewardRouter).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
 
         vm.expectRevert(abi.encodeWithSelector(IncorrectValue.selector, 2 ether, 1.9 ether));

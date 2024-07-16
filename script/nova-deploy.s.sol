@@ -1,15 +1,14 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "forge-std/Script.sol";
 import "../src/RewardDistributor.sol";
 
 contract DeployScript is Script {
-
     address constant l2ExecutorNova = address(0x86a02dD71363c440b21F4c0E5B2Ad01Ffe1A7482);
     // address constant l2TreasuryTimelockNova = address();
     address constant l2OffchainLabsMultisigNova = address(0xD0749b3e537Ed52DE4e6a3Ae1eB6fc26059d0895);
-    
+
     // l1Timelock is 0xE6841D92B0C345144506576eC13ECf5103aC7f49
     address constant l1TimelockAlias = address(0xf7951D92B0C345144506576eC13Ecf5103aC905a);
 
@@ -43,10 +42,7 @@ contract DeployScript is Script {
         weights[5] = 373;
         recipients[6] = Opensea;
         weights[6] = 133;
-        RewardDistributor rd_l2base = new RewardDistributor({
-            recipients: recipients,
-            weights: weights
-        });
+        RewardDistributor rd_l2base = new RewardDistributor({recipients: recipients, weights: weights});
         rd_l2base.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L2 Base at: ");
         console.log(address(rd_l2base));
@@ -56,28 +52,19 @@ contract DeployScript is Script {
         weights[0] = 10000;
 
         recipients[0] = l1TimelockAlias;
-        RewardDistributor rd_l2surplus = new RewardDistributor({
-            recipients: recipients,
-            weights: weights
-        });
+        RewardDistributor rd_l2surplus = new RewardDistributor({recipients: recipients, weights: weights});
         rd_l2surplus.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L2 Surplus at: ");
         console.log(address(rd_l2surplus));
 
         recipients[0] = l2OffchainLabsMultisigNova;
-        RewardDistributor rd_l1base = new RewardDistributor({
-            recipients: recipients,
-            weights: weights
-        });
+        RewardDistributor rd_l1base = new RewardDistributor({recipients: recipients, weights: weights});
         rd_l1base.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L1 Base at: ");
         console.log(address(rd_l1base));
 
         recipients[0] = l1TimelockAlias;
-        RewardDistributor rd_l1surplus = new RewardDistributor({
-            recipients: recipients,
-            weights: weights
-        });
+        RewardDistributor rd_l1surplus = new RewardDistributor({recipients: recipients, weights: weights});
         rd_l1surplus.transferOwnership(l2ExecutorNova);
         console.log("Deployed Nova L1 Surplus at: ");
         console.log(address(rd_l1surplus));

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "../src/FeeRouter/ArbChildToParentRewardRouter.sol";
@@ -13,13 +13,14 @@ contract TestChildToParentRewardRouter is ChildToParentRewardRouter {
         uint256 _minDistributionIntervalSeconds,
         address _parentChainTokenAddress,
         address _childChainTokenAddress
-    ) ChildToParentRewardRouter(
-        _parentChainTarget,
-        _minDistributionIntervalSeconds,
-        _parentChainTokenAddress,
-        _childChainTokenAddress
-    ) {
-    }
+    )
+        ChildToParentRewardRouter(
+            _parentChainTarget,
+            _minDistributionIntervalSeconds,
+            _parentChainTokenAddress,
+            _childChainTokenAddress
+        )
+    {}
 
     function _sendNative(uint256 amount) internal override {
         (bool b,) = address(parentChainTarget).call{value: amount}("");
@@ -48,9 +49,8 @@ contract ChildToParentRewardRouterTest is Test {
         childToParentRewardRouter = new TestChildToParentRewardRouter(
             address(1111_2), minDistributionIntervalSeconds, parentToken, address(token)
         );
-        nativeOnlyChildToParentRewardRouter = new TestChildToParentRewardRouter(
-            address(1111_3), minDistributionIntervalSeconds, address(1), address(1)
-        );
+        nativeOnlyChildToParentRewardRouter =
+            new TestChildToParentRewardRouter(address(1111_3), minDistributionIntervalSeconds, address(1), address(1));
     }
 
     function testZeroAddressConstructorCheck() public {
@@ -139,20 +139,24 @@ contract ChildToParentRewardRouterTest is Test {
         (bool sent,) = payable(address(childToParentRewardRouter)).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
         _assertDistribution(parentToken, 0, true, 0);
-        _assertDistribution(native, minDistributionIntervalSeconds, false, block.timestamp + minDistributionIntervalSeconds);
+        _assertDistribution(
+            native, minDistributionIntervalSeconds, false, block.timestamp + minDistributionIntervalSeconds
+        );
 
         // warp
-        vm.warp(block.timestamp + 2*minDistributionIntervalSeconds);
+        vm.warp(block.timestamp + 2 * minDistributionIntervalSeconds);
 
         // route some token
         vm.prank(me);
         token.transfer(address(childToParentRewardRouter), 1 ether);
         childToParentRewardRouter.routeToken();
-        _assertDistribution(parentToken, minDistributionIntervalSeconds, false, block.timestamp + minDistributionIntervalSeconds);
+        _assertDistribution(
+            parentToken, minDistributionIntervalSeconds, false, block.timestamp + minDistributionIntervalSeconds
+        );
         _assertDistribution(native, 0, true, block.timestamp - minDistributionIntervalSeconds);
     }
 
-    function _assertDistribution(address addr, uint256 timeToNext, bool canDistribute, uint256 next) internal {
+    function _assertDistribution(address addr, uint256 timeToNext, bool canDistribute, uint256 next) view internal  {
         assertEq(childToParentRewardRouter.timeToNextDistribution(addr), timeToNext, "time to next distribution");
         assertEq(childToParentRewardRouter.canDistribute(addr), canDistribute, "can distribute");
         assertEq(childToParentRewardRouter.nextDistributions(addr), next, "next distribution time");

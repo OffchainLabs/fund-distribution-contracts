@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "../src/FeeRouter/OpChildToParentRewardRouter.sol";
@@ -14,12 +14,14 @@ contract TestOpChildToParentRewardRouter is OpChildToParentRewardRouter {
         uint256 _minDistributionIntervalSeconds,
         address _parentChainTokenAddress,
         address _childChainTokenAddress
-    ) OpChildToParentRewardRouter(
-        _parentChainTarget,
-        _minDistributionIntervalSeconds,
-        _parentChainTokenAddress,
-        _childChainTokenAddress
-    ) {}
+    )
+        OpChildToParentRewardRouter(
+            _parentChainTarget,
+            _minDistributionIntervalSeconds,
+            _parentChainTokenAddress,
+            _childChainTokenAddress
+        )
+    {}
 
     function triggerSendNative(uint256 amount) external {
         _sendNative(amount);
@@ -38,6 +40,10 @@ contract OpChildToParentRewardRouterTest is Test {
     TestOpChildToParentRewardRouter childToParentRewardRouter;
     uint256 minDistributionIntervalSeconds = 20;
 
+    event Approval(address indexed, address indexed, uint256);
+    event BridgeEthTo(address, uint256, uint32, bytes);
+    event BridgeERC20To(address, address, address, uint256, uint32, bytes);
+
     function setUp() public {
         vm.deal(me, 10 ether);
 
@@ -54,27 +60,25 @@ contract OpChildToParentRewardRouterTest is Test {
     function testSanityCheck() public {
         vm.etch(0x4200000000000000000000000000000000000010, "");
         vm.expectRevert(OpChildToParentRewardRouter.NotOpStack.selector);
-        new TestOpChildToParentRewardRouter(
-            parentTarget, minDistributionIntervalSeconds, parentToken, address(token)
-        );
+        new TestOpChildToParentRewardRouter(parentTarget, minDistributionIntervalSeconds, parentToken, address(token));
     }
 
     function testSendNative(uint64 amount) external {
-        vm.deal(address(childToParentRewardRouter), 2*uint256(amount));
+        vm.deal(address(childToParentRewardRouter), 2 * uint256(amount));
         vm.expectEmit(false, false, false, true, 0x4200000000000000000000000000000000000010);
-        emit OpStandardBridgeMock.BridgeEthTo(parentTarget, amount, 0, bytes(""));
+        emit BridgeEthTo(parentTarget, amount, 0, bytes(""));
         childToParentRewardRouter.triggerSendNative(amount);
     }
 
     function testSendToken(uint256 amount) external {
         amount = bound(amount, 1, 10 ether);
         vm.prank(me);
-        token.transfer(address(childToParentRewardRouter), 2*amount);
+        token.transfer(address(childToParentRewardRouter), 2 * amount);
 
         vm.expectEmit(true, true, false, true, address(token));
-        emit IERC20.Approval(address(childToParentRewardRouter), 0x4200000000000000000000000000000000000010, amount);
+        emit Approval(address(childToParentRewardRouter), 0x4200000000000000000000000000000000000010, amount);
         vm.expectEmit(false, false, false, true, 0x4200000000000000000000000000000000000010);
-        emit OpStandardBridgeMock.BridgeERC20To(address(token), parentToken, parentTarget, amount, 0, "");
+        emit BridgeERC20To(address(token), parentToken, parentTarget, amount, 0, "");
         childToParentRewardRouter.triggerSendToken(amount);
     }
 }

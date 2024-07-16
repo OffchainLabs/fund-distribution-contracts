@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "../src/FeeRouter/ArbChildToParentRewardRouter.sol";
@@ -16,13 +16,15 @@ contract TestArbChildToParentRewardRouter is ArbChildToParentRewardRouter {
         address _parentChainTokenAddress,
         address _childChainTokenAddress,
         address _childChainGatewayRouter
-    ) ArbChildToParentRewardRouter(
-        _parentChainTarget,
-        _minDistributionIntervalSeconds,
-        _parentChainTokenAddress,
-        _childChainTokenAddress,
-        _childChainGatewayRouter
-    ) {}
+    )
+        ArbChildToParentRewardRouter(
+            _parentChainTarget,
+            _minDistributionIntervalSeconds,
+            _parentChainTokenAddress,
+            _childChainTokenAddress,
+            _childChainGatewayRouter
+        )
+    {}
 
     function triggerSendNative(uint256 amount) external {
         _sendNative(amount);
@@ -42,6 +44,10 @@ contract ArbChildToParentRewardRouterTest is Test {
     TestArbChildToParentRewardRouter childToParentRewardRouter;
     ChildToParentGatewayRouterMock gatewayRouter;
     uint256 minDistributionIntervalSeconds = 20;
+
+    event ArbSysL2ToL1Tx(address from, address to, uint256 value, bytes indexed data);
+    event Approval(address indexed, address indexed, uint256);
+    event OutboundTransfer(address token, address to, uint256 amount, bytes data);
 
     function setUp() public {
         vm.etch(address(100), address(new ArbSysMock()).code);
@@ -70,7 +76,9 @@ contract ArbChildToParentRewardRouterTest is Test {
         vm.etch(address(100), address(new ArbSysMock()).code);
 
         gatewayRouter.setL2TokenAddress(parentToken, address(0));
-        vm.expectRevert(abi.encodeWithSelector(ArbChildToParentRewardRouter.TokenNotRegisteredToGateway.selector, parentToken));
+        vm.expectRevert(
+            abi.encodeWithSelector(ArbChildToParentRewardRouter.TokenNotRegisteredToGateway.selector, parentToken)
+        );
         new TestArbChildToParentRewardRouter(
             parentTarget, minDistributionIntervalSeconds, parentToken, address(token), address(gatewayRouter)
         );
@@ -84,21 +92,21 @@ contract ArbChildToParentRewardRouterTest is Test {
     }
 
     function testSendNative(uint64 amount) external {
-        vm.deal(address(childToParentRewardRouter), 2*uint256(amount));
+        vm.deal(address(childToParentRewardRouter), 2 * uint256(amount));
         vm.expectEmit(true, false, false, true, address(100));
-        emit ArbSysMock.ArbSysL2ToL1Tx(address(childToParentRewardRouter), parentTarget, amount, "");
+        emit ArbSysL2ToL1Tx(address(childToParentRewardRouter), parentTarget, amount, "");
         childToParentRewardRouter.triggerSendNative(amount);
     }
 
     function testSendToken(uint256 amount) external {
         amount = bound(amount, 1, 10 ether);
         vm.prank(me);
-        token.transfer(address(childToParentRewardRouter), 2*amount);
+        token.transfer(address(childToParentRewardRouter), 2 * amount);
 
         vm.expectEmit(true, true, false, true, address(token));
-        emit IERC20.Approval(address(childToParentRewardRouter), address(gateway), amount);
+        emit Approval(address(childToParentRewardRouter), address(gateway), amount);
         vm.expectEmit(true, false, false, true, address(gatewayRouter));
-        emit ChildToParentGatewayRouterMock.OutboundTransfer(parentToken, parentTarget, amount, "");
+        emit OutboundTransfer(parentToken, parentTarget, amount, "");
         childToParentRewardRouter.triggerSendToken(amount);
     }
 }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 // import "./src/RewardDistributor.sol";
@@ -41,7 +41,7 @@ contract RewardDistributorTest is Test {
         return recps;
     }
 
-    function makeRecipientWeights(uint256 count) private returns (uint256[] memory) {
+    function makeRecipientWeights(uint256 count) private pure returns (uint256[] memory) {
         uint256[] memory weig = new uint256[](count);
         if (count == 0) {
             return weig;
@@ -398,7 +398,7 @@ contract RewardDistributorTest is Test {
         assertEq(actual, expected, "incorrect max recipients hash");
     }
 
-    function testUncheckedInc() public {
+    function testUncheckedInc() pure public {
         uint256 expected;
         uint256 actual;
 

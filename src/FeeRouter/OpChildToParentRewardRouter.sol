@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
@@ -21,7 +21,7 @@ interface IOpStandardBridge {
 /// @notice Child to Parent Reward Router deployed to OP Stack chains
 contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
     using SafeERC20 for IERC20;
-    
+
     IOpStandardBridge public constant opStandardBridge = IOpStandardBridge(0x4200000000000000000000000000000000000010);
 
     error NotOpStack();

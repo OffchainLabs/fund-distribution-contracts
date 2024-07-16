@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "forge-std/Script.sol";
@@ -15,10 +15,7 @@ contract DeployScript is Script {
         weights[0] = 10000;
 
         vm.startBroadcast();
-        RewardDistributor rd = new RewardDistributor({
-            recipients: recipients,
-            weights: weights
-        });
+        RewardDistributor rd = new RewardDistributor({recipients: recipients, weights: weights});
         console.log("Deployed RewardDistributor at: ");
         console.log(address(rd));
         vm.stopBroadcast();

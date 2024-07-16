@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
@@ -38,7 +38,7 @@ error ZeroAddress();
 /// @dev supports native currency and any number of arbitrary ERC20s.
 contract ParentToChildRewardRouter is DistributionInterval {
     using SafeERC20 for IERC20;
-    
+
     // inbox of target Arbitrum child chain
     IInbox public immutable inbox;
     // Receiving address of funds on target Arbitrum chain
