@@ -1,5 +1,6 @@
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet } from "ethers";
+import { ethers as ethersv6 } from "ethers-v6";
 import {
   ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
@@ -12,104 +13,84 @@ import {
   L2ToL1Message,
   L2ToL1MessageStatus,
 } from "../../lib/arbitrum-sdk/src";
+
+import { Database } from 'better-sqlite3';
+import { LogCache } from 'fetch-logs-with-cache'
+
 const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export default class ChildToParentMessageRedeemer {
-  public startBlock: number;
-  public childToParentRewardRouter: ChildToParentRewardRouter;
-  public readonly retryDelay: number;
+  public readonly childToParentRewardRouter: ChildToParentRewardRouter;
+
   constructor(
+    public readonly db: Database,
     public readonly childChainProvider: JsonRpcProvider,
     public readonly parentChainSigner: Wallet,
     public readonly childToParentRewardRouterAddr: string,
-    public readonly blockLag: number,
-    initialStartBlock: number,
-    retryDelay = 1000 * 60 * 10
+    public readonly startBlock: number,
+    public readonly logPageSize: number,
   ) {
-    this.startBlock = initialStartBlock;
     this.childToParentRewardRouter = ChildToParentRewardRouter__factory.connect(
       childToParentRewardRouterAddr,
       childChainProvider
     );
-    this.retryDelay = retryDelay;
   }
 
-  public async redeemChildToParentMessages(oneOff = false) {
-    const toBlock =
-      (await this.childChainProvider.getBlockNumber()) - this.blockLag;
-    const logs = await this.childChainProvider.getLogs({
-      fromBlock: this.startBlock,
-      toBlock: toBlock,
-      ...this.childToParentRewardRouter.filters.FundsRouted(),
-    });
+  private _getFundsRoutedLogs() {
+    return new LogCache(this.db).getLogs(
+      new ethersv6.JsonRpcProvider(this.childChainProvider.connection.url),
+      {
+        fromBlock: this.startBlock,
+        ...this.childToParentRewardRouter.filters.FundsRouted(),
+      },
+      this.logPageSize
+    )
+  }
+
+  public async run() {
+    const logs = await this._getFundsRoutedLogs();
     if (logs.length) {
       console.log(
-        `Found ${logs.length} route events between blocks ${this.startBlock} and ${toBlock}`
+        `Found ${logs.length} route events between blocks ${this.startBlock} and latest`
       );
     }
 
+    const l1ToL1Events: EventArgs<L2ToL1TxEvent>[] = [];
     for (let log of logs) {
       const arbTransactionRec = new L2TransactionReceipt(
         await this.childChainProvider.getTransactionReceipt(log.transactionHash)
       );
-      let l2ToL1Events =
-        (await arbTransactionRec.getL2ToL1Events()) as EventArgs<L2ToL1TxEvent>[];
-
-      if (l2ToL1Events.length != 1) {
-        throw new Error("Only 1 l2 to l1 message per tx supported");
-      }
-
-      for (let l2ToL1Event of l2ToL1Events) {
-        const l2ToL1Message = L2ToL1Message.fromEvent(
-          this.parentChainSigner,
-          l2ToL1Event
-        );
-        if (!oneOff) {
-          console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`);
-          await l2ToL1Message.waitUntilReadyToExecute(
-            this.childChainProvider,
-            this.retryDelay
-          );
-        }
-
-        const status = await l2ToL1Message.status(this.childChainProvider);
-        switch (status) {
-          case L2ToL1MessageStatus.CONFIRMED: {
-            console.log(l2ToL1Event.hash, "confirmed; executing:");
-            const rec = await (
-              await l2ToL1Message.execute(this.childChainProvider)
-            ).wait(2);
-            console.log(`${l2ToL1Event.hash} executed:`, rec.transactionHash);
-            break;
-          }
-          case L2ToL1MessageStatus.EXECUTED: {
-            console.log(`${l2ToL1Event.hash} already executed`);
-            break;
-          }
-          case L2ToL1MessageStatus.UNCONFIRMED: {
-            console.log(`${l2ToL1Event.hash} not yet confirmed`);
-            break;
-          }
-          default: {
-            throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`);
-          }
-        }
-      }
+      l1ToL1Events.push(...arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[])
     }
-    this.startBlock = toBlock;
-  }
 
-  public async run(oneOff = false) {
-    while (true) {
-      try {
-        await this.redeemChildToParentMessages(oneOff);
-      } catch (err) {
-        console.log("err", err);
-      }
-      if (oneOff) {
-        break;
-      } else {
-        await wait(1000 * 60 * 60);
+
+    for (let l2ToL1Event of l1ToL1Events) {
+      const l2ToL1Message = L2ToL1Message.fromEvent(
+        this.parentChainSigner,
+        l2ToL1Event
+      );
+
+      const status = await l2ToL1Message.status(this.childChainProvider);
+      switch (status) {
+        case L2ToL1MessageStatus.CONFIRMED: {
+          console.log(l2ToL1Event.hash, "confirmed; executing:");
+          const rec = await (
+            await l2ToL1Message.execute(this.childChainProvider)
+          ).wait(2);
+          console.log(`${l2ToL1Event.hash} executed:`, rec.transactionHash);
+          break;
+        }
+        case L2ToL1MessageStatus.EXECUTED: {
+          console.log(`${l2ToL1Event.hash} already executed`);
+          break;
+        }
+        case L2ToL1MessageStatus.UNCONFIRMED: {
+          console.log(`${l2ToL1Event.hash} not yet confirmed`);
+          break;
+        }
+        default: {
+          throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`);
+        }
       }
     }
   }

@@ -47,6 +47,8 @@
     "@types/mocha": "^10.0.4",
     "chai": "^4.3.10",
     "ethers": "^5.7.2",
+    "ethers-v6": "npm:ethers@^6.13.1",
+    "fetch-logs-with-cache": "^0.0.1",
     "hardhat": "^2.19.1",
     "hardhat-gas-reporter": "^1.0.9",
     "solidity-coverage": "^0.8.5",
