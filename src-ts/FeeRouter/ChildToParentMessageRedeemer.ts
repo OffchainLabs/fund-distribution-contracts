@@ -36,8 +36,8 @@ export default class ChildToParentMessageRedeemer {
     );
   }
 
-  private _getFundsRoutedLogs() {
-    return new LogCache(this.db).getLogs(
+  private async _getL2ToL1Events() {
+    const logs = await new LogCache(this.db).getLogs(
       new ethersv6.JsonRpcProvider(this.childChainProvider.connection.url),
       {
         fromBlock: this.startBlock,
@@ -45,26 +45,27 @@ export default class ChildToParentMessageRedeemer {
       },
       this.logPageSize
     )
-  }
 
-  public async run() {
-    const logs = await this._getFundsRoutedLogs();
-    if (logs.length) {
-      console.log(
-        `Found ${logs.length} route events between blocks ${this.startBlock} and latest`
-      );
-    }
-
-    const l1ToL1Events: EventArgs<L2ToL1TxEvent>[] = [];
+    const l2ToL1Events: EventArgs<L2ToL1TxEvent>[] = [];
     for (let log of logs) {
       const arbTransactionRec = new L2TransactionReceipt(
         await this.childChainProvider.getTransactionReceipt(log.transactionHash)
       );
-      l1ToL1Events.push(...arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[])
+      l2ToL1Events.push(...arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[])
     }
 
+    return l2ToL1Events.filter(ev => ev.caller.toLowerCase() === this.childToParentRewardRouterAddr.toLowerCase())
+  }
 
-    for (let l2ToL1Event of l1ToL1Events) {
+  public async run() {
+    const l2ToL1Events = await this._getL2ToL1Events();
+    if (l2ToL1Events.length) {
+      console.log(
+        `Found ${l2ToL1Events.length} route events between blocks ${this.startBlock} and latest`
+      );
+    }
+
+    for (let l2ToL1Event of l2ToL1Events) {
       const l2ToL1Message = L2ToL1Message.fromEvent(
         this.parentChainSigner,
         l2ToL1Event
