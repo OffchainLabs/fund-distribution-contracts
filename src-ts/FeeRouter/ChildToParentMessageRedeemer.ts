@@ -14,7 +14,7 @@ import {
   L2ToL1MessageStatus,
 } from "../../lib/arbitrum-sdk/src";
 
-import { Database } from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import { LogCache } from 'fetch-logs-with-cache'
 
 const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -23,7 +23,7 @@ export default class ChildToParentMessageRedeemer {
   public readonly childToParentRewardRouter: ChildToParentRewardRouter;
 
   constructor(
-    public readonly db: Database,
+    public readonly dbPath: string,
     public readonly childChainProvider: JsonRpcProvider,
     public readonly parentChainSigner: Wallet,
     public readonly childToParentRewardRouterAddr: string,
@@ -37,7 +37,7 @@ export default class ChildToParentMessageRedeemer {
   }
 
   private async _getL2ToL1Events() {
-    const logs = await new LogCache(this.db).getLogs(
+    const logs = await new LogCache(new Database(this.dbPath)).getLogs(
       new ethersv6.JsonRpcProvider(this.childChainProvider.connection.url),
       {
         fromBlock: this.startBlock,

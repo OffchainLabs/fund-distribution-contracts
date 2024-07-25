@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { TestSetup, testSetup } from "./testSetup";
 import { BigNumber, utils, Wallet } from "ethers";
+import Database from 'better-sqlite3';
 import {
   ParentToChildRewardRouter__factory,
   ParentToChildRewardRouter,
@@ -15,6 +16,7 @@ import { checkAndRouteFunds } from "../../src-ts/FeeRouter/checkAndRouteFunds";
 import { TestERC20__factory } from "../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory";
 import { TestERC20 } from "../../lib/arbitrum-sdk/src/lib/abi/TestERC20";
 import { Erc20Bridger } from "../../lib/arbitrum-sdk/src";
+import { wait } from "../../lib/arbitrum-sdk/tests/integration/testHelpers";
 
 describe("Router e2e test", () => {
   let setup: TestSetup;
@@ -163,21 +165,28 @@ describe("Router e2e test", () => {
     });
 
     it("redeems l2 to l1 message", async () => {
-      await new ChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
-        childToParentRewardRouter.address,
-        0,
-        0,
-        1000
-      ).redeemChildToParentMessages();
+      while (true) {
+        await new ChildToParentMessageRedeemer(
+          ':memory:',
+          setup.l2Provider,
+          setup.l1Signer,
+          childToParentRewardRouter.address,
+          0,
+          1000,
+        ).run();
 
-      // funds should be in parentToChildRewardRouter now
-      expect(
-        (
-          await setup.l1Provider.getBalance(parentToChildRewardRouter.address)
-        ).toHexString()
-      ).to.eq(ethValue.toHexString());
+        const balance = await testToken.balanceOf(parentToChildRewardRouter.address)
+
+        if (balance.eq(ethValue.toHexString())) {
+          break;
+        }
+
+        if (!balance.eq('0')) {
+          throw new Error('nonzero unexpected balance')
+        }
+
+        await wait(1000)
+      }
     });
 
     it("routes runds to destination ", async () => {
@@ -215,21 +224,28 @@ describe("Router e2e test", () => {
     });
 
     it("redeems l2 to l1 message", async () => {
-      await new ChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
-        childToParentRewardRouter.address,
-        0,
-        0,
-        1000
-      ).redeemChildToParentMessages();
+      while (true) {
+        await new ChildToParentMessageRedeemer(
+          ':memory:',
+          setup.l2Provider,
+          setup.l1Signer,
+          childToParentRewardRouter.address,
+          0,
+          1000,
+        ).run();
 
-      // funds should be in parentToChildRewardRouter now
-      expect(
-        (
-          await testToken.balanceOf(parentToChildRewardRouter.address)
-        ).toHexString()
-      ).to.eq(tokenValue.toHexString());
+        const balance = await testToken.balanceOf(parentToChildRewardRouter.address)
+
+        if (balance.eq(tokenValue.toHexString())) {
+          break;
+        }
+
+        if (!balance.eq('0')) {
+          throw new Error('nonzero unexpected balance')
+        }
+
+        await wait(1000)
+      }
     });
 
     it("routes runds to destination ", async () => {

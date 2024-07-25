@@ -3,7 +3,6 @@ import yargs from "yargs";
 import ChildToParentMessageRedeemer from "../FeeRouter/ChildToParentMessageRedeemer";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet } from "ethers";
-import Database from "better-sqlite3";
 
 dotenv.config();
 
@@ -31,12 +30,12 @@ const options = yargs(process.argv.slice(2))
   ${(await parentChildSigner.provider.getNetwork()).chainId}'`);
 
   const redeemer = new ChildToParentMessageRedeemer(
-    new Database(options.dbPath),
+    options.dbPath,
     new JsonRpcProvider(options.childRPCUrl),
     parentChildSigner,
     options.childToParentRewardRouterAddr,
     options.childChainStartBlock,
-    options.logPageSize
+    options.logPageSize,
   );
   await redeemer.run();
 })();
