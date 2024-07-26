@@ -1,15 +1,9 @@
 [profile.default]
-src = 'src'
+src = 'contracts'
 out = 'out'
-libs = ['lib']
-solc_version = '0.8.16'
-optimizer = true
-optimizer_runs = 20000
-via_ir = false
-
-[rpc_endpoints]
-arb1 = "https://arb1.arbitrum.io/rpc"
-arbgoerli = "https://goerli-rollup.arbitrum.io/rpc"
-arbnova = "https://nova.arbitrum.io/rpc"
-
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+libs = ['node_modules', 'lib']
+test = 'test'
+cache_path  = 'cache_forge'
+solc_version = '0.8.20'
+optimizer_runs = 2000
+script = 'scripts'

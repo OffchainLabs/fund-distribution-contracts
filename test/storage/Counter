@@ -1,0 +1,3 @@
+| Name   | Type    | Slot | Offset | Bytes | Contract                      |
+|--------|---------|------|--------|-------|-------------------------------|
+| number | uint256 | 0    | 0      | 32    | contracts/Counter.sol:Counter |
