@@ -1,7 +1,13 @@
 {
-  "name": "blockchain-eng-template",
-  "version": "1.0.0",
-  "repository": "https://github.com/OffchainLabs/blockchain-eng-template.git",
+  "name": "@offchainlabs/fund-distribution-contracts",
+  "version": "1.0.1",
+  "description": "A set of smart contracts that handle fund distribution across multiple chains.",
+  "author": "Offchain Labs, Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/offchainlabs/fund-distribution-contracts.git"
+  },
   "scripts": {
     "prepare": "forge install && cd lib/arbitrum-sdk && yarn",
     "minimal-install": "yarn --ignore-scripts && forge install",
@@ -20,7 +26,12 @@
     "test:sigs": "./test/signatures/test-sigs.bash",
     "test:storage": "./test/storage/test-storage.bash",
     "gas-snapshot": "forge snapshot --match-path \"test/unit/**/*.t.sol\"",
-    "fix": "yarn format; yarn test:sigs; yarn test:storage; yarn gas-snapshot"
+    "fix": "yarn format; yarn test:sigs; yarn test:storage; yarn gas-snapshot",
+
+    "distribute": "ts-node ./scripts/src-ts/cli/distributeRewards.ts",
+    "route-parent-to-child": "ts-node ./scripts/src-ts/cli/routeParentToChild.ts",
+    "redeem-child-to-parent": "ts-node ./scripts/src-ts/cli/childToParentRedeemer.ts",
+    "gen-recipients": "yarn && hardhat run ./scripts/src-ts/getRecipientData.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",

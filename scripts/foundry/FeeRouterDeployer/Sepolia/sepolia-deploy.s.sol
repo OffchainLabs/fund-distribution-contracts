@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "forge-std/Script.sol";
-import "../../../src/FeeRouter/ParentToChildRewardRouter.sol";
+import "contracts/FeeRouter/ParentToChildRewardRouter.sol";
 
 contract DeployScript is Script {
     function setUp() public {}

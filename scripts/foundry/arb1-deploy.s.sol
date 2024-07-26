@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "forge-std/Script.sol";
-import "../src/RewardDistributor.sol";
+import "contracts/RewardDistributor.sol";
 
 contract DeployScript is Script {
     address constant l2Executor = address(0xCF57572261c7c2BCF21ffD220ea7d1a27D40A827);

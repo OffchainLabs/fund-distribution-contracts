@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "../src/FeeRouter/ArbChildToParentRewardRouter.sol";
+import "contracts/FeeRouter/ArbChildToParentRewardRouter.sol";
 import "./util/TestToken.sol";
 import "./Empty.sol";
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 import "./util/InboxMock.sol";
-import "../src/FeeRouter/ParentToChildRewardRouter.sol";
+import "contracts/FeeRouter/ParentToChildRewardRouter.sol";
 
 contract ParentToChildRewardRouterMock {
     InboxMock inboxMock;
