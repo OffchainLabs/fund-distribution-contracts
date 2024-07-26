@@ -1,11 +1,9 @@
 import { expect } from "chai";
 import { TestSetup, testSetup } from "./testSetup";
 import { BigNumber, utils, Wallet } from "ethers";
-import Database from 'better-sqlite3';
 import {
   ParentToChildRewardRouter__factory,
   ParentToChildRewardRouter,
-  ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
   RewardDistributor__factory,
   RewardDistributor,
@@ -175,7 +173,7 @@ describe("Router e2e test", () => {
           1000,
         ).run();
 
-        const balance = await testToken.balanceOf(parentToChildRewardRouter.address)
+        const balance = await setup.l1Provider.getBalance(parentToChildRewardRouter.address)
 
         if (balance.eq(ethValue.toHexString())) {
           break;
@@ -185,7 +183,7 @@ describe("Router e2e test", () => {
           throw new Error('nonzero unexpected balance')
         }
 
-        await wait(1000)
+        await wait(15000)
       }
     });
 
@@ -236,7 +234,7 @@ describe("Router e2e test", () => {
 
         const balance = await testToken.balanceOf(parentToChildRewardRouter.address)
 
-        if (balance.eq(tokenValue.toHexString())) {
+        if (balance.eq(tokenValue)) {
           break;
         }
 
@@ -244,7 +242,7 @@ describe("Router e2e test", () => {
           throw new Error('nonzero unexpected balance')
         }
 
-        await wait(1000)
+        await wait(15000)
       }
     });
 

@@ -14,10 +14,7 @@ import {
   L2ToL1MessageStatus,
 } from "../../lib/arbitrum-sdk/src";
 
-import Database from 'better-sqlite3';
 import { LogCache } from 'fetch-logs-with-cache'
-
-const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 export default class ChildToParentMessageRedeemer {
   public readonly childToParentRewardRouter: ChildToParentRewardRouter;
@@ -37,7 +34,7 @@ export default class ChildToParentMessageRedeemer {
   }
 
   private async _getL2ToL1Events() {
-    const logs = await new LogCache(new Database(this.dbPath)).getLogs(
+    const logs = await new LogCache(this.dbPath).getLogs(
       new ethersv6.JsonRpcProvider(this.childChainProvider.connection.url),
       {
         fromBlock: this.startBlock,
@@ -51,10 +48,18 @@ export default class ChildToParentMessageRedeemer {
       const arbTransactionRec = new L2TransactionReceipt(
         await this.childChainProvider.getTransactionReceipt(log.transactionHash)
       );
-      l2ToL1Events.push(...arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[])
+      const evs = arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[];
+
+      if (evs.length != 1) {
+        // TODO: handle multiple events in a single transaction
+        // this is not that simple because we need to inspect messages to see if they are bridging tokens to the right place
+        throw new Error(`Expected 1 L2ToL1 event, got ${evs.length}`);
+      }
+
+      l2ToL1Events.push(...evs);
     }
 
-    return l2ToL1Events.filter(ev => ev.caller.toLowerCase() === this.childToParentRewardRouterAddr.toLowerCase())
+    return l2ToL1Events
   }
 
   public async run() {
@@ -72,21 +77,22 @@ export default class ChildToParentMessageRedeemer {
       );
 
       const status = await l2ToL1Message.status(this.childChainProvider);
+      const evHash = l2ToL1Event.hash.toHexString();
       switch (status) {
         case L2ToL1MessageStatus.CONFIRMED: {
-          console.log(l2ToL1Event.hash, "confirmed; executing:");
+          console.log(evHash, "confirmed; executing:");
           const rec = await (
             await l2ToL1Message.execute(this.childChainProvider)
           ).wait(2);
-          console.log(`${l2ToL1Event.hash} executed:`, rec.transactionHash);
+          console.log(`${evHash} executed:`, rec.transactionHash);
           break;
         }
         case L2ToL1MessageStatus.EXECUTED: {
-          console.log(`${l2ToL1Event.hash} already executed`);
+          console.log(`${evHash} already executed`);
           break;
         }
         case L2ToL1MessageStatus.UNCONFIRMED: {
-          console.log(`${l2ToL1Event.hash} not yet confirmed`);
+          console.log(`${evHash} not yet confirmed`);
           break;
         }
         default: {

@@ -903,13 +903,6 @@
   dependencies:
     fs-extra "^9.1.0"
 
-"@types/better-sqlite3@^7.6.10":
-  version "7.6.11"
-  resolved "https://registry.yarnpkg.com/@types/better-sqlite3/-/better-sqlite3-7.6.11.tgz#95acf22fcf5577624eea202058e26ba239760b9f"
-  integrity sha512-i8KcD3PgGtGBLl3+mMYA8PdKkButvPyARxA7IQAd6qeslht13qxb1zzO8dRCtE7U3IoJS782zDBAeoKiM695kg==
-  dependencies:
-    "@types/node" "*"
-
 "@types/bn.js@^4.11.3":
   version "4.11.6"
   resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-4.11.6.tgz#c306c70d9358aaea33cd4eda092a742b9505967c"
@@ -2007,6 +2000,7 @@ ethereumjs-util@^7.1.4:
     rlp "^2.2.4"
 
 "ethers-v6@npm:ethers@^6.13.1", ethers@^6.13.0:
+  name ethers-v6
   version "6.13.1"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-6.13.1.tgz#2b9f9c7455cde9d38b30fe6589972eb083652961"
   integrity sha512-hdJ2HOxg/xx97Lm9HdCWk949BfYqYWpyw4//78SiwOLgASyfrNszfMUNB2joKjvGUdwhHfaiMMFFwacVVoLR9A==
@@ -2112,13 +2106,11 @@ fastq@^1.6.0:
   dependencies:
     reusify "^1.0.4"
 
-fetch-logs-with-cache@^0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/fetch-logs-with-cache/-/fetch-logs-with-cache-0.0.1.tgz#aea539f97174a1143ea7c21e4d4cbd13521ec89d"
-  integrity sha512-+B4NCWWS4pUOHwDXuMgnN1D6zAxycKhfqOUNaC5Z2gz/oDr/CzFVb4I/dEjvoGLQXbdb0pxl+Lfx/+Mb1Yk0cA==
+fetch-logs-with-cache@^0.0.8:
+  version "0.0.8"
+  resolved "https://registry.yarnpkg.com/fetch-logs-with-cache/-/fetch-logs-with-cache-0.0.8.tgz#c817d5317a9ccbcbeb05bf8baa71387f00375cfd"
+  integrity sha512-4Fes1cTmn349SC1ZGi0QkyE79+LeL4PdcIUdUJVHtKnBCiJ8WoI5M5GBEFEWc3CMK7gbnT0pwBiHJ1ZPztIFLw==
   dependencies:
-    "@types/better-sqlite3" "^7.6.10"
-    "@types/yargs" "^17.0.32"
     better-sqlite3 "^11.0.0"
     ethers "^6.13.0"
     yargs "^17.7.2"
