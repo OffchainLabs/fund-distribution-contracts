@@ -22,7 +22,7 @@ export const checkAndRouteFunds = async (
 
   if (
     isEth &&
-    (await parentChainSigner.v6.provider.getBalance(
+    (await parentChainSigner.provider.getBalance(
       parentToChildRewardRouterAddr
     )) < minBalance
   ) {
@@ -33,7 +33,7 @@ export const checkAndRouteFunds = async (
     !isEth &&
     (await IERC20__factory.connect(
       ethOrTokenAddress,
-      parentChainSigner.v6
+      parentChainSigner
     ).balanceOf(parentToChildRewardRouterAddr)) < minBalance
   ) {
     return
@@ -42,7 +42,7 @@ export const checkAndRouteFunds = async (
   const parentToChildRewardRouter: ParentToChildRewardRouter =
     ParentToChildRewardRouter__factory.connect(
       parentToChildRewardRouterAddr,
-      parentChainSigner.v6
+      parentChainSigner
     )
 
   // check if it's time to trigger
@@ -57,13 +57,13 @@ export const checkAndRouteFunds = async (
 
   const inbox = IInbox__factory.connect(
     await parentToChildRewardRouter.inbox(),
-    parentChainSigner.v6.provider
+    parentChainSigner.provider
   )
   // for ETH, retryable has 0 calldata (simple transfer)
   // For token,  it sens data abi.encode(maxSubmissionCost, bytes("")) (length of 96)
   const dataLength = isEth ? 0 : 96
 
-  const parentGasPrice = (await parentChainSigner.v6.provider.getFeeData())
+  const parentGasPrice = (await parentChainSigner.provider.getFeeData())
     .gasPrice
   if (parentGasPrice === null) {
     throw new Error('Parent gas price is null')
@@ -76,8 +76,7 @@ export const checkAndRouteFunds = async (
   // add a 20% increase for insurance
   const submissionFee = (_submissionFee * 120n) / 100n
 
-  const childGasPrice = (await childChainSigner.v6.provider.getFeeData())
-    .gasPrice
+  const childGasPrice = (await childChainSigner.provider.getFeeData()).gasPrice
   if (childGasPrice === null) {
     throw new Error('Child gas price is null')
   }

@@ -29,7 +29,7 @@ const options = yargs(process.argv.slice(2))
 ;(async () => {
   const parentChildSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
-    options.parentRPCUrl
+    new DoubleProvider(options.parentRPCUrl)
   )
   console.log(`Signing with ${parentChildSigner.v5.address} on parent chain 
   ${(await parentChildSigner.v5.provider.getNetwork()).chainId}'`)

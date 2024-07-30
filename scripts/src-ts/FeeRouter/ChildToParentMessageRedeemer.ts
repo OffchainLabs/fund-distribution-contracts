@@ -30,15 +30,15 @@ export default class ChildToParentMessageRedeemer {
 
     this.childToParentRewardRouter = ChildToParentRewardRouter__factory.connect(
       childToParentRewardRouterAddr,
-      this.childChainProvider.v6
+      this.childChainProvider
     )
     this.retryDelay = retryDelay
   }
 
   public async redeemChildToParentMessages(oneOff = false) {
     const toBlock =
-      (await this.childChainProvider.v6.getBlockNumber()) - this.blockLag
-    const logs = await this.childChainProvider.v6.getLogs({
+      (await this.childChainProvider.getBlockNumber()) - this.blockLag
+    const logs = await this.childChainProvider.getLogs({
       fromBlock: this.startBlock,
       toBlock: toBlock,
       address: this.childToParentRewardRouterAddr,

@@ -2,7 +2,7 @@ import dotenv from 'dotenv'
 import yargs from 'yargs'
 import { parseEther } from 'ethers'
 import { checkAndRouteFunds } from '../FeeRouter/checkAndRouteFunds'
-import { DoubleWallet } from '../../template/util'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
 
 dotenv.config()
 
@@ -25,14 +25,14 @@ const options = yargs(process.argv.slice(2))
 ;(async () => {
   const parentChildSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
-    options.parentRPCUrl
+    new DoubleProvider(options.parentRPCUrl)
   )
   console.log(`Signing with ${parentChildSigner.v5.address} on parent chain 
     ${(await parentChildSigner.v5.provider.getNetwork()).chainId}'`)
 
   const childChainSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
-    options.childRPCUrl
+    new DoubleProvider(options.childRPCUrl)
   )
 
   console.log(`Signing with ${childChainSigner.v5.address} on child chain 

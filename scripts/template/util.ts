@@ -11,39 +11,29 @@ export function getEnv(name: string): string {
   return value
 }
 
-export class DoubleProvider {
+export class DoubleProvider extends JsonRpcProvider {
   public readonly v5: ethersv5.providers.JsonRpcProvider
-  public readonly v6: JsonRpcProvider
   constructor(public readonly url: string) {
+    super(url)
     this.v5 = new ethersv5.providers.JsonRpcProvider(url)
-    this.v6 = new JsonRpcProvider(url)
   }
 }
 
-export class DoubleWallet {
-  public readonly doubleProvider: DoubleProvider
+export class DoubleWallet extends Wallet {
   public readonly v5: ethersv5.Wallet & {
     provider: ethersv5.providers.JsonRpcProvider
   }
-  public readonly v6: Wallet & { provider: JsonRpcProvider }
 
   constructor(
-    public readonly privateKey: string,
-    urlOrProvider: string | DoubleProvider
+    privateKey: string,
+    public readonly provider: DoubleProvider
   ) {
-    this.doubleProvider = new DoubleProvider(
-      urlOrProvider instanceof DoubleProvider
-        ? urlOrProvider.url
-        : urlOrProvider
-    )
+    super(privateKey, provider)
+    this.provider = provider
 
     this.v5 = new ethersv5.Wallet(
       privateKey,
-      this.doubleProvider.v5
+      this.provider.v5
     ) as ethersv5.Wallet & { provider: ethersv5.providers.JsonRpcProvider }
-
-    this.v6 = new Wallet(privateKey, this.doubleProvider.v6) as Wallet & {
-      provider: JsonRpcProvider
-    }
   }
 }
