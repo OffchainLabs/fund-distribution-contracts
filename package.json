@@ -27,7 +27,6 @@
     "test:storage": "./test/storage/test-storage.bash",
     "gas-snapshot": "forge snapshot --match-path \"test/unit/**/*.t.sol\"",
     "fix": "yarn format; yarn test:sigs; yarn test:storage; yarn gas-snapshot",
-
     "distribute": "ts-node ./scripts/src-ts/cli/distributeRewards.ts",
     "route-parent-to-child": "ts-node ./scripts/src-ts/cli/routeParentToChild.ts",
     "redeem-child-to-parent": "ts-node ./scripts/src-ts/cli/childToParentRedeemer.ts",
