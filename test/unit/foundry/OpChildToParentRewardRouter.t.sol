@@ -2,8 +2,8 @@
 pragma solidity ^0.8.16;
 
 import "contracts/FeeRouter/OpChildToParentRewardRouter.sol";
-import "./util/TestToken.sol";
-import "./util/OpStandardBridgeMock.sol";
+import "test/mocks/TestToken.sol";
+import "test/mocks/OpStandardBridgeMock.sol";
 import "./Empty.sol";
 
 import "forge-std/Test.sol";
