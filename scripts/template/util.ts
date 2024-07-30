@@ -21,26 +21,28 @@ export class DoubleProvider {
 }
 
 export class DoubleWallet {
+  public readonly doubleProvider: DoubleProvider
   public readonly v5: ethersv5.Wallet & {
     provider: ethersv5.providers.JsonRpcProvider
   }
   public readonly v6: Wallet & { provider: JsonRpcProvider }
+
   constructor(
     public readonly privateKey: string,
-    public readonly urlOrProvider: string | DoubleProvider
+    urlOrProvider: string | DoubleProvider
   ) {
+    this.doubleProvider = new DoubleProvider(
+      urlOrProvider instanceof DoubleProvider
+        ? urlOrProvider.url
+        : urlOrProvider
+    )
+
     this.v5 = new ethersv5.Wallet(
       privateKey,
-      urlOrProvider instanceof DoubleProvider
-        ? urlOrProvider.v5
-        : new ethersv5.providers.JsonRpcProvider(urlOrProvider)
+      this.doubleProvider.v5
     ) as ethersv5.Wallet & { provider: ethersv5.providers.JsonRpcProvider }
-    this.v6 = new Wallet(
-      privateKey,
-      urlOrProvider instanceof DoubleProvider
-        ? urlOrProvider.v6
-        : new JsonRpcProvider(urlOrProvider)
-    ) as Wallet & {
+
+    this.v6 = new Wallet(privateKey, this.doubleProvider.v6) as Wallet & {
       provider: JsonRpcProvider
     }
   }
