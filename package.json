@@ -26,6 +26,7 @@
     "test:sigs": "./test/signatures/test-sigs.bash",
     "test:storage": "./test/storage/test-storage.bash",
     "gas-snapshot": "forge snapshot --match-path \"test/unit/**/*.t.sol\"",
+    "show-used-contracts": "./scripts/template/show-used-contracts.bash && rm -rf flattened",
     "fix": "yarn format; yarn test:sigs; yarn test:storage; yarn gas-snapshot",
     "distribute": "ts-node ./scripts/src-ts/cli/distributeRewards.ts",
     "route-parent-to-child": "ts-node ./scripts/src-ts/cli/routeParentToChild.ts",
