@@ -1,7 +1,6 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
-import { JsonRpcProvider } from '@ethersproject/providers'
-import { Wallet } from 'ethers'
+import { JsonRpcProvider, Wallet } from 'ethers'
 import { distributeRewards } from '../lib'
 dotenv.config()
 

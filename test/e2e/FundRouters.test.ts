@@ -2,12 +2,13 @@ import { expect } from 'chai'
 import { TestSetup, testSetup } from './testSetup'
 import {
   ParentToChildRewardRouter__factory,
-  ParentToChildRewardRouter, ChildToParentRewardRouter,
+  ParentToChildRewardRouter,
+  ChildToParentRewardRouter,
   RewardDistributor__factory,
   RewardDistributor,
   ArbChildToParentRewardRouter__factory,
   IERC20__factory,
-  IERC20
+  IERC20,
 } from '../../typechain-types'
 import { BigNumber } from 'ethers-v5'
 import ChildToParentMessageRedeemer from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'

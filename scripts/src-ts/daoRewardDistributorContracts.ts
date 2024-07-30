@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { JsonRpcProvider, Provider } from 'ethers'
 
 export type chainID = 42161 | 42170
 enum FeeType {
@@ -12,7 +12,7 @@ interface Chain {
   id: chainID
   name: string
   startBlock: number
-  provider: JsonRpcProvider
+  provider: Provider
 }
 interface RewardDistributorData {
   address: string

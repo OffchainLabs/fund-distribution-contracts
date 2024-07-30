@@ -1,0 +1,5 @@
+| Name                    | Type    | Slot | Offset | Bytes | Contract                                          |
+|-------------------------|---------|------|--------|-------|---------------------------------------------------|
+| _owner                  | address | 0    | 0      | 20    | contracts/RewardDistributor.sol:RewardDistributor |
+| currentRecipientGroup   | bytes32 | 1    | 0      | 32    | contracts/RewardDistributor.sol:RewardDistributor |
+| currentRecipientWeights | bytes32 | 2    | 0      | 32    | contracts/RewardDistributor.sol:RewardDistributor |

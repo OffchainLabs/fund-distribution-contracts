@@ -10,7 +10,7 @@ import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
 } from '../../../lib/arbitrum-sdk/src'
-import { toV6Wallet } from '../../../test/util/util'
+import { toV6Wallet } from '../../template/util'
 
 export const checkAndRouteFunds = async (
   ethOrTokenAddress: string,

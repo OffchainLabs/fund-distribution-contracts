@@ -1,9 +1,8 @@
-import { RewardDistributor__factory } from '../typechain-types'
-import { RecipientsUpdatedEventObject } from '../typechain-types/src/RewardDistributor'
+import { parseEther, Provider, Wallet } from 'ethers'
+import { RewardDistributor__factory } from '../../typechain-types'
 
-import { Provider } from '@ethersproject/providers'
-import { Wallet, BigNumber, utils } from 'ethers'
 import { readFileSync } from 'fs'
+import { RecipientsUpdatedEvent } from '../../typechain-types/contracts/RewardDistributor'
 
 interface RecipientsAndWeights {
   recipients: string[]
@@ -23,19 +22,19 @@ export const getRecipientsAndWeights = async (
 
   const logs = await provider.getLogs({
     fromBlock,
-    ...distributor.filters.RecipientsUpdated(),
+    address: distributor.getAddress(),
+    topics: [distributor.interface.getEvent('RecipientsUpdated').topicHash],
   })
-  const latestLog = logs[logs.length - 1]
+  const latestLog = logs[logs.length - 1] as
+    | RecipientsUpdatedEvent.Log
+    | undefined
   if (!latestLog) throw new Error('No updates found')
 
-  const eventObj = distributor.interface.parseLog(latestLog)
-    .args as unknown as RecipientsUpdatedEventObject
-
   return {
-    recipients: eventObj.recipients,
-    recipientGroup: eventObj.recipientGroup,
-    weights: eventObj.weights.map(w => w.toNumber()),
-    recipientWeights: eventObj.recipientWeights,
+    recipients: latestLog.args.recipients,
+    recipientGroup: latestLog.args.recipientGroup,
+    weights: latestLog.args.weights.map((w: bigint) => parseInt(w.toString())),
+    recipientWeights: latestLog.args.recipientWeights,
   }
 }
 
@@ -44,25 +43,25 @@ export const distributeRewards = async (
   distributorAddr: string,
   _minBalanceEther?: number
 ) => {
-  const chainId = await connectedSigner.getChainId()
+  const chainId = (await connectedSigner.provider!.getNetwork()).chainId
   const minBalanceWei = _minBalanceEther
-    ? utils.parseEther(_minBalanceEther.toString())
-    : BigNumber.from(0)
+    ? parseEther(_minBalanceEther.toString())
+    : 0n
   const distributor = RewardDistributor__factory.connect(
     distributorAddr,
     connectedSigner
   )
   console.log(connectedSigner.address)
 
-  const bal = await connectedSigner.provider.getBalance(distributorAddr)
-  if (bal.lt(minBalanceWei)) {
+  const bal = await connectedSigner.provider!.getBalance(distributorAddr)
+  if (bal < minBalanceWei) {
     console.log('Balance too low')
     console.log('Min balance', minBalanceWei.toString())
     console.log('Balance', bal.toString())
     return
   }
 
-  const dataBuf = await readFileSync(
+  const dataBuf = readFileSync(
     './src-ts/data/recipientAndWeightsData.json'
   ).toString()
   const data = JSON.parse(dataBuf).data
@@ -76,7 +75,7 @@ export const distributeRewards = async (
   if (!recAndWeights) {
     recAndWeights = await getRecipientsAndWeights(
       distributorAddr,
-      connectedSigner.provider
+      connectedSigner.provider!
     )
   }
   const res = await distributor.distributeRewards(
@@ -84,5 +83,5 @@ export const distributeRewards = async (
     recAndWeights.weights
   )
   const rec = await res.wait()
-  console.log('Rewards distributed', rec.transactionHash)
+  console.log('Rewards distributed', rec!.hash)
 }

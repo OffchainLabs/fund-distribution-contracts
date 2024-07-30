@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
-import { JsonRpcProvider } from '@ethersproject/providers'
-import { Wallet, utils } from 'ethers'
+import { parseEther } from 'ethers'
+import { ethers as ethersv5 } from 'ethers-v5'
 import { checkAndRouteFunds } from '../FeeRouter/checkAndRouteFunds'
 
 dotenv.config()
@@ -23,26 +23,26 @@ const options = yargs(process.argv.slice(2))
   .parseSync()
 
 ;(async () => {
-  const parentChildSigner = new Wallet(
+  const parentChildSigner = new ethersv5.Wallet(
     PARENT_CHAIN_PK,
-    new JsonRpcProvider(options.parentRPCUrl)
+    new ethersv5.providers.JsonRpcProvider(options.parentRPCUrl)
   )
   console.log(`Signing with ${parentChildSigner.address} on parent chain 
-    ${(await parentChildSigner.provider.getNetwork()).chainId}'`)
+    ${(await parentChildSigner.provider!.getNetwork()).chainId}'`)
 
-  const childChainSigner = new Wallet(
+  const childChainSigner = new ethersv5.Wallet(
     PARENT_CHAIN_PK,
-    new JsonRpcProvider(options.childRPCUrl)
+    new ethersv5.providers.JsonRpcProvider(options.childRPCUrl)
   )
 
   console.log(`Signing with ${childChainSigner.address} on child chain 
-  ${(await childChainSigner.provider.getNetwork()).chainId}'`)
+  ${(await childChainSigner.provider!.getNetwork()).chainId}'`)
   await checkAndRouteFunds(
     options.ETHorTokenAddress,
     parentChildSigner,
     childChainSigner,
     options.parentToChildRewardRouterAddr,
-    utils.parseEther(String(options.minBalanceEther))
+    parseEther(String(options.minBalanceEther))
   )
   console.log('done')
 })()
