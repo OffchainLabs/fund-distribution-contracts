@@ -25,7 +25,7 @@
     // We do not use do any merkle proofs
     "GHSA-wprv-93r4-jj2p",
     // OpenZeppelin Contracts TransparentUpgradeableProxy clashing selector calls may not be delegated
-    // TODO: investigate if this affects us
+    // This project does not use proxies
     "GHSA-mx2q-35m2-x2rh",
     // OpenZeppelin Contracts's governor proposal creation may be blocked by frontrunning
     // We do not use governors
