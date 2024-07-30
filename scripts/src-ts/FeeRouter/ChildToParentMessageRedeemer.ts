@@ -1,5 +1,3 @@
-import { Wallet, JsonRpcProvider } from 'ethers'
-import { ethers as ethersv5 } from 'ethers-v5'
 import {
   ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
@@ -12,6 +10,7 @@ import {
   L2ToL1Message,
   L2ToL1MessageStatus,
 } from '../../../lib/arbitrum-sdk/src'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
 const wait = async (ms: number) => new Promise(res => setTimeout(res, ms))
 
 export default class ChildToParentMessageRedeemer {
@@ -19,11 +18,9 @@ export default class ChildToParentMessageRedeemer {
   public childToParentRewardRouter: ChildToParentRewardRouter
   public readonly retryDelay: number
 
-  private readonly v6ChildChainProvider: JsonRpcProvider
-  private readonly v6ParentChainSigner: Wallet
   constructor(
-    public readonly v5ChildChainProvider: ethersv5.providers.JsonRpcProvider,
-    public readonly v5ParentChainSigner: ethersv5.Wallet,
+    public readonly childChainProvider: DoubleProvider,
+    public readonly parentChainSigner: DoubleWallet,
     public readonly childToParentRewardRouterAddr: string,
     public readonly blockLag: number,
     initialStartBlock: number,
@@ -31,25 +28,17 @@ export default class ChildToParentMessageRedeemer {
   ) {
     this.startBlock = initialStartBlock
 
-    this.v6ChildChainProvider = new JsonRpcProvider(
-      v5ChildChainProvider.connection.url
-    )
-    this.v6ParentChainSigner = new Wallet(
-      v5ParentChainSigner.privateKey,
-      this.v6ChildChainProvider
-    )
-
     this.childToParentRewardRouter = ChildToParentRewardRouter__factory.connect(
       childToParentRewardRouterAddr,
-      this.v6ChildChainProvider
+      this.childChainProvider.v6
     )
     this.retryDelay = retryDelay
   }
 
   public async redeemChildToParentMessages(oneOff = false) {
     const toBlock =
-      (await this.v6ChildChainProvider.getBlockNumber()) - this.blockLag
-    const logs = await this.v6ChildChainProvider.getLogs({
+      (await this.childChainProvider.v6.getBlockNumber()) - this.blockLag
+    const logs = await this.childChainProvider.v6.getLogs({
       fromBlock: this.startBlock,
       toBlock: toBlock,
       address: this.childToParentRewardRouterAddr,
@@ -66,7 +55,7 @@ export default class ChildToParentMessageRedeemer {
 
     for (const log of logs) {
       const arbTransactionRec = new L2TransactionReceipt(
-        await this.v5ChildChainProvider.getTransactionReceipt(
+        await this.childChainProvider.v5.getTransactionReceipt(
           log.transactionHash
         )
       )
@@ -79,23 +68,23 @@ export default class ChildToParentMessageRedeemer {
 
       for (const l2ToL1Event of l2ToL1Events) {
         const l2ToL1Message = L2ToL1Message.fromEvent(
-          this.v5ParentChainSigner,
+          this.parentChainSigner.v5,
           l2ToL1Event
         )
         if (!oneOff) {
           console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`)
           await l2ToL1Message.waitUntilReadyToExecute(
-            this.v5ChildChainProvider,
+            this.childChainProvider.v5,
             this.retryDelay
           )
         }
 
-        const status = await l2ToL1Message.status(this.v5ChildChainProvider)
+        const status = await l2ToL1Message.status(this.childChainProvider.v5)
         switch (status) {
           case L2ToL1MessageStatus.CONFIRMED: {
             console.log(l2ToL1Event.hash, 'confirmed; executing:')
             const rec = await (
-              await l2ToL1Message.execute(this.v5ChildChainProvider)
+              await l2ToL1Message.execute(this.childChainProvider.v5)
             ).wait(2)
             console.log(`${l2ToL1Event.hash} executed:`, rec.transactionHash)
             break

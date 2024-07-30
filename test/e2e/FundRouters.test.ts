@@ -42,16 +42,16 @@ describe('Router e2e test', () => {
     setup = await testSetup()
     console.log(
       'using L1 wallet:',
-      setup.l1Signer.address,
-      await setup.l1Provider.getBalance(setup.l1Signer.address)
+      setup.l1Signer.v5.address,
+      await setup.l1Provider.v6.getBalance(setup.l1Signer.v5.address)
     )
     console.log(
       'using L2 wallet:',
-      setup.l2Signer.address,
-      await setup.l2Provider.getBalance(setup.l2Signer.address)
+      setup.l2Signer.v5.address,
+      await setup.l2Provider.v6.getBalance(setup.l2Signer.v5.address)
     )
 
-    testToken = await deployTestToken(setup.l1Signer)
+    testToken = await deployTestToken(setup.l1Signer.v6)
     console.log('Test token L1 deployed', await testToken.getAddress())
 
     // Initial token deposit:
@@ -60,35 +60,35 @@ describe('Router e2e test', () => {
     await (
       await erc20Bridger.approveToken({
         erc20L1Address: await testToken.getAddress(),
-        l1Signer: setup.v5.l1Signer,
+        l1Signer: setup.l1Signer.v5,
       })
     ).wait()
     const depositRes = await erc20Bridger.deposit({
       amount: BigNumber.from(1000),
       erc20L1Address: await testToken.getAddress(),
-      l1Signer: setup.v5.l1Signer,
-      l2Provider: setup.v5.l2Provider,
+      l1Signer: setup.l1Signer.v5,
+      l2Provider: setup.l2Provider.v5,
     })
 
     const depositRec = await depositRes.wait()
 
     console.log('waiting for retryables')
 
-    await depositRec.waitForL2(setup.v5.l2Signer)
+    await depositRec.waitForL2(setup.l2Signer.v5)
     const l2TokenAddress = await erc20Bridger.getL2ERC20Address(
       await testToken.getAddress(),
-      setup.v5.l1Provider
+      setup.l1Provider.v5
     )
 
     console.log('L2 test token:', l2TokenAddress)
 
-    l2TestToken = IERC20__factory.connect(l2TokenAddress, setup.l2Signer)
+    l2TestToken = IERC20__factory.connect(l2TokenAddress, setup.l2Signer.v6)
 
     // deploy parent to child
     console.log('Deploying parentToChildRewardRouter:')
 
     parentToChildRewardRouter = await new ParentToChildRewardRouter__factory(
-      setup.l1Signer
+      setup.l1Signer.v6
     ).deploy(
       setup.l2Network.tokenBridge.l1GatewayRouter,
       destination,
@@ -106,7 +106,7 @@ describe('Router e2e test', () => {
 
     // deploy child to parent
     childToParentRewardRouter = await new ArbChildToParentRewardRouter__factory(
-      setup.l2Signer
+      setup.l2Signer.v6
     ).deploy(
       await parentToChildRewardRouter.getAddress(),
       10,
@@ -124,7 +124,7 @@ describe('Router e2e test', () => {
     console.log('Deploying rewardDistributor:')
 
     rewardDistributor = await new RewardDistributor__factory(
-      setup.l2Signer
+      setup.l2Signer.v6
     ).deploy([await childToParentRewardRouter.getAddress()], [10000])
     await rewardDistributor.waitForDeployment()
     console.log(
@@ -141,14 +141,14 @@ describe('Router e2e test', () => {
   describe('e2e eth routing test', async () => {
     const ethValue = parseEther('.23')
     it('destination has initial balance of 0', async () => {
-      const initialBal = await setup.l2Provider.getBalance(destination)
+      const initialBal = await setup.l2Provider.v6.getBalance(destination)
       expect(initialBal).to.eq(0n)
     })
 
     // fund reward distributor
     it('funds and pokes reward distributor', async () => {
       await (
-        await setup.l2Signer.sendTransaction({
+        await setup.l2Signer.v6.sendTransaction({
           value: ethValue,
           to: rewardDistributor.getAddress(),
         })
@@ -164,11 +164,11 @@ describe('Router e2e test', () => {
 
       // fund should be distributed and auto-routed
       expect(
-        await setup.l2Provider.getBalance(rewardDistributor.getAddress())
+        await setup.l2Provider.v6.getBalance(rewardDistributor.getAddress())
       ).to.equal(0n)
 
       expect(
-        await setup.l2Provider.getBalance(
+        await setup.l2Provider.v6.getBalance(
           childToParentRewardRouter.getAddress()
         )
       ).to.equal(0n)
@@ -176,8 +176,8 @@ describe('Router e2e test', () => {
 
     it('redeems l2 to l1 message', async () => {
       await new ChildToParentMessageRedeemer(
-        setup.v5.l2Provider,
-        setup.v5.l1Signer,
+        setup.l2Provider,
+        setup.l1Signer,
         await childToParentRewardRouter.getAddress(),
         0,
         0,
@@ -186,7 +186,7 @@ describe('Router e2e test', () => {
 
       // funds should be in parentToChildRewardRouter now
       expect(
-        await setup.l1Provider.getBalance(
+        await setup.l1Provider.v6.getBalance(
           await parentToChildRewardRouter.getAddress()
         )
       ).to.eq(ethValue)
@@ -195,12 +195,12 @@ describe('Router e2e test', () => {
     it('routes runds to destination ', async () => {
       await checkAndRouteFunds(
         'ETH',
-        setup.v5.l1Signer,
-        setup.v5.l2Signer,
+        setup.l1Signer,
+        setup.l2Signer,
         await parentToChildRewardRouter.getAddress(),
         0n
       )
-      expect(await setup.l2Provider.getBalance(destination)).to.eq(ethValue)
+      expect(await setup.l2Provider.v6.getBalance(destination)).to.eq(ethValue)
     })
   })
 
@@ -231,8 +231,8 @@ describe('Router e2e test', () => {
 
     it('redeems l2 to l1 message', async () => {
       await new ChildToParentMessageRedeemer(
-        setup.v5.l2Provider,
-        setup.v5.l1Signer,
+        setup.l2Provider,
+        setup.l1Signer,
         await childToParentRewardRouter.getAddress(),
         0,
         0,
@@ -248,8 +248,8 @@ describe('Router e2e test', () => {
     it('routes runds to destination ', async () => {
       await checkAndRouteFunds(
         await testToken.getAddress(),
-        setup.v5.l1Signer,
-        setup.v5.l2Signer,
+        setup.l1Signer,
+        setup.l2Signer,
         await parentToChildRewardRouter.getAddress(),
         0n
       )

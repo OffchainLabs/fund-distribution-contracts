@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
 import ChildToParentMessageRedeemer from '../FeeRouter/ChildToParentMessageRedeemer'
-import { ethers as ethersv5 } from 'ethers-v5'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
 
 dotenv.config()
 
@@ -27,15 +27,15 @@ const options = yargs(process.argv.slice(2))
   .parseSync()
 
 ;(async () => {
-  const parentChildSigner = new ethersv5.Wallet(
+  const parentChildSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
-    new ethersv5.providers.JsonRpcProvider(options.parentRPCUrl)
+    options.parentRPCUrl
   )
-  console.log(`Signing with ${parentChildSigner.address} on parent chain 
-  ${(await parentChildSigner.provider.getNetwork()).chainId}'`)
+  console.log(`Signing with ${parentChildSigner.v5.address} on parent chain 
+  ${(await parentChildSigner.v5.provider.getNetwork()).chainId}'`)
 
   const redeemer = new ChildToParentMessageRedeemer(
-    new ethersv5.providers.JsonRpcProvider(options.childRPCUrl),
+    new DoubleProvider(options.childRPCUrl),
     parentChildSigner,
     options.childToParentRewardRouterAddr,
     options.blockLag,

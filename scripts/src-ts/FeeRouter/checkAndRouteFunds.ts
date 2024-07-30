@@ -1,4 +1,3 @@
-import { ethers as ethersv5 } from 'ethers-v5'
 import {
   ParentToChildRewardRouter__factory,
   ParentToChildRewardRouter,
@@ -10,23 +9,20 @@ import {
   L1TransactionReceipt,
   L1ToL2MessageStatus,
 } from '../../../lib/arbitrum-sdk/src'
-import { toV6Wallet } from '../../template/util'
+import { DoubleWallet } from '../../template/util'
 
 export const checkAndRouteFunds = async (
   ethOrTokenAddress: string,
-  parentChainSigner: ethersv5.Wallet,
-  childChainSigner: ethersv5.Wallet,
+  parentChainSigner: DoubleWallet,
+  childChainSigner: DoubleWallet,
   parentToChildRewardRouterAddr: string,
   minBalance: bigint
 ) => {
   const isEth = ethOrTokenAddress == 'ETH'
 
-  const v6ChildChainSigner = toV6Wallet(childChainSigner)
-  const v6ParentChainSigner = toV6Wallet(parentChainSigner)
-
   if (
     isEth &&
-    (await v6ParentChainSigner.provider.getBalance(
+    (await parentChainSigner.v6.provider.getBalance(
       parentToChildRewardRouterAddr
     )) < minBalance
   ) {
@@ -37,7 +33,7 @@ export const checkAndRouteFunds = async (
     !isEth &&
     (await IERC20__factory.connect(
       ethOrTokenAddress,
-      v6ParentChainSigner
+      parentChainSigner.v6
     ).balanceOf(parentToChildRewardRouterAddr)) < minBalance
   ) {
     return
@@ -46,7 +42,7 @@ export const checkAndRouteFunds = async (
   const parentToChildRewardRouter: ParentToChildRewardRouter =
     ParentToChildRewardRouter__factory.connect(
       parentToChildRewardRouterAddr,
-      v6ParentChainSigner
+      parentChainSigner.v6
     )
 
   // check if it's time to trigger
@@ -61,13 +57,13 @@ export const checkAndRouteFunds = async (
 
   const inbox = IInbox__factory.connect(
     await parentToChildRewardRouter.inbox(),
-    v6ParentChainSigner.provider
+    parentChainSigner.v6.provider
   )
   // for ETH, retryable has 0 calldata (simple transfer)
   // For token,  it sens data abi.encode(maxSubmissionCost, bytes("")) (length of 96)
   const dataLength = isEth ? 0 : 96
 
-  const parentGasPrice = (await v6ParentChainSigner.provider.getFeeData())
+  const parentGasPrice = (await parentChainSigner.v6.provider.getFeeData())
     .gasPrice
   if (parentGasPrice === null) {
     throw new Error('Parent gas price is null')
@@ -80,7 +76,7 @@ export const checkAndRouteFunds = async (
   // add a 20% increase for insurance
   const submissionFee = (_submissionFee * 120n) / 100n
 
-  const childGasPrice = (await v6ChildChainSigner.provider.getFeeData())
+  const childGasPrice = (await childChainSigner.v6.provider.getFeeData())
     .gasPrice
   if (childGasPrice === null) {
     throw new Error('Child gas price is null')
@@ -124,9 +120,9 @@ export const checkAndRouteFunds = async (
   })()
 
   const l1TxRec = new L1TransactionReceipt(
-    await parentChainSigner.provider.getTransactionReceipt(rec!.hash)
+    await parentChainSigner.v5.provider.getTransactionReceipt(rec!.hash)
   )
-  const l1ToL2Msgs = await l1TxRec.getL1ToL2Messages(childChainSigner)
+  const l1ToL2Msgs = await l1TxRec.getL1ToL2Messages(childChainSigner.v5)
   if (l1ToL2Msgs.length != 1) throw new Error('Unexpected messages length')
 
   const l1ToL2Msg = l1ToL2Msgs[0]

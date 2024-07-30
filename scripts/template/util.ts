@@ -11,33 +11,37 @@ export function getEnv(name: string): string {
   return value
 }
 
-/**
- * Produces a v6 provider from a v5 provider
- * @param provider An ethers v5 JsonRpcProvider
- * @returns An ethers v6 JsonRpcProvider
- */
-export function toV6Provider(provider: ethersv5.providers.JsonRpcProvider) {
-  const url = provider.connection.url
-  if (!url) {
-    throw new Error('Provider does not have a connection url')
+export class DoubleProvider {
+  public readonly v5: ethersv5.providers.JsonRpcProvider
+  public readonly v6: JsonRpcProvider
+  constructor(public readonly url: string) {
+    this.v5 = new ethersv5.providers.JsonRpcProvider(url)
+    this.v6 = new JsonRpcProvider(url)
   }
-  return new JsonRpcProvider(provider.connection.url)
 }
 
-/**
- * Produces a v6 wallet from a v5 wallet
- * @param wallet An ethers v5 Wallet
- * @throws If the wallet provider is not a JsonRpcProvider
- * @returns An ethers v6 Wallet
- */
-export function toV6Wallet(
-  wallet: ethersv5.Wallet
-): Wallet & { provider: JsonRpcProvider } {
-  if (!(wallet.provider instanceof ethersv5.providers.JsonRpcProvider)) {
-    throw new Error('Wallet provider is not a JsonRpcProvider')
+export class DoubleWallet {
+  public readonly v5: ethersv5.Wallet & {
+    provider: ethersv5.providers.JsonRpcProvider
   }
-  return new Wallet(
-    wallet.privateKey,
-    toV6Provider(wallet.provider)
-  ) as Wallet & { provider: JsonRpcProvider }
+  public readonly v6: Wallet & { provider: JsonRpcProvider }
+  constructor(
+    public readonly privateKey: string,
+    public readonly urlOrProvider: string | DoubleProvider
+  ) {
+    this.v5 = new ethersv5.Wallet(
+      privateKey,
+      urlOrProvider instanceof DoubleProvider
+        ? urlOrProvider.v5
+        : new ethersv5.providers.JsonRpcProvider(urlOrProvider)
+    ) as ethersv5.Wallet & { provider: ethersv5.providers.JsonRpcProvider }
+    this.v6 = new Wallet(
+      privateKey,
+      urlOrProvider instanceof DoubleProvider
+        ? urlOrProvider.v6
+        : new JsonRpcProvider(urlOrProvider)
+    ) as Wallet & {
+      provider: JsonRpcProvider
+    }
+  }
 }
