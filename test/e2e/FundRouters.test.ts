@@ -16,8 +16,9 @@ import { checkAndRouteFunds } from '../../scripts/src-ts/FeeRouter/checkAndRoute
 import { Erc20Bridger } from '../../lib/arbitrum-sdk/src'
 import { ContractFactory, Wallet, parseEther } from 'ethers'
 import TestTokenArtifact from '../../out/TestToken.sol/TestToken.json'
+import { DoubleWallet } from '../../scripts/template/util'
 
-async function deployTestToken(signer: Wallet) {
+async function deployTestToken(signer: DoubleWallet) {
   const testToken = await new ContractFactory(
     TestTokenArtifact.abi,
     TestTokenArtifact.bytecode,
@@ -34,7 +35,7 @@ describe('Router e2e test', () => {
   let rewardDistributor: RewardDistributor
   let testToken: IERC20
   let l2TestToken: IERC20
-  const destination = Wallet.createRandom().address
+  const destination = DoubleWallet.createRandom().address
 
   console.log('destination', destination)
 

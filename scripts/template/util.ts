@@ -11,6 +11,13 @@ export function getEnv(name: string): string {
   return value
 }
 
+export function assertDefined<T>(value: T | undefined | null): T {
+  if (value === undefined || value === null) {
+    throw new Error('Value is undefined or null')
+  }
+  return value
+}
+
 export class DoubleProvider extends JsonRpcProvider {
   public readonly v5: ethersv5.providers.JsonRpcProvider
   constructor(public readonly url: string) {
@@ -25,11 +32,14 @@ export class DoubleWallet extends Wallet {
     provider: ethersv5.providers.JsonRpcProvider
   }
 
-  constructor(privateKey: string, provider: DoubleProvider) {
-    super(privateKey, provider)
+  constructor(
+    privateKey: string,
+    public readonly doubleProvider: DoubleProvider
+  ) {
+    super(privateKey, doubleProvider)
     this.v5 = new ethersv5.Wallet(
       privateKey,
-      provider.v5
+      doubleProvider.v5
     ) as ethersv5.Wallet & { provider: ethersv5.providers.JsonRpcProvider }
   }
 }
