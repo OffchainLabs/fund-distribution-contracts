@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Wallet } from 'ethers'
+import { JsonRpcProvider, Provider, Wallet } from 'ethers'
 import { ethers as ethersv5 } from 'ethers-v5'
 
 export type Unwrap<T> = T extends Promise<infer U> ? U : T
@@ -11,33 +11,35 @@ export function getEnv(name: string): string {
   return value
 }
 
-/**
- * Produces a v6 provider from a v5 provider
- * @param provider An ethers v5 JsonRpcProvider
- * @returns An ethers v6 JsonRpcProvider
- */
-export function toV6Provider(provider: ethersv5.providers.JsonRpcProvider) {
-  const url = provider.connection.url
-  if (!url) {
-    throw new Error('Provider does not have a connection url')
+export function assertDefined<T>(value: T | undefined | null): T {
+  if (value === undefined || value === null) {
+    throw new Error('Value is undefined or null')
   }
-  return new JsonRpcProvider(provider.connection.url)
+  return value
 }
 
-/**
- * Produces a v6 wallet from a v5 wallet
- * @param wallet An ethers v5 Wallet
- * @throws If the wallet provider is not a JsonRpcProvider
- * @returns An ethers v6 Wallet
- */
-export function toV6Wallet(
-  wallet: ethersv5.Wallet
-): Wallet & { provider: JsonRpcProvider } {
-  if (!(wallet.provider instanceof ethersv5.providers.JsonRpcProvider)) {
-    throw new Error('Wallet provider is not a JsonRpcProvider')
+export class DoubleProvider extends JsonRpcProvider {
+  public readonly v5: ethersv5.providers.JsonRpcProvider
+  constructor(public readonly url: string) {
+    super(url)
+    this.v5 = new ethersv5.providers.JsonRpcProvider(url)
   }
-  return new Wallet(
-    wallet.privateKey,
-    toV6Provider(wallet.provider)
-  ) as Wallet & { provider: JsonRpcProvider }
+}
+
+export class DoubleWallet extends Wallet {
+  public readonly provider!: Provider
+  public readonly v5: ethersv5.Wallet & {
+    provider: ethersv5.providers.JsonRpcProvider
+  }
+
+  constructor(
+    privateKey: string,
+    public readonly doubleProvider: DoubleProvider
+  ) {
+    super(privateKey, doubleProvider)
+    this.v5 = new ethersv5.Wallet(
+      privateKey,
+      doubleProvider.v5
+    ) as ethersv5.Wallet & { provider: ethersv5.providers.JsonRpcProvider }
+  }
 }

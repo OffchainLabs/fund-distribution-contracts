@@ -16,8 +16,9 @@ import { checkAndRouteFunds } from '../../scripts/src-ts/FeeRouter/checkAndRoute
 import { Erc20Bridger } from '../../lib/arbitrum-sdk/src'
 import { ContractFactory, Wallet, parseEther } from 'ethers'
 import TestTokenArtifact from '../../out/TestToken.sol/TestToken.json'
+import { DoubleWallet } from '../../scripts/template/util'
 
-async function deployTestToken(signer: Wallet) {
+async function deployTestToken(signer: DoubleWallet) {
   const testToken = await new ContractFactory(
     TestTokenArtifact.abi,
     TestTokenArtifact.bytecode,
@@ -34,7 +35,7 @@ describe('Router e2e test', () => {
   let rewardDistributor: RewardDistributor
   let testToken: IERC20
   let l2TestToken: IERC20
-  const destination = Wallet.createRandom().address
+  const destination = DoubleWallet.createRandom().address
 
   console.log('destination', destination)
 
@@ -42,13 +43,13 @@ describe('Router e2e test', () => {
     setup = await testSetup()
     console.log(
       'using L1 wallet:',
-      setup.l1Signer.address,
-      await setup.l1Provider.getBalance(setup.l1Signer.address)
+      setup.l1Signer.v5.address,
+      await setup.l1Provider.getBalance(setup.l1Signer.v5.address)
     )
     console.log(
       'using L2 wallet:',
-      setup.l2Signer.address,
-      await setup.l2Provider.getBalance(setup.l2Signer.address)
+      setup.l2Signer.v5.address,
+      await setup.l2Provider.getBalance(setup.l2Signer.v5.address)
     )
 
     testToken = await deployTestToken(setup.l1Signer)
@@ -60,24 +61,24 @@ describe('Router e2e test', () => {
     await (
       await erc20Bridger.approveToken({
         erc20L1Address: await testToken.getAddress(),
-        l1Signer: setup.v5.l1Signer,
+        l1Signer: setup.l1Signer.v5,
       })
     ).wait()
     const depositRes = await erc20Bridger.deposit({
       amount: BigNumber.from(1000),
       erc20L1Address: await testToken.getAddress(),
-      l1Signer: setup.v5.l1Signer,
-      l2Provider: setup.v5.l2Provider,
+      l1Signer: setup.l1Signer.v5,
+      l2Provider: setup.l2Provider.v5,
     })
 
     const depositRec = await depositRes.wait()
 
     console.log('waiting for retryables')
 
-    await depositRec.waitForL2(setup.v5.l2Signer)
+    await depositRec.waitForL2(setup.l2Signer.v5)
     const l2TokenAddress = await erc20Bridger.getL2ERC20Address(
       await testToken.getAddress(),
-      setup.v5.l1Provider
+      setup.l1Provider.v5
     )
 
     console.log('L2 test token:', l2TokenAddress)
@@ -176,8 +177,8 @@ describe('Router e2e test', () => {
 
     it('redeems l2 to l1 message', async () => {
       await new ChildToParentMessageRedeemer(
-        setup.v5.l2Provider,
-        setup.v5.l1Signer,
+        setup.l2Provider,
+        setup.l1Signer,
         await childToParentRewardRouter.getAddress(),
         0,
         0,
@@ -195,8 +196,8 @@ describe('Router e2e test', () => {
     it('routes runds to destination ', async () => {
       await checkAndRouteFunds(
         'ETH',
-        setup.v5.l1Signer,
-        setup.v5.l2Signer,
+        setup.l1Signer,
+        setup.l2Signer,
         await parentToChildRewardRouter.getAddress(),
         0n
       )
@@ -231,8 +232,8 @@ describe('Router e2e test', () => {
 
     it('redeems l2 to l1 message', async () => {
       await new ChildToParentMessageRedeemer(
-        setup.v5.l2Provider,
-        setup.v5.l1Signer,
+        setup.l2Provider,
+        setup.l1Signer,
         await childToParentRewardRouter.getAddress(),
         0,
         0,
@@ -248,8 +249,8 @@ describe('Router e2e test', () => {
     it('routes runds to destination ', async () => {
       await checkAndRouteFunds(
         await testToken.getAddress(),
-        setup.v5.l1Signer,
-        setup.v5.l2Signer,
+        setup.l1Signer,
+        setup.l2Signer,
         await parentToChildRewardRouter.getAddress(),
         0n
       )
