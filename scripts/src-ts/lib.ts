@@ -1,8 +1,9 @@
-import { parseEther, Provider, Wallet } from 'ethers'
+import { parseEther, Provider } from 'ethers'
 import { RewardDistributor__factory } from '../../typechain-types'
 
 import { readFileSync } from 'fs'
 import { RecipientsUpdatedEvent } from '../../typechain-types/contracts/RewardDistributor'
+import { DoubleWallet } from '../template/util'
 
 interface RecipientsAndWeights {
   recipients: string[]
@@ -39,11 +40,11 @@ export const getRecipientsAndWeights = async (
 }
 
 export const distributeRewards = async (
-  connectedSigner: Wallet,
+  connectedSigner: DoubleWallet,
   distributorAddr: string,
   _minBalanceEther?: number
 ) => {
-  const chainId = (await connectedSigner.provider!.getNetwork()).chainId
+  const chainId = (await connectedSigner.provider.getNetwork()).chainId
   const minBalanceWei = _minBalanceEther
     ? parseEther(_minBalanceEther.toString())
     : 0n
@@ -53,7 +54,7 @@ export const distributeRewards = async (
   )
   console.log(connectedSigner.address)
 
-  const bal = await connectedSigner.provider!.getBalance(distributorAddr)
+  const bal = await connectedSigner.provider.getBalance(distributorAddr)
   if (bal < minBalanceWei) {
     console.log('Balance too low')
     console.log('Min balance', minBalanceWei.toString())
@@ -75,7 +76,7 @@ export const distributeRewards = async (
   if (!recAndWeights) {
     recAndWeights = await getRecipientsAndWeights(
       distributorAddr,
-      connectedSigner.provider!
+      connectedSigner.provider
     )
   }
   const res = await distributor.distributeRewards(

@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Wallet } from 'ethers'
+import { JsonRpcProvider, Provider, Wallet } from 'ethers'
 import { ethers as ethersv5 } from 'ethers-v5'
 
 export type Unwrap<T> = T extends Promise<infer U> ? U : T
@@ -20,20 +20,16 @@ export class DoubleProvider extends JsonRpcProvider {
 }
 
 export class DoubleWallet extends Wallet {
+  public readonly provider!: Provider
   public readonly v5: ethersv5.Wallet & {
     provider: ethersv5.providers.JsonRpcProvider
   }
 
-  constructor(
-    privateKey: string,
-    public readonly provider: DoubleProvider
-  ) {
+  constructor(privateKey: string, provider: DoubleProvider) {
     super(privateKey, provider)
-    this.provider = provider
-
     this.v5 = new ethersv5.Wallet(
       privateKey,
-      this.provider.v5
+      provider.v5
     ) as ethersv5.Wallet & { provider: ethersv5.providers.JsonRpcProvider }
   }
 }
