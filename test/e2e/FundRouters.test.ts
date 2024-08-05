@@ -14,7 +14,7 @@ import { BigNumber } from 'ethers-v5'
 import ChildToParentMessageRedeemer from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'
 import { checkAndRouteFunds } from '../../scripts/src-ts/FeeRouter/checkAndRouteFunds'
 import { Erc20Bridger } from '../../lib/arbitrum-sdk/src'
-import { ContractFactory, Wallet, parseEther } from 'ethers'
+import { ContractFactory, parseEther } from 'ethers'
 import TestTokenArtifact from '../../out/TestToken.sol/TestToken.json'
 import { DoubleWallet } from '../../scripts/template/util'
 

@@ -1,6 +1,5 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
-import { JsonRpcProvider } from '@ethersproject/providers'
 import { checkAndRouteFunds } from '../FeeRouter/checkAndRouteFunds'
 import { DoubleProvider, DoubleWallet } from '../../template/util'
 import { parseEther } from 'ethers'

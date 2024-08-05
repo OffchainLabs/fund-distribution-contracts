@@ -1,4 +1,3 @@
-import { Wallet } from 'ethers'
 import {
   ParentToChildRewardRouter__factory,
   ParentToChildRewardRouter,

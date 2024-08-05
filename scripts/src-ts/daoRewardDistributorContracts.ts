@@ -1,4 +1,3 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
 import { DoubleProvider } from '../template/util'
 
 export type chainID = 42161 | 42170

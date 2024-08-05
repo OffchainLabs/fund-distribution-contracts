@@ -1,5 +1,3 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
-import { Wallet } from 'ethers'
 import {
   ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
@@ -52,20 +50,20 @@ export default class ChildToParentMessageRedeemer {
       )
     }
 
-    for (let log of logs) {
+    for (const log of logs) {
       const arbTransactionRec = new L2TransactionReceipt(
         await this.childChainProvider.v5.getTransactionReceipt(
           log.transactionHash
         )
       )
-      let l2ToL1Events =
+      const l2ToL1Events =
         arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[]
 
       if (l2ToL1Events.length != 1) {
         throw new Error('Only 1 l2 to l1 message per tx supported')
       }
 
-      for (let l2ToL1Event of l2ToL1Events) {
+      for (const l2ToL1Event of l2ToL1Events) {
         const l2ToL1Message = L2ToL1Message.fromEvent(
           this.parentChainSigner.v5,
           l2ToL1Event
@@ -106,6 +104,7 @@ export default class ChildToParentMessageRedeemer {
   }
 
   public async run(oneOff = false) {
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
         await this.redeemChildToParentMessages(oneOff)

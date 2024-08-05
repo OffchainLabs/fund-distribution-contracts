@@ -1,12 +1,12 @@
 import { getRecipientsAndWeights } from './lib'
-import { rewardDistributors, chainID } from './daoRewardDistributorContracts'
+import { rewardDistributors } from './daoRewardDistributorContracts'
 import fs from 'fs'
 import { RewardDistributor__factory } from '../../typechain-types'
 
 const main = async () => {
   const recAndWeightsJsonData = []
   const time = new Date().toTimeString()
-  for (let { address, chain, feeType } of rewardDistributors) {
+  for (const { address, chain, feeType } of rewardDistributors) {
     const recAndWeightData = await getRecipientsAndWeights(
       address,
       chain.provider,
