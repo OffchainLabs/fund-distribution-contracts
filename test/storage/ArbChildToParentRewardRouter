@@ -1,0 +1,3 @@
+| Name              | Type                        | Slot | Offset | Bytes | Contract                                                                          |
+|-------------------|-----------------------------|------|--------|-------|-----------------------------------------------------------------------------------|
+| nextDistributions | mapping(address => uint256) | 0    | 0      | 32    | contracts/FeeRouter/ArbChildToParentRewardRouter.sol:ArbChildToParentRewardRouter |

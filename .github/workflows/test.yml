@@ -1,38 +1,99 @@
-name: test
+name: Test
 
 on:
   pull_request:
-  push:
-    branches:
-      - 'main'
-
-env:
-  FOUNDRY_PROFILE: ci
+  workflow_dispatch:
 
 jobs:
-  check:
-    strategy:
-      fail-fast: true
-
-    name: Foundry project
+  test-unit:
+    name: Test Unit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          submodules: recursive
+          node-version: 18
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
+      - run: yarn minimal-install
+      - run: yarn test:unit
 
-      - name: Run Forge tests
-        run: |
-          forge test -vvv
-        id: test
+  test-contract-size:
+    name: Test Contract Size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - run: yarn minimal-install
+      - run: yarn test:sizes
+
+  test-gas-check:
+    name: Test Gas Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - run: yarn minimal-install
+      - run: yarn test:gas-check
+
+  test-sigs:
+    name: Test Signatures
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - run: yarn minimal-install
+      - run: yarn test:sigs
+
+  test-storage:
+    name: Test Storage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+        
+      - run: yarn minimal-install
+      - run: yarn test:storage
+  
+  test-unused-errors:
+    name: Test Unused Errors
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Execute check
+        uses: OffchainLabs/actions/check-unused-errors@main
+        with:
+          directory: './contracts'
+          exceptions_file: './test/unused-errors/exceptions.txt'

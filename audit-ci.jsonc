@@ -1,0 +1,52 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "low": true,
+  "allowlist": [
+    // ws affected by a DoS when handling a request with many HTTP headers
+    "GHSA-3h5v-q93c-6h6q",
+    // follow-redirects' Proxy-Authorization header kept across hosts
+    "GHSA-cxjh-pqwp-8mfp",
+    // Undici's Proxy-Authorization header not cleared on cross-origin redirect for dispatch, request, stream, pipeline
+    "GHSA-m4v8-wqvr-p9f7",
+    // Undici's fetch with integrity option is too lax when algorithm is specified but hash value is in incorrect
+    "GHSA-9qxr-qj54-h672",
+    // Uncontrolled resource consumption in braces
+    "GHSA-grv7-fg5c-xmjg",
+    // GovernorCompatibilityBravo may trim proposal calldata
+    // we do not use this contract
+    "GHSA-93hq-5wgc-jc82",
+    // OpenZeppelin Contracts vulnerable to Improper Escaping of Output
+    // > Starting in version 4.0.0 and prior to version 4.9.3, 
+    // > contracts using ERC2771Context along with a custom trusted forwarder may see 
+    // > _msgSender return address(0) in calls that originate from the forwarder with calldata shorter than 20 bytes.
+    // We do not use this contract
+    "GHSA-g4vp-m682-qqmp",
+    // OpenZeppelin Contracts using MerkleProof multiproofs may allow proving arbitrary leaves for specific trees
+    // We do not use do any merkle proofs
+    "GHSA-wprv-93r4-jj2p",
+    // OpenZeppelin Contracts TransparentUpgradeableProxy clashing selector calls may not be delegated
+    // This project does not use proxies
+    "GHSA-mx2q-35m2-x2rh",
+    // OpenZeppelin Contracts's governor proposal creation may be blocked by frontrunning
+    // We do not use governors
+    "GHSA-5h3x-9wvq-w4m2",
+    // OpenZeppelin Contracts base64 encoding may read from potentially dirty memory
+    // We do not use base64 encoding
+    "GHSA-9vx6-7xxf-x967",
+    // OpenZeppelin Contracts's SignatureChecker may revert on invalid EIP-1271 signers
+    // We do not use EIP-1271
+    "GHSA-4g63-c64m-25w9",
+    // OpenZeppelin Contracts's GovernorVotesQuorumFraction updates to quorum may affect past defeated proposals
+    // We do not use governors
+    "GHSA-xrc4-737v-9q75",
+    // OpenZeppelin Contracts's ERC165Checker may revert instead of returning false
+    // We do not use ERC165Checker
+    "GHSA-qh9x-gcfh-pcrw",
+    // OpenZeppelin Contracts vulnerable to ECDSA signature malleability
+    // We do not use the ECDSA library
+    "GHSA-4h98-2769-gh6h",
+    // OpenZeppelin Contracts ERC165Checker unbounded gas consumption
+    // We do not use ERC165Checker
+    "GHSA-7grf-83vw-6f5x"
+  ]
+}

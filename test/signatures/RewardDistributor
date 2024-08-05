@@ -1,0 +1,11 @@
+{
+  "MAX_RECIPIENTS()": "a6980ce2",
+  "PER_RECIPIENT_GAS()": "dc55beee",
+  "currentRecipientGroup()": "bd8bd40e",
+  "currentRecipientWeights()": "75fbe986",
+  "distributeAndUpdateRecipients(address[],uint256[],address[],uint256[])": "91aee56e",
+  "distributeRewards(address[],uint256[])": "143ba4f3",
+  "owner()": "8da5cb5b",
+  "renounceOwnership()": "715018a6",
+  "transferOwnership(address)": "f2fde38b"
+}

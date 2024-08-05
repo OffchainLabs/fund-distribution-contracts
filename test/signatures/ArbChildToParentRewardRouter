@@ -1,0 +1,12 @@
+{
+  "NATIVE_CURRENCY()": "49f42650",
+  "canDistribute(address)": "0bc6d25c",
+  "childChainGatewayRouter()": "092e5748",
+  "childChainTokenAddress()": "ec46da44",
+  "nextDistributions(address)": "70898f78",
+  "parentChainTarget()": "a796efb3",
+  "parentChainTokenAddress()": "002698b6",
+  "routeNativeFunds()": "af76af28",
+  "routeToken()": "fbd5dfae",
+  "timeToNextDistribution(address)": "56bdaefe"
+}
