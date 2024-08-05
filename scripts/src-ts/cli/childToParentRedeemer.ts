@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
-import ChildToParentMessageRedeemer from '../FeeRouter/ChildToParentMessageRedeemer'
+import { ArbChildToParentMessageRedeemer } from '../FeeRouter/ChildToParentMessageRedeemer'
 import { DoubleProvider, DoubleWallet } from '../../template/util'
 
 dotenv.config()
@@ -27,7 +27,7 @@ const options = yargs(process.argv.slice(2))
   console.log(`Signing with ${parentChildSigner.address} on parent chain 
   ${(await parentChildSigner.provider.getNetwork()).chainId}'`)
 
-  const redeemer = new ChildToParentMessageRedeemer(
+  const redeemer = new ArbChildToParentMessageRedeemer(
     new DoubleProvider(options.childRPCUrl),
     parentChildSigner,
     options.childToParentRewardRouterAddr,

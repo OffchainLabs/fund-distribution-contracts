@@ -11,12 +11,14 @@ import {
   IERC20,
 } from '../../typechain-types'
 import { BigNumber } from 'ethers-v5'
-import ChildToParentMessageRedeemer from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'
+import { ArbChildToParentMessageRedeemer } from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'
 import { checkAndRouteFunds } from '../../scripts/src-ts/FeeRouter/checkAndRouteFunds'
 import { Erc20Bridger } from '../../lib/arbitrum-sdk/src'
 import { ContractFactory, parseEther } from 'ethers'
 import TestTokenArtifact from '../../out/TestToken.sol/TestToken.json'
 import { DoubleWallet } from '../../scripts/template/util'
+
+const wait = (ms: number) => new Promise(res => setTimeout(res, ms))
 
 async function deployTestToken(signer: DoubleWallet) {
   const testToken = await new ContractFactory(
@@ -176,20 +178,29 @@ describe('Router e2e test', () => {
     })
 
     it('redeems l2 to l1 message', async () => {
-      await new ChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
-        await childToParentRewardRouter.getAddress(),
-        0,
-        ':memory:'
-      ).redeemChildToParentMessages()
+      while (true) {
+        await new ArbChildToParentMessageRedeemer(
+          setup.l2Provider,
+          setup.l1Signer,
+          await childToParentRewardRouter.getAddress(),
+          0,
+          ':memory:'
+        ).redeemChildToParentMessages()
 
-      // funds should be in parentToChildRewardRouter now
-      expect(
-        await setup.l1Provider.getBalance(
+        const balance = await setup.l1Provider.getBalance(
           await parentToChildRewardRouter.getAddress()
         )
-      ).to.eq(ethValue)
+
+        if (balance === ethValue) {
+          break
+        }
+
+        if (balance > 0) {
+          throw new Error('unexpected balance')
+        }
+
+        await wait(10_000)
+      }
     })
 
     it('routes runds to destination ', async () => {
@@ -230,18 +241,29 @@ describe('Router e2e test', () => {
     })
 
     it('redeems l2 to l1 message', async () => {
-      await new ChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
-        await childToParentRewardRouter.getAddress(),
-        0,
-        ':memory:'
-      ).redeemChildToParentMessages()
+      while (true) {
+        await new ArbChildToParentMessageRedeemer(
+          setup.l2Provider,
+          setup.l1Signer,
+          await childToParentRewardRouter.getAddress(),
+          0,
+          ':memory:'
+        ).redeemChildToParentMessages()
 
-      // funds should be in parentToChildRewardRouter now
-      expect(
-        await testToken.balanceOf(await parentToChildRewardRouter.getAddress())
-      ).to.eq(tokenValue)
+        const balance = await testToken.balanceOf(
+          parentToChildRewardRouter.getAddress()
+        )
+
+        if (balance === tokenValue) {
+          break
+        }
+
+        if (balance > 0) {
+          throw new Error('unexpected balance')
+        }
+
+        await wait(10_000)
+      }
     })
 
     it('routes runds to destination ', async () => {
