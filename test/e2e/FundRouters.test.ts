@@ -181,8 +181,7 @@ describe('Router e2e test', () => {
         setup.l1Signer,
         await childToParentRewardRouter.getAddress(),
         0,
-        0,
-        1000
+        ':memory:'
       ).redeemChildToParentMessages()
 
       // funds should be in parentToChildRewardRouter now
@@ -236,8 +235,7 @@ describe('Router e2e test', () => {
         setup.l1Signer,
         await childToParentRewardRouter.getAddress(),
         0,
-        0,
-        1000
+        ':memory:'
       ).redeemChildToParentMessages()
 
       // funds should be in parentToChildRewardRouter now

@@ -14,15 +14,8 @@ const options = yargs(process.argv.slice(2))
     parentRPCUrl: { type: 'string', demandOption: true },
     childRPCUrl: { type: 'string', demandOption: true },
     childToParentRewardRouterAddr: { type: 'string', demandOption: true },
-    blockLag: { type: 'number', demandOption: false, default: 5 },
     childChainStartBlock: { type: 'number', demandOption: false, default: 0 },
-    oneOff: {
-      type: 'boolean',
-      demandOption: false,
-      default: false,
-      description:
-        'Runs continuously if false, runs once and terminates if true',
-    },
+    logsDbPath: { type: 'string', demandOption: false, default: '.logs.db' },
   })
   .parseSync()
 
@@ -38,8 +31,8 @@ const options = yargs(process.argv.slice(2))
     new DoubleProvider(options.childRPCUrl),
     parentChildSigner,
     options.childToParentRewardRouterAddr,
-    options.blockLag,
-    options.childChainStartBlock
+    options.childChainStartBlock,
+    options.logsDbPath
   )
-  await redeemer.run(options.oneOff)
+  await redeemer.redeemChildToParentMessages()
 })()
