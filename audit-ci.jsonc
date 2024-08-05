@@ -47,15 +47,6 @@
     "GHSA-4h98-2769-gh6h",
     // OpenZeppelin Contracts ERC165Checker unbounded gas consumption
     // We do not use ERC165Checker
-    "GHSA-7grf-83vw-6f5x",
-    // Elliptic allows BER-encoded signatures
-    // > In the Elliptic package 6.5.6 for Node.js, ECDSA signature malleability occurs because BER-encoded signatures are allowed.
-    "GHSA-49q7-c7j4-3p7m",
-    // Elliptic's ECDSA missing check for whether leading bit of r and s is zero
-    // > In the Elliptic package 6.5.6 for Node.js, ECDSA signature malleability occurs because there is a missing check for whether the leading bit of r and s is zero.
-    "GHSA-977x-g7h5-7qgw",
-    // Elliptic's EDDSA missing signature length check
-    // > In the Elliptic package 6.5.6 for Node.js, EDDSA signature malleability occurs because there is a missing signature length check, and thus zero-valued bytes can be removed or appended.
-    "GHSA-f7q4-pwc6-w24p"
+    "GHSA-7grf-83vw-6f5x"
   ]
 }
