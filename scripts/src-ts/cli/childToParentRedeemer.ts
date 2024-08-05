@@ -1,38 +1,38 @@
-import dotenv from "dotenv";
-import yargs from "yargs";
-import ChildToParentMessageRedeemer from "../FeeRouter/ChildToParentMessageRedeemer";
-import { DoubleProvider, DoubleWallet } from "../../template/util";
+import dotenv from 'dotenv'
+import yargs from 'yargs'
+import ChildToParentMessageRedeemer from '../FeeRouter/ChildToParentMessageRedeemer'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
 
-dotenv.config();
+dotenv.config()
 
-const PARENT_CHAIN_PK = process.env.PARENT_CHAIN_PK;
+const PARENT_CHAIN_PK = process.env.PARENT_CHAIN_PK
 
-if (!PARENT_CHAIN_PK) throw new Error("Need PARENT_CHAIN_PK");
+if (!PARENT_CHAIN_PK) throw new Error('Need PARENT_CHAIN_PK')
 
 const options = yargs(process.argv.slice(2))
   .options({
-    parentRPCUrl: { type: "string", demandOption: true },
-    childRPCUrl: { type: "string", demandOption: true },
-    childToParentRewardRouterAddr: { type: "string", demandOption: true },
-    blockLag: { type: "number", demandOption: false, default: 5 },
-    childChainStartBlock: { type: "number", demandOption: false, default: 0 },
+    parentRPCUrl: { type: 'string', demandOption: true },
+    childRPCUrl: { type: 'string', demandOption: true },
+    childToParentRewardRouterAddr: { type: 'string', demandOption: true },
+    blockLag: { type: 'number', demandOption: false, default: 5 },
+    childChainStartBlock: { type: 'number', demandOption: false, default: 0 },
     oneOff: {
-      type: "boolean",
+      type: 'boolean',
       demandOption: false,
       default: false,
       description:
-        "Runs continuously if false, runs once and terminates if true",
+        'Runs continuously if false, runs once and terminates if true',
     },
   })
-  .parseSync();
+  .parseSync()
 
-(async () => {
+;(async () => {
   const parentChildSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
     new DoubleProvider(options.parentRPCUrl)
-  );
+  )
   console.log(`Signing with ${parentChildSigner.address} on parent chain 
-  ${(await parentChildSigner.provider.getNetwork()).chainId}'`);
+  ${(await parentChildSigner.provider.getNetwork()).chainId}'`)
 
   const redeemer = new ChildToParentMessageRedeemer(
     new DoubleProvider(options.childRPCUrl),
@@ -40,6 +40,6 @@ const options = yargs(process.argv.slice(2))
     options.childToParentRewardRouterAddr,
     options.blockLag,
     options.childChainStartBlock
-  );
-  await redeemer.run(options.oneOff);
-})();
+  )
+  await redeemer.run(options.oneOff)
+})()
