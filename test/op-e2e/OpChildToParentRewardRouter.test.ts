@@ -1,29 +1,17 @@
-import { expect } from 'chai'
 import {
-  ParentToChildRewardRouter__factory,
-  ParentToChildRewardRouter,
-  ChildToParentRewardRouter,
-  RewardDistributor__factory,
-  RewardDistributor,
-  ArbChildToParentRewardRouter__factory,
   IERC20__factory,
   IERC20,
   OpChildToParentRewardRouter,
   OpChildToParentRewardRouter__factory,
 } from '../../typechain-types'
-import { BigNumber } from 'ethers-v5'
-import {
-  ArbChildToParentMessageRedeemer,
-  OpChildToParentMessageRedeemer,
-} from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'
-import { checkAndRouteFunds } from '../../scripts/src-ts/FeeRouter/checkAndRouteFunds'
-import { Erc20Bridger } from '../../lib/arbitrum-sdk/src'
-import { ContractFactory, ethers, parseEther, ZeroAddress } from 'ethers'
+import { OpChildToParentMessageRedeemer } from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'
+import { ContractFactory, ethers, parseEther } from 'ethers'
 import TestTokenArtifact from '../../out/TestToken.sol/TestToken.json'
 import { DoubleProvider, DoubleWallet } from '../../scripts/template/util'
-import { createWalletClient, defineChain, http } from 'viem'
-import { localhost, mainnet } from 'viem/chains'
-import { chainConfig, walletActionsL1 } from 'viem/op-stack'
+import { defineChain } from 'viem'
+import { chainConfig } from 'viem/op-stack'
+
+// Follow instructions to set up a local devnet here: https://docs.optimism.io/chain/testing/dev-node
 
 const devnetL1 = defineChain({
   id: 900,
@@ -99,15 +87,15 @@ describe('Router e2e test', () => {
 
   const funder = new DoubleWallet(
     funderPk,
-    new DoubleProvider('http://127.0.0.1:8545') // todo: use configs
+    new DoubleProvider(devnetL1.rpcUrls.default.http[0]) // todo: use configs
   )
   const parentChainSigner = new DoubleWallet(
     pk,
-    new DoubleProvider('http://127.0.0.1:8545')
+    new DoubleProvider(devnetL1.rpcUrls.default.http[0])
   )
   const childChainSigner = new DoubleWallet(
     pk,
-    new DoubleProvider('http://127.0.0.1:9545')
+    new DoubleProvider(devnetL2.rpcUrls.default.http[0])
   )
 
   let childToParentRewardRouter: OpChildToParentRewardRouter
@@ -116,12 +104,22 @@ describe('Router e2e test', () => {
 
   const destination = DoubleWallet.createRandom().address
 
-  async function depositTokensAndETHToL2() {
+  before(async () => {
+    // fund the parent chain signer
+    await (
+      await funder.sendTransaction({
+        to: parentChainSigner.address,
+        value: parseEther('100'),
+      })
+    ).wait()
+
     // deposit ETH
-    await (await parentChainSigner.sendTransaction({
-      to: l1StdBridgeAddr,
-      value: parseEther('50'),
-    })).wait()
+    await (
+      await parentChainSigner.sendTransaction({
+        to: l1StdBridgeAddr,
+        value: parseEther('50'),
+      })
+    ).wait()
 
     // wait for eth
     while (
@@ -131,21 +129,20 @@ describe('Router e2e test', () => {
       await wait(1000)
     }
 
-
+    l1Token = await deployTestToken(parentChainSigner)
     const l1Addr = await l1Token.getAddress()
 
-    const iface = new ethers.Interface([
+    const opTokenFactoryIface = new ethers.Interface([
       'function createOptimismMintableERC20(address,string,string)',
     ])
 
     const createRec = await (
       await childChainSigner.sendTransaction({
         to: '0x4200000000000000000000000000000000000012',
-        data: iface.encodeFunctionData('createOptimismMintableERC20', [
-          l1Addr,
-          'L2 Token',
-          'L2TKN',
-        ]),
+        data: opTokenFactoryIface.encodeFunctionData(
+          'createOptimismMintableERC20',
+          [l1Addr, 'L2 Token', 'L2TKN']
+        ),
       })
     ).wait()
 
@@ -177,42 +174,6 @@ describe('Router e2e test', () => {
     while ((await l2Token.balanceOf(childChainSigner.address)) === 0n) {
       await wait(1000)
     }
-  }
-
-  async function printBalances() {
-    console.log(
-      'parent signer eth balance',
-      await parentChainSigner.provider.getBalance(parentChainSigner.address)
-    )
-    console.log(
-      'child signer eth balance',
-      await childChainSigner.provider.getBalance(childChainSigner.address)
-    )
-    console.log(
-      'router eth balance',
-      await childChainSigner.provider.getBalance(
-        await childToParentRewardRouter.getAddress()
-      )
-    )
-    console.log(
-      'destination eth balance',
-      await parentChainSigner.provider.getBalance(destination)
-    )
-  }
-
-  before(async () => {
-    // fund the parent chain signer
-    await (await funder.sendTransaction({
-      to: parentChainSigner.address,
-      value: parseEther('100'),
-    })).wait()
-
-    console.log('funded parent chain signer')
-
-    l1Token = await deployTestToken(parentChainSigner)
-
-    // also sets l2Token
-    await depositTokensAndETHToL2()
 
     childToParentRewardRouter = await new OpChildToParentRewardRouter__factory(
       childChainSigner
@@ -220,15 +181,13 @@ describe('Router e2e test', () => {
 
     await childToParentRewardRouter.waitForDeployment()
 
-    console.log(
-      'childToParentRewardRouter',
-      await childToParentRewardRouter.getAddress()
-    )
-    console.log('l2Token', await l2Token.getAddress())
-    console.log('l1Token', await l1Token.getAddress())
-    console.log('destination', destination)
-
-    await printBalances()
+    // console.log(
+    //   'childToParentRewardRouter',
+    //   await childToParentRewardRouter.getAddress()
+    // )
+    // console.log('l2Token', await l2Token.getAddress())
+    // console.log('l1Token', await l1Token.getAddress())
+    // console.log('destination', destination)
   })
 
   describe('ETH to Parent', () => {
@@ -241,12 +200,16 @@ describe('Router e2e test', () => {
       })
       const rec = (await tx.wait())!
 
-      // make sure it emits the events
-      // todo: actually check these in code
-      console.log(rec.logs.map(l => `${l.address} ${l.topics[0]}`).join('\n'))
+      // make sure it emits the event
+      const fundsRoutedLog = rec.logs.find(
+        log =>
+          log.topics[0] ===
+          childToParentRewardRouter.getEvent('FundsRouted').fragment.topicHash
+      )
 
-      console.log(rec.logs)
-      await printBalances()
+      if (!fundsRoutedLog) {
+        throw new Error('expected FundsRouted log')
+      }
     })
 
     it('should redeem the funds on the parent chain', async () => {
@@ -260,15 +223,71 @@ describe('Router e2e test', () => {
         devnetL1
       )
 
+      // eslint-disable-next-line no-constant-condition
       while (true) {
-        await printBalances()
         await redeemer.redeemChildToParentMessages()
 
         const balance = await parentChainSigner.provider.getBalance(destination)
 
-        console.log(balance)
-
         if (balance === ethValue) {
+          break
+        }
+
+        if (balance > 0) {
+          throw new Error('unexpected balance')
+        }
+
+        await wait(10_000)
+      }
+    })
+  })
+
+  describe('ERC20 to Parent', () => {
+    const erc20Amount = parseEther('1')
+
+    it('should initiate a withdrawal', async () => {
+      // send tokens to the router
+      await (
+        await l2Token
+          .connect(childChainSigner)
+          .transfer(childToParentRewardRouter.getAddress(), erc20Amount)
+      ).wait()
+
+      const pokeTx = await childToParentRewardRouter
+        .connect(childChainSigner)
+        .routeToken()
+      const pokeRec = (await pokeTx.wait())!
+
+      // make sure it emits the event
+      const fundsRoutedLog = pokeRec.logs.find(
+        log =>
+          log.topics[0] ===
+          childToParentRewardRouter.getEvent('FundsRouted').fragment.topicHash
+      )
+
+      if (!fundsRoutedLog) {
+        throw new Error('expected FundsRouted log')
+      }
+    })
+
+    it('should redeem the funds on the parent chain', async () => {
+      const redeemer = new OpChildToParentMessageRedeemer(
+        childChainSigner.doubleProvider,
+        parentChainSigner,
+        await childToParentRewardRouter.getAddress(),
+        0,
+        ':memory:',
+        devnetL2,
+        devnetL1
+      )
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        await redeemer.redeemChildToParentMessages()
+
+        const balance = await l1Token.balanceOf(destination)
+
+        if (balance === erc20Amount) {
           break
         }
 

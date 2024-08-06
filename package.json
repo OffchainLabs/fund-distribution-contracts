@@ -18,6 +18,7 @@
     "lint": "tsc --noEmit && eslint . && forge fmt --check",
     "build": "hardhat compile && forge build",
     "clean": "hardhat clean && forge clean",
+    "test:op-e2e": "mocha test/op-e2e/OpChildToParentRewardRouter.test.ts --timeout 300000",
     "test:unit": "./test/unit/test-unit.bash",
     "test:fork": "./test/fork/test-fork.bash",
     "test:e2e": "./test/e2e/test-e2e.bash",

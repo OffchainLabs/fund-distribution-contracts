@@ -16,23 +16,19 @@ import { LogCache } from 'fetch-logs-with-cache'
 import {
   Chain,
   ChainContract,
-  Client,
   createPublicClient,
   createWalletClient,
   Hex,
   http,
   publicActions,
-  PublicClient,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import {
-  chainConfig,
   getWithdrawals,
   publicActionsL1,
   publicActionsL2,
   walletActionsL1,
 } from 'viem/op-stack'
-import { base, mainnet } from 'viem/chains'
 // import { walletL1OpStackActions, publicL1OpStackActions, publicL2OpStackActions } from 'op-viem'
 
 abstract class ChildToParentMessageRedeemer {
@@ -112,7 +108,8 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
         this.parentChainSigner.privateKey as `0x${string}`
       ),
       transport: http(this.parentChainSigner.v5.provider.connection.url),
-    }).extend(publicActions)
+    })
+      .extend(publicActions)
       .extend(walletActionsL1())
       .extend(publicActionsL1())
   }
@@ -152,9 +149,7 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
         // 3. Prove the withdrawal on the L1.
         const hash = await this.parentChainViemSigner.proveWithdrawal(args)
         // 4. Wait until the prove withdrawal is processed.
-        await (
-          this.parentChainViemSigner
-        ).waitForTransactionReceipt({
+        await this.parentChainViemSigner.waitForTransactionReceipt({
           hash,
         })
 
@@ -165,18 +160,16 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
         // 1. Wait until the withdrawal is ready to finalize. (done)
 
         // 2. Finalize the withdrawal.
-        const hash = await this.parentChainViemSigner.finalizeWithdrawal({ 
-          targetChain: this.childChainViemProvider.chain, 
-          withdrawal, 
+        const hash = await this.parentChainViemSigner.finalizeWithdrawal({
+          targetChain: this.childChainViemProvider.chain,
+          withdrawal,
         })
 
         // 3. Wait until the withdrawal is finalized.
-        const rec = await (this.parentChainViemSigner).waitForTransactionReceipt({ 
-          hash 
-        }) 
+        await this.parentChainViemSigner.waitForTransactionReceipt({
+          hash,
+        })
 
-        console.log(rec.logs)
-        
         console.log(`${log.transactionHash} finalized:`, hash)
       }
     }

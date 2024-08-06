@@ -178,6 +178,7 @@ describe('Router e2e test', () => {
     })
 
     it('redeems l2 to l1 message', async () => {
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         await new ArbChildToParentMessageRedeemer(
           setup.l2Provider,
@@ -241,6 +242,7 @@ describe('Router e2e test', () => {
     })
 
     it('redeems l2 to l1 message', async () => {
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         await new ArbChildToParentMessageRedeemer(
           setup.l2Provider,
