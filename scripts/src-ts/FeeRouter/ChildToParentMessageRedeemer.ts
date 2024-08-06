@@ -13,7 +13,27 @@ import { DoubleProvider, DoubleWallet } from '../../template/util'
 import { EventArgs } from '../../../lib/arbitrum-sdk/src/lib/dataEntities/event'
 import { LogCache } from 'fetch-logs-with-cache'
 
-import optimism, { MessageStatus } from '@eth-optimism/sdk'
+import {
+  Chain,
+  ChainContract,
+  Client,
+  createPublicClient,
+  createWalletClient,
+  Hex,
+  http,
+  publicActions,
+  PublicClient,
+} from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import {
+  chainConfig,
+  getWithdrawals,
+  publicActionsL1,
+  publicActionsL2,
+  walletActionsL1,
+} from 'viem/op-stack'
+import { base, mainnet } from 'viem/chains'
+// import { walletL1OpStackActions, publicL1OpStackActions, publicL2OpStackActions } from 'op-viem'
 
 abstract class ChildToParentMessageRedeemer {
   public readonly childToParentRewardRouter: ChildToParentRewardRouter
@@ -51,43 +71,113 @@ abstract class ChildToParentMessageRedeemer {
   }
 }
 
+type OpChildChainConfig = Chain & {
+  contracts: {
+    portal: { [x: number]: ChainContract }
+    disputeGameFactory: { [x: number]: ChainContract }
+    l2OutputOracle: { [x: number]: ChainContract }
+  }
+}
+
 export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer {
+  public readonly childChainViemProvider
+
+  public readonly parentChainViemSigner
+
+  constructor(
+    childChainProvider: DoubleProvider,
+    parentChainSigner: DoubleWallet,
+    childToParentRewardRouterAddr: string,
+    startBlock: number,
+    logsDbPath: string,
+    public readonly childChainViem: OpChildChainConfig,
+    public readonly parentChainViem: Chain
+  ) {
+    super(
+      childChainProvider,
+      parentChainSigner,
+      childToParentRewardRouterAddr,
+      startBlock,
+      logsDbPath
+    )
+
+    this.childChainViemProvider = createPublicClient({
+      chain: childChainViem,
+      transport: http(this.childChainProvider.v5.connection.url),
+    }).extend(publicActionsL2())
+
+    this.parentChainViemSigner = createWalletClient({
+      chain: parentChainViem,
+      account: privateKeyToAccount(
+        this.parentChainSigner.privateKey as `0x${string}`
+      ),
+      transport: http(this.parentChainSigner.v5.provider.connection.url),
+    }).extend(publicActions)
+      .extend(walletActionsL1())
+      .extend(publicActionsL1())
+  }
+
   public async redeemChildToParentMessages() {
     const logs = await this._getLogs()
 
-    const messenger = new optimism.CrossChainMessenger({
-      l1ChainId: (await this.parentChainSigner.v5.provider.getNetwork())
-        .chainId,
-      l2ChainId: (await this.childChainProvider.v5.getNetwork()).chainId,
-      l1SignerOrProvider: this.parentChainSigner.v5,
-      l2SignerOrProvider: this.childChainProvider.v5,
-    })
-
     for (const log of logs) {
-      const status = await messenger.getMessageStatus(log.transactionHash)
+      const receipt = await this.childChainViemProvider.getTransactionReceipt({
+        hash: log.transactionHash as Hex,
+      })
 
-      switch (status) {
-        case MessageStatus.STATE_ROOT_NOT_PUBLISHED:
-          console.log(`${log.transactionHash} STATE_ROOT_NOT_PUBLISHED`)
-          break
-        case MessageStatus.READY_TO_PROVE:
-          console.log(`${log.transactionHash} READY_TO_PROVE...`)
-          await messenger.proveMessage(log.transactionHash)
-          console.log(`${log.transactionHash} proved`)
-          break
-        case MessageStatus.IN_CHALLENGE_PERIOD:
-          console.log(`${log.transactionHash} IN_CHALLENGE_PERIOD`)
-          break
-        case MessageStatus.READY_FOR_RELAY:
-          console.log(`${log.transactionHash} READY_FOR_RELAY...`)
-          await messenger.finalizeMessage(log.transactionHash)
-          console.log(`${log.transactionHash} relayed`)
-          break
-        case MessageStatus.RELAYED:
-          console.log(`${log.transactionHash} RELAYED`)
-          break
-        default:
-          throw new Error(`Unhandled MessageStatus case: ${status}`)
+      // 'waiting-to-prove'
+      // 'ready-to-prove'
+      // 'waiting-to-finalize'
+      // 'ready-to-finalize'
+      // 'finalized'
+      const status = await this.parentChainViemSigner.getWithdrawalStatus({
+        receipt,
+        targetChain: this.childChainViemProvider.chain,
+      })
+
+      console.log(`${log.transactionHash} ${status}`)
+
+      if (status === 'ready-to-prove') {
+        // 1. Wait until the withdrawal is ready to prove.
+        const { output, withdrawal } =
+          await this.parentChainViemSigner.waitToProve({
+            receipt,
+            targetChain: this.childChainViemProvider.chain,
+          })
+        // 2. Build parameters to prove the withdrawal on the L2.
+        const args = await this.childChainViemProvider.buildProveWithdrawal({
+          output,
+          withdrawal,
+        })
+        // 3. Prove the withdrawal on the L1.
+        const hash = await this.parentChainViemSigner.proveWithdrawal(args)
+        // 4. Wait until the prove withdrawal is processed.
+        await (
+          this.parentChainViemSigner
+        ).waitForTransactionReceipt({
+          hash,
+        })
+
+        console.log(`${log.transactionHash} proved:`, hash)
+      } else if (status === 'ready-to-finalize') {
+        const [withdrawal] = getWithdrawals(receipt)
+
+        // 1. Wait until the withdrawal is ready to finalize. (done)
+
+        // 2. Finalize the withdrawal.
+        const hash = await this.parentChainViemSigner.finalizeWithdrawal({ 
+          targetChain: this.childChainViemProvider.chain, 
+          withdrawal, 
+        })
+
+        // 3. Wait until the withdrawal is finalized.
+        const rec = await (this.parentChainViemSigner).waitForTransactionReceipt({ 
+          hash 
+        }) 
+
+        console.log(rec.logs)
+        
+        console.log(`${log.transactionHash} finalized:`, hash)
       }
     }
   }
