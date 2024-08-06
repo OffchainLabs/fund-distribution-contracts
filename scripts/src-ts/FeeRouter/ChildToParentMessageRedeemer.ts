@@ -67,7 +67,7 @@ abstract class ChildToParentMessageRedeemer {
   }
 }
 
-type OpChildChainConfig = Chain & {
+export type OpChildChainConfig = Chain & {
   contracts: {
     portal: { [x: number]: ChainContract }
     disputeGameFactory: { [x: number]: ChainContract }

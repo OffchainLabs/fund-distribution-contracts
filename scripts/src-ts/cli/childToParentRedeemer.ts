@@ -1,7 +1,12 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
-import { ArbChildToParentMessageRedeemer } from '../FeeRouter/ChildToParentMessageRedeemer'
+import {
+  ArbChildToParentMessageRedeemer,
+  OpChildChainConfig,
+  OpChildToParentMessageRedeemer,
+} from '../FeeRouter/ChildToParentMessageRedeemer'
 import { DoubleProvider, DoubleWallet } from '../../template/util'
+import chains from 'viem/chains'
 
 dotenv.config()
 
@@ -16,6 +21,7 @@ const options = yargs(process.argv.slice(2))
     childToParentRewardRouterAddr: { type: 'string', demandOption: true },
     childChainStartBlock: { type: 'number', demandOption: false, default: 0 },
     logsDbPath: { type: 'string', demandOption: false, default: '.logs.db' },
+    opStack: { type: 'boolean', demandOption: false, default: false },
   })
   .parseSync()
 
@@ -24,15 +30,43 @@ const options = yargs(process.argv.slice(2))
     PARENT_CHAIN_PK,
     new DoubleProvider(options.parentRPCUrl)
   )
-  console.log(`Signing with ${parentChildSigner.address} on parent chain 
-  ${(await parentChildSigner.provider.getNetwork()).chainId}'`)
+  const childChainProvider = new DoubleProvider(options.childRPCUrl)
+  const parentChainId = (await parentChildSigner.v5.provider.getNetwork())
+    .chainId
+  const childChainId = (await childChainProvider.v5.getNetwork()).chainId
 
-  const redeemer = new ArbChildToParentMessageRedeemer(
-    new DoubleProvider(options.childRPCUrl),
-    parentChildSigner,
-    options.childToParentRewardRouterAddr,
-    options.childChainStartBlock,
-    options.logsDbPath
+  console.log(
+    `Signing with ${parentChildSigner.address} on parent chain ${parentChainId}`
   )
-  await redeemer.redeemChildToParentMessages()
+
+  if (options.opStack) {
+    const childChain = Object.values(chains).find(
+      c => c.id === childChainId
+    )
+    const parentChain = Object.values(chains).find(
+      c => c.id === parentChainId
+    )
+
+    if (!childChain || !parentChain) {
+      throw new Error('Unsupported chain')
+    }
+
+    await new OpChildToParentMessageRedeemer(
+      new DoubleProvider(options.childRPCUrl),
+      parentChildSigner,
+      options.childToParentRewardRouterAddr,
+      options.childChainStartBlock,
+      options.logsDbPath,
+      childChain as OpChildChainConfig,
+      parentChain
+    ).redeemChildToParentMessages()
+  } else {
+    await new ArbChildToParentMessageRedeemer(
+      new DoubleProvider(options.childRPCUrl),
+      parentChildSigner,
+      options.childToParentRewardRouterAddr,
+      options.childChainStartBlock,
+      options.logsDbPath
+    ).redeemChildToParentMessages()
+  }
 })()
