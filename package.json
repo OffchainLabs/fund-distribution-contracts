@@ -35,7 +35,6 @@
     "gen-recipients": "yarn && hardhat run ./scripts/src-ts/getRecipientData.ts"
   },
   "devDependencies": {
-    "@eth-optimism/sdk": "^3.3.2",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
@@ -74,9 +73,5 @@
   "dependencies": {
     "@arbitrum/nitro-contracts": "1.3.0",
     "@openzeppelin/contracts": "4.7.3"
-  },
-  "resolutions": {
-    "@eth-optimism/sdk/ethers": "^5.7.2",
-    "@eth-optimism/contracts/ethers": "^5.7.2"
   }
 }

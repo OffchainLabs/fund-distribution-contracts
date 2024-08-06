@@ -40,12 +40,8 @@ const options = yargs(process.argv.slice(2))
   )
 
   if (options.opStack) {
-    const childChain = Object.values(chains).find(
-      c => c.id === childChainId
-    )
-    const parentChain = Object.values(chains).find(
-      c => c.id === parentChainId
-    )
+    const childChain = Object.values(chains).find(c => c.id === childChainId)
+    const parentChain = Object.values(chains).find(c => c.id === parentChainId)
 
     if (!childChain || !parentChain) {
       throw new Error('Unsupported chain')
