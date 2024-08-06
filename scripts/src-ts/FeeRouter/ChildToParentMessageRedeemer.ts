@@ -29,7 +29,6 @@ import {
   publicActionsL2,
   walletActionsL1,
 } from 'viem/op-stack'
-// import { walletL1OpStackActions, publicL1OpStackActions, publicL2OpStackActions } from 'op-viem'
 
 abstract class ChildToParentMessageRedeemer {
   public readonly childToParentRewardRouter: ChildToParentRewardRouter
@@ -77,7 +76,6 @@ export type OpChildChainConfig = Chain & {
 
 export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer {
   public readonly childChainViemProvider
-
   public readonly parentChainViemSigner
 
   constructor(
