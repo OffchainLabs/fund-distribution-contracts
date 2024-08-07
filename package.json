@@ -18,6 +18,7 @@
     "lint": "tsc --noEmit && eslint . && forge fmt --check",
     "build": "hardhat compile && forge build",
     "clean": "hardhat clean && forge clean",
+    "test:op-e2e": "mocha test/op-e2e/OpChildToParentRewardRouter.test.ts --timeout 300000",
     "test:unit": "./test/unit/test-unit.bash",
     "test:fork": "./test/fork/test-fork.bash",
     "test:e2e": "./test/e2e/test-e2e.bash",
@@ -66,6 +67,7 @@
     "ts-node": ">=8.0.0",
     "typechain": "^8.3.0",
     "typescript": ">=4.5.0",
+    "viem": "^2.18.8",
     "yargs": "^17.7.2"
   },
   "dependencies": {

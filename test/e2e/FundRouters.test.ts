@@ -11,7 +11,7 @@ import {
   IERC20,
 } from '../../typechain-types'
 import { BigNumber } from 'ethers-v5'
-import ChildToParentMessageRedeemer from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'
+import { ArbChildToParentMessageRedeemer } from '../../scripts/src-ts/FeeRouter/ChildToParentMessageRedeemer'
 import { checkAndRouteFunds } from '../../scripts/src-ts/FeeRouter/checkAndRouteFunds'
 import { Erc20Bridger } from '../../lib/arbitrum-sdk/src'
 import { ContractFactory, parseEther } from 'ethers'
@@ -180,7 +180,7 @@ describe('Router e2e test', () => {
     it('redeems l2 to l1 message', async () => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        await new ChildToParentMessageRedeemer(
+        await new ArbChildToParentMessageRedeemer(
           setup.l2Provider,
           setup.l1Signer,
           await childToParentRewardRouter.getAddress(),
@@ -244,7 +244,7 @@ describe('Router e2e test', () => {
     it('redeems l2 to l1 message', async () => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        await new ChildToParentMessageRedeemer(
+        await new ArbChildToParentMessageRedeemer(
           setup.l2Provider,
           setup.l1Signer,
           await childToParentRewardRouter.getAddress(),
