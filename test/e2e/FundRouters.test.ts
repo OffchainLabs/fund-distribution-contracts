@@ -18,6 +18,8 @@ import { ContractFactory, parseEther } from 'ethers'
 import TestTokenArtifact from '../../out/TestToken.sol/TestToken.json'
 import { DoubleWallet } from '../../scripts/template/util'
 
+const wait = (ms: number) => new Promise(res => setTimeout(res, ms))
+
 async function deployTestToken(signer: DoubleWallet) {
   const testToken = await new ContractFactory(
     TestTokenArtifact.abi,
@@ -176,20 +178,30 @@ describe('Router e2e test', () => {
     })
 
     it('redeems l2 to l1 message', async () => {
-      await new ChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
-        await childToParentRewardRouter.getAddress(),
-        0,
-        ':memory:'
-      ).redeemChildToParentMessages()
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        await new ChildToParentMessageRedeemer(
+          setup.l2Provider,
+          setup.l1Signer,
+          await childToParentRewardRouter.getAddress(),
+          0,
+          ':memory:'
+        ).redeemChildToParentMessages()
 
-      // funds should be in parentToChildRewardRouter now
-      expect(
-        await setup.l1Provider.getBalance(
+        const balance = await setup.l1Provider.getBalance(
           await parentToChildRewardRouter.getAddress()
         )
-      ).to.eq(ethValue)
+
+        if (balance === ethValue) {
+          break
+        }
+
+        if (balance > 0) {
+          throw new Error('unexpected balance')
+        }
+
+        await wait(10_000)
+      }
     })
 
     it('routes runds to destination ', async () => {
@@ -230,18 +242,30 @@ describe('Router e2e test', () => {
     })
 
     it('redeems l2 to l1 message', async () => {
-      await new ChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
-        await childToParentRewardRouter.getAddress(),
-        0,
-        ':memory:'
-      ).redeemChildToParentMessages()
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        await new ChildToParentMessageRedeemer(
+          setup.l2Provider,
+          setup.l1Signer,
+          await childToParentRewardRouter.getAddress(),
+          0,
+          ':memory:'
+        ).redeemChildToParentMessages()
 
-      // funds should be in parentToChildRewardRouter now
-      expect(
-        await testToken.balanceOf(await parentToChildRewardRouter.getAddress())
-      ).to.eq(tokenValue)
+        const balance = await testToken.balanceOf(
+          parentToChildRewardRouter.getAddress()
+        )
+
+        if (balance === tokenValue) {
+          break
+        }
+
+        if (balance > 0) {
+          throw new Error('unexpected balance')
+        }
+
+        await wait(10_000)
+      }
     })
 
     it('routes runds to destination ', async () => {
