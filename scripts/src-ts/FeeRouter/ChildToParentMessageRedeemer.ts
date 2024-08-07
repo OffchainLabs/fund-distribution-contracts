@@ -11,42 +11,36 @@ import {
 } from '../../../lib/arbitrum-sdk/src'
 import { DoubleProvider, DoubleWallet } from '../../template/util'
 import { EventArgs } from '../../../lib/arbitrum-sdk/src/lib/dataEntities/event'
-const wait = async (ms: number) => new Promise(res => setTimeout(res, ms))
+import { LogCache } from 'fetch-logs-with-cache'
 
 export default class ChildToParentMessageRedeemer {
-  public startBlock: number
-  public childToParentRewardRouter: ChildToParentRewardRouter
-  public readonly retryDelay: number
+  public readonly childToParentRewardRouter: ChildToParentRewardRouter
+  private readonly logCache: LogCache
   constructor(
     public readonly childChainProvider: DoubleProvider,
     public readonly parentChainSigner: DoubleWallet,
     public readonly childToParentRewardRouterAddr: string,
-    public readonly blockLag: number,
-    initialStartBlock: number,
-    retryDelay = 1000 * 60 * 10
+    public readonly startBlock: number,
+    public readonly logsDbPath: string
   ) {
-    this.startBlock = initialStartBlock
     this.childToParentRewardRouter = ChildToParentRewardRouter__factory.connect(
       childToParentRewardRouterAddr,
       childChainProvider
     )
-    this.retryDelay = retryDelay
+    this.logCache = new LogCache(logsDbPath)
   }
 
-  public async redeemChildToParentMessages(oneOff = false) {
-    const toBlock =
-      (await this.childChainProvider.getBlockNumber()) - this.blockLag
-    const logs = await this.childChainProvider.getLogs({
+  public async redeemChildToParentMessages() {
+    const logs = await this.logCache.getLogs(this.childChainProvider, {
       fromBlock: this.startBlock,
-      toBlock: toBlock,
-      address: this.childToParentRewardRouter.getAddress(),
+      address: await this.childToParentRewardRouter.getAddress(),
       topics: [
         this.childToParentRewardRouter.filters.FundsRouted().fragment.topicHash,
       ],
     })
     if (logs.length) {
       console.log(
-        `Found ${logs.length} route events between blocks ${this.startBlock} and ${toBlock}`
+        `Found ${logs.length} route events between blocks ${this.startBlock} and latest`
       )
     }
 
@@ -68,13 +62,6 @@ export default class ChildToParentMessageRedeemer {
           this.parentChainSigner.v5,
           l2ToL1Event
         )
-        if (!oneOff) {
-          console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`)
-          await l2ToL1Message.waitUntilReadyToExecute(
-            this.childChainProvider.v5,
-            this.retryDelay
-          )
-        }
 
         const status = await l2ToL1Message.status(this.childChainProvider.v5)
         switch (status) {
@@ -98,23 +85,6 @@ export default class ChildToParentMessageRedeemer {
             throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`)
           }
         }
-      }
-    }
-    this.startBlock = toBlock
-  }
-
-  public async run(oneOff = false) {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      try {
-        await this.redeemChildToParentMessages(oneOff)
-      } catch (err) {
-        console.log('err', err)
-      }
-      if (oneOff) {
-        break
-      } else {
-        await wait(1000 * 60 * 60)
       }
     }
   }
