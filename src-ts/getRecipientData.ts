@@ -44,7 +44,7 @@ const main = async () => {
     JSON.stringify({
       updatedAt: time,
       data: recAndWeightsJsonData,
-    })
+    }, null, 4)
   );
   console.log(`Recipeint and weight data saved to ${path}`);
   
