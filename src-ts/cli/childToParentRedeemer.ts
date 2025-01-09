@@ -1,8 +1,14 @@
 import dotenv from "dotenv";
 import yargs, { option } from "yargs";
-import { ArbChildToParentMessageRedeemer } from "../FeeRouter/ChildToParentMessageRedeemer";
-import { JsonRpcProvider } from "@ethersproject/providers";
+import {
+  ArbChildToParentMessageRedeemer,
+  OpChildChainConfig,
+  OpChildToParentMessageRedeemer,
+  ChildToParentMessageRedeemer
+} from '../FeeRouter/ChildToParentMessageRedeemer';
 import { Wallet } from "ethers";
+import { JsonRpcProvider } from "@ethersproject/providers";
+import chains from 'viem/chains';
 
 dotenv.config();
 
@@ -24,20 +30,45 @@ const options = yargs(process.argv.slice(2))
       description:
         "Runs continuously if false, runs once and terminates if true",
     },
+    opStack: { type: 'boolean', demandOption: false, default: false },
   })
   .parseSync();
 
 (async () => {
-  const parentChildSigner = new Wallet(PARENT_CHAIN_PK,);
-  console.log(`Signing with ${parentChildSigner.address} on parent chain ${(await parentChildSigner.provider.getNetwork()).chainId}'`);
+  const parentChildSigner = new Wallet(PARENT_CHAIN_PK, new JsonRpcProvider(options.parentRPCUrl));
+  const childChainProvider = new JsonRpcProvider(options.childRPCUrl);
+  const parentChainId = (await parentChildSigner.provider.getNetwork()).chainId;
+  const childChainId = (await childChainProvider.getNetwork()).chainId;
+  console.log(`Signing with ${parentChildSigner.address} on parent chain ${parentChainId}'`);
 
-  const redeemer = new ArbChildToParentMessageRedeemer(
-    options.childRPCUrl,
-    options.parentRPCUrl,
-    PARENT_CHAIN_PK,
-    options.childToParentRewardRouterAddr,
-    options.blockLag,
-    options.childChainStartBlock
-  );
+  let redeemer: ChildToParentMessageRedeemer;
+  if (options.opStack) {
+    const childChain = Object.values(chains).find(c => c.id === childChainId)
+    const parentChain = Object.values(chains).find(c => c.id === parentChainId)
+
+    if (!childChain || !parentChain) {
+      throw new Error('Unsupported chain')
+    }
+
+    redeemer = new OpChildToParentMessageRedeemer(
+      options.childRPCUrl,
+      options.parentRPCUrl,
+      PARENT_CHAIN_PK,
+      options.childToParentRewardRouterAddr,
+      options.blockLag,
+      options.childChainStartBlock,
+      childChain as OpChildChainConfig,
+      parentChain
+    )
+  } else {
+    redeemer = new ArbChildToParentMessageRedeemer(
+      options.childRPCUrl,
+      options.parentRPCUrl,
+      PARENT_CHAIN_PK,
+      options.childToParentRewardRouterAddr,
+      options.blockLag,
+      options.childChainStartBlock
+    );
+  }
   await redeemer.run(options.oneOff);
 })();

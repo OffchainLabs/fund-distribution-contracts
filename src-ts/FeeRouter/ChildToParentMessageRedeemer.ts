@@ -25,6 +25,7 @@ import {
 import { privateKeyToAccount } from 'viem/accounts'
 import {
   getWithdrawals,
+  GetWithdrawalStatusReturnType,
   publicActionsL1,
   publicActionsL2,
   walletActionsL1,
@@ -32,7 +33,7 @@ import {
 
 const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-abstract class ChildToParentMessageRedeemer {
+export abstract class ChildToParentMessageRedeemer {
   constructor(
     public readonly childChainRpc: string,
     public readonly parentChainRpc: string,
@@ -53,6 +54,7 @@ abstract class ChildToParentMessageRedeemer {
     const logs = await childChainProvider.getLogs({
       fromBlock: this.startBlock,
       toBlock: toBlock,
+      address: this.childToParentRewardRouterAddr,
       topics: [ChildToParentRewardRouter__factory.createInterface().getEventTopic('FundsRouted')],
     });
     if (logs.length) {
@@ -61,19 +63,21 @@ abstract class ChildToParentMessageRedeemer {
       );
     }
     await this._handleLogs(logs, oneOff);
-    this.startBlock = toBlock;
+    return toBlock
   }
 
   public async run(oneOff = false) {
     while (true) {
+      let toBlock = 0
       try {
-        await this.redeemChildToParentMessages(oneOff);
+        toBlock = await this.redeemChildToParentMessages(oneOff);
       } catch (err) {
         console.log("err", err);
       }
       if (oneOff) {
         break;
       } else {
+        this.startBlock = toBlock + 1;
         await wait(1000 * 60 * 60);
       }
     }
@@ -140,7 +144,6 @@ export type OpChildChainConfig = Chain & {
   contracts: {
     portal: { [x: number]: ChainContract }
     disputeGameFactory: { [x: number]: ChainContract }
-    l2OutputOracle: { [x: number]: ChainContract }
   }
 }
 
@@ -155,9 +158,9 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
     childToParentRewardRouterAddr: string,
     blockLag: number,
     startBlock: number = 0,
-    retryDelay = 1000 * 60 * 10,
     public readonly childChainViem: OpChildChainConfig,
-    public readonly parentChainViem: Chain
+    public readonly parentChainViem: Chain,
+    retryDelay = 1000 * 60 * 10,
   ) {
     super(
       childChainRpc,
@@ -187,6 +190,7 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
   }
 
   protected async _handleLogs(logs: Log[], oneOff: boolean): Promise<void> {
+    if (!oneOff) throw new Error('OpChildToParentMessageRedeemer only supports one-off mode')
     for (const log of logs) {
       const receipt = await this.childChainViemProvider.getTransactionReceipt({
         hash: log.transactionHash as Hex,
@@ -197,10 +201,21 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
       // 'waiting-to-finalize'
       // 'ready-to-finalize'
       // 'finalized'
-      const status = await this.parentChainViemSigner.getWithdrawalStatus({
-        receipt,
-        targetChain: this.childChainViemProvider.chain,
-      })
+      let status: GetWithdrawalStatusReturnType;
+      try {
+        status = await this.parentChainViemSigner.getWithdrawalStatus({
+          receipt,
+          targetChain: this.childChainViemProvider.chain,
+        })
+      } catch (e: any) {
+        // workaround
+        if (e.metaMessages[0] === 'Error: Unproven()') {
+          status = 'ready-to-prove'
+        }
+        else {
+          throw e;
+        }
+      }
 
       console.log(`${log.transactionHash} ${status}`)
 
