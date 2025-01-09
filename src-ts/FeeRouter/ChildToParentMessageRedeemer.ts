@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from "@ethersproject/providers";
+import { JsonRpcProvider, Log } from "@ethersproject/providers";
 import { Wallet } from "ethers";
 import {
   ChildToParentRewardRouter__factory,
@@ -12,9 +12,27 @@ import {
   L2ToL1Message,
   L2ToL1MessageStatus,
 } from "../../lib/arbitrum-sdk/src";
+
+import {
+  Chain,
+  ChainContract,
+  createPublicClient,
+  createWalletClient,
+  Hex,
+  http,
+  publicActions,
+} from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import {
+  getWithdrawals,
+  publicActionsL1,
+  publicActionsL2,
+  walletActionsL1,
+} from 'viem/op-stack'
+
 const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-export default class ChildToParentMessageRedeemer {
+abstract class ChildToParentMessageRedeemer {
   public startBlock: number;
   public childToParentRewardRouter: ChildToParentRewardRouter;
   public readonly retryDelay: number;
@@ -34,6 +52,8 @@ export default class ChildToParentMessageRedeemer {
     this.retryDelay = retryDelay;
   }
 
+  protected abstract _handleLogs(logs: Log[], oneOff: boolean): Promise<void>;
+
   public async redeemChildToParentMessages(oneOff = false) {
     const toBlock =
       (await this.childChainProvider.getBlockNumber()) - this.blockLag;
@@ -47,13 +67,34 @@ export default class ChildToParentMessageRedeemer {
         `Found ${logs.length} route events between blocks ${this.startBlock} and ${toBlock}`
       );
     }
+    await this._handleLogs(logs, oneOff);
+    this.startBlock = toBlock;
+  }
 
+  public async run(oneOff = false) {
+    while (true) {
+      try {
+        await this.redeemChildToParentMessages(oneOff);
+      } catch (err) {
+        console.log("err", err);
+      }
+      if (oneOff) {
+        break;
+      } else {
+        await wait(1000 * 60 * 60);
+      }
+    }
+  }
+}
+
+export class ArbChildToParentMessageRedeemer extends ChildToParentMessageRedeemer {
+  protected async _handleLogs(logs: Log[], oneOff: boolean): Promise<void> {
     for (let log of logs) {
       const arbTransactionRec = new L2TransactionReceipt(
         await this.childChainProvider.getTransactionReceipt(log.transactionHash)
       );
       let l2ToL1Events =
-        (await arbTransactionRec.getL2ToL1Events()) as EventArgs<L2ToL1TxEvent>[];
+        arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[];
 
       if (l2ToL1Events.length != 1) {
         throw new Error("Only 1 l2 to l1 message per tx supported");
@@ -94,22 +135,6 @@ export default class ChildToParentMessageRedeemer {
             throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`);
           }
         }
-      }
-    }
-    this.startBlock = toBlock;
-  }
-
-  public async run(oneOff = false) {
-    while (true) {
-      try {
-        await this.redeemChildToParentMessages(oneOff);
-      } catch (err) {
-        console.log("err", err);
-      }
-      if (oneOff) {
-        break;
-      } else {
-        await wait(1000 * 60 * 60);
       }
     }
   }

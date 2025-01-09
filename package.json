@@ -30,7 +30,8 @@
     "prepare": "forge install && cd lib/arbitrum-sdk && yarn",
     "prepublishOnly": "make clean && make build",
     "gen-recipients": "make install && hardhat run src-ts/getRecipientData.ts",
-    "test:e2e": "./test/e2e/test-e2e.bash"
+    "test:e2e": "./test/e2e/test-e2e.bash",
+    "test:op-e2e": "mocha test/op-e2e/OpChildToParentRewardRouter.test.ts --timeout 300000"
   },
   "private": false,
   "devDependencies": {
@@ -52,7 +53,8 @@
     "solidity-coverage": "^0.8.5",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "viem": "^2.18.8"
   },
   "dependencies": {
     "@types/yargs": "^17.0.32",

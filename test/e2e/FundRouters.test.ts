@@ -10,7 +10,7 @@ import {
   RewardDistributor,
   ArbChildToParentRewardRouter__factory,
 } from "../../typechain-types";
-import ChildToParentMessageRedeemer from "../../src-ts/FeeRouter/ChildToParentMessageRedeemer";
+import { ArbChildToParentMessageRedeemer } from "../../src-ts/FeeRouter/ChildToParentMessageRedeemer";
 import { checkAndRouteFunds } from "../../src-ts/FeeRouter/checkAndRouteFunds";
 import { TestERC20__factory } from "../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory";
 import { TestERC20 } from "../../lib/arbitrum-sdk/src/lib/abi/TestERC20";
@@ -163,7 +163,7 @@ describe("Router e2e test", () => {
     });
 
     it("redeems l2 to l1 message", async () => {
-      await new ChildToParentMessageRedeemer(
+      await new ArbChildToParentMessageRedeemer(
         setup.l2Provider,
         setup.l1Signer,
         childToParentRewardRouter.address,
@@ -215,7 +215,7 @@ describe("Router e2e test", () => {
     });
 
     it("redeems l2 to l1 message", async () => {
-      await new ChildToParentMessageRedeemer(
+      await new ArbChildToParentMessageRedeemer(
         setup.l2Provider,
         setup.l1Signer,
         childToParentRewardRouter.address,
