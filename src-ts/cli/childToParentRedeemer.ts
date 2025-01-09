@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import yargs from "yargs";
+import yargs, { option } from "yargs";
 import { ArbChildToParentMessageRedeemer } from "../FeeRouter/ChildToParentMessageRedeemer";
 import { JsonRpcProvider } from "@ethersproject/providers";
 import { Wallet } from "ethers";
@@ -28,16 +28,13 @@ const options = yargs(process.argv.slice(2))
   .parseSync();
 
 (async () => {
-  const parentChildSigner = new Wallet(
-    PARENT_CHAIN_PK,
-    new JsonRpcProvider(options.parentRPCUrl)
-  );
-  console.log(`Signing with ${parentChildSigner.address} on parent chain 
-  ${(await parentChildSigner.provider.getNetwork()).chainId}'`);
+  const parentChildSigner = new Wallet(PARENT_CHAIN_PK,);
+  console.log(`Signing with ${parentChildSigner.address} on parent chain ${(await parentChildSigner.provider.getNetwork()).chainId}'`);
 
   const redeemer = new ArbChildToParentMessageRedeemer(
-    new JsonRpcProvider(options.childRPCUrl),
-    parentChildSigner,
+    options.childRPCUrl,
+    options.parentRPCUrl,
+    PARENT_CHAIN_PK,
     options.childToParentRewardRouterAddr,
     options.blockLag,
     options.childChainStartBlock

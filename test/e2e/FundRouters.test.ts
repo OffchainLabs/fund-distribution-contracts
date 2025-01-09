@@ -164,8 +164,9 @@ describe("Router e2e test", () => {
 
     it("redeems l2 to l1 message", async () => {
       await new ArbChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
+        setup.l2Provider.connection.url,
+        setup.l1Provider.connection.url,
+        setup.l1Signer.privateKey,
         childToParentRewardRouter.address,
         0,
         0,
@@ -216,8 +217,9 @@ describe("Router e2e test", () => {
 
     it("redeems l2 to l1 message", async () => {
       await new ArbChildToParentMessageRedeemer(
-        setup.l2Provider,
-        setup.l1Signer,
+        setup.l2Provider.connection.url,
+        setup.l1Provider.connection.url,
+        setup.l1Signer.privateKey,
         childToParentRewardRouter.address,
         0,
         0,
