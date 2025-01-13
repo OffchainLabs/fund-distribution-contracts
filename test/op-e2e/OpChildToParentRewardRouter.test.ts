@@ -43,17 +43,17 @@ const devnetL2 = defineChain({
     ...chainConfig.contracts,
     portal: {
       900: {
-        address: '0x55BdfB0bfEF1070C457124920546359426153833',
+        address: '0xA439B64360C875951478b0Cf77698038df331255',
       },
     },
     l1StandardBridge: {
       900: {
-        address: '0xE37a5595976d66102d0401cecf685713116d1023',
+        address: '0x9D34A2610Ea283f6d9AE29f9Cad82e00c4d38507',
       },
     },
     disputeGameFactory: {
       900: {
-        address: '0x5e8176772863842cd9d692c9E793dc4958626E69',
+        address: '0xeCb92a686D1ab066fc4E559A305FEB75DD512377',
       },
     },
   },

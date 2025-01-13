@@ -220,12 +220,12 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
       console.log(`${log.transactionHash} ${status}`)
 
       if (status === 'ready-to-prove') {
-        // 1. Wait until the withdrawal is ready to prove.
-        const { output, withdrawal } =
-          await this.parentChainViemSigner.waitToProve({
-            receipt,
-            targetChain: this.childChainViemProvider.chain,
-          })
+        // 1. Get withdrawal information
+        const [withdrawal] = getWithdrawals(receipt)
+        const output = await this.parentChainViemSigner.getL2Output({
+          l2BlockNumber: receipt.blockNumber,
+          targetChain: this.childChainViem,
+        })
         // 2. Build parameters to prove the withdrawal on the L2.
         const args = await this.childChainViemProvider.buildProveWithdrawal({
           output,
