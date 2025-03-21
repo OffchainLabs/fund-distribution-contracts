@@ -20,6 +20,7 @@ error InvalidTotalWeight(uint256 totalWeight);
 /// @notice You can use this contract to distribute ether/token according to defined weights between a group of participants managed by an owner.
 /// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
 ///      A RewardDistributor can only handle a single, specific asset defined at deployment.
+///      This contract assumes that the token is not blacklistable or has other non standard behavior.
 contract RewardDistributor is Ownable {
     using SafeERC20 for IERC20;
 
@@ -127,6 +128,7 @@ contract RewardDistributor is Ownable {
             if (address(token) == address(0)) {
                 (success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
             } else {
+                // we assume that this will never revert, because we know we have enough token and the token is "normal"
                 token.safeTransfer(recipients[r], individualRewards);
                 success = true;
             }
@@ -136,6 +138,7 @@ contract RewardDistributor is Ownable {
             if (success) {
                 emit RecipientRecieved(recipients[r], individualRewards);
             } else {
+                // this case will never be hit if we are using an ERC20 token
                 // cache owner in memory
                 address _owner = owner();
                 (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
