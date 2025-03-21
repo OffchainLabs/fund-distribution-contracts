@@ -6,6 +6,7 @@ import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+error CannotReceiveNative();
 error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
@@ -55,8 +56,12 @@ contract RewardDistributor is Ownable {
     }
 
     /// @notice allows eth to be deposited into this contract
-    /// @dev this contract is expected to handle ether appearing in its balance as well as an explicit deposit
-    receive() external payable {}
+    /// @dev this contract is expected to handle ether appearing in its balance as well as an explicit deposit as long as token == address(0)
+    receive() external payable {
+        if (address(token) != address(0)) {
+            revert CannotReceiveNative();
+        }
+    }
 
     /**
      * @notice Distributes previous rewards then updates the recipients to a new group.
