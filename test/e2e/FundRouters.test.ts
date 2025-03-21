@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { TestSetup, testSetup } from "./testSetup";
-import { BigNumber, utils, Wallet } from "ethers";
+import { BigNumber, ethers, utils, Wallet } from "ethers";
 import {
   ParentToChildRewardRouter__factory,
   ParentToChildRewardRouter,
@@ -115,7 +115,7 @@ describe("Router e2e test", () => {
 
     rewardDistributor = await new RewardDistributor__factory(
       setup.l2Signer
-    ).deploy([childToParentRewardRouter.address], [10000]);
+    ).deploy(ethers.constants.AddressZero, [childToParentRewardRouter.address], [10000]);
     console.log("Reward Distributor deployed:", rewardDistributor.address);
   });
 
