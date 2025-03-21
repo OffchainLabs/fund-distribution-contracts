@@ -3,6 +3,8 @@ pragma solidity ^0.8.16;
 
 import {BASIS_POINTS, hashAddresses, hashWeights, uncheckedInc} from "./Util.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 error TooManyRecipients();
 error EmptyRecipients();
@@ -13,10 +15,12 @@ error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
 
-/// @title A distributor of ether
+/// @title A distributor of ether or ERC20 tokens
 /// @notice You can use this contract to distribute ether according to defined weights between a group of participants managed by an owner.
 /// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
 contract RewardDistributor is Ownable {
+    using SafeERC20 for IERC20;
+
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known group of contracts that won't consume more than this amount.
     uint256 public constant PER_RECIPIENT_GAS = 100_000;
@@ -24,6 +28,8 @@ contract RewardDistributor is Ownable {
     /// @notice The maximum number of addresses that may be recipients.
     /// @dev This ensures that all sends may always happen within a block.
     uint64 public constant MAX_RECIPIENTS = 64;
+
+    IERC20 public immutable token;
 
     /// @notice Hash of concat'ed recipient group.
     bytes32 public currentRecipientGroup;
@@ -40,10 +46,12 @@ contract RewardDistributor is Ownable {
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
 
     /// @notice It is assumed that all recipients are able to receive eth when called with value but no data
+    /// @param _token Address of the ERC20 token to distribute. Use address(0) for ether.
     /// @param recipients Addresses to receive rewards.
     /// @param weights Weights of each recipient in basis points.
-    constructor(address[] memory recipients, uint256[] memory weights) Ownable() {
+    constructor(address _token, address[] memory recipients, uint256[] memory weights) Ownable() {
         setRecipients(recipients, weights);
+        token = IERC20(_token);
     }
 
     /// @notice allows eth to be deposited into this contract
@@ -93,7 +101,7 @@ contract RewardDistributor is Ownable {
         }
 
         // calculate individual reward
-        uint256 rewards = address(this).balance;
+        uint256 rewards = address(token) == address(0) ? address(this).balance : token.balanceOf(address(this));
         // the reminder will be kept in the contract
         uint256 rewardPerBps = rewards / BASIS_POINTS;
         if (rewardPerBps == 0) {
@@ -109,7 +117,13 @@ contract RewardDistributor is Ownable {
             // if the recipient reentry to steal funds, the contract will not have sufficient
             // funds and revert when trying to send fund to the next recipient
             // if the recipient is the last, it doesn't matter since there are no extra fund to steal
-            (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
+            bool success;
+            if (address(token) == address(0)) {
+                (success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
+            } else {
+                token.safeTransfer(recipients[r], individualRewards);
+                success = true;
+            }
 
             // if the funds failed to send we send them to the owner for safe keeping
             // then the owner will have the opportunity to distribute them out of band
