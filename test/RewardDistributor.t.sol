@@ -5,6 +5,7 @@ pragma solidity ^0.8.16;
 import "../src/RewardDistributor.sol";
 import "./Reverter.sol";
 import "./Empty.sol";
+import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
@@ -177,15 +178,17 @@ contract RewardDistributorTest is Test {
 
     address zero = 0x0000000000000000000000000000000000000000;
 
-    function testDistributeRewards(uint256 reward) public withContext(3) {
+    function _distributeRewards(uint256 reward, bool useToken) public {
         // If reward is less than recipient.length, we expect to throw an error
         // see testLowSend
         vm.assume(reward >= BASIS_POINTS);
 
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        ERC20PresetMinterPauser token = new ERC20PresetMinterPauser("token", "TKN");
+
+        RewardDistributor rd = new RewardDistributor(useToken ? address(token) : address(0), recipients, weights);
 
         // increase the balance of rd
-        vm.deal(address(rd), reward);
+        useToken ? token.mint(address(rd), reward) : vm.deal(address(rd), reward);
 
         vm.expectEmit(true, false, false, true);
         emit RecipientRecieved(recipients[0], reward / BASIS_POINTS * weights[0]);
@@ -199,12 +202,17 @@ contract RewardDistributorTest is Test {
         // anyone should be able to call distributeRewards
         rd.distributeRewards(recipients, weights);
 
-        assertEq(recipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance");
-        assertEq(recipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance");
-        assertEq(recipients[2].balance, reward / BASIS_POINTS * weights[2], "c balance");
-        assertEq(owner.balance, 0, "owner balance");
-        assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
+        assertEq(useToken ? token.balanceOf(recipients[0]) : recipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance");
+        assertEq(useToken ? token.balanceOf(recipients[1]) : recipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance");
+        assertEq(useToken ? token.balanceOf(recipients[2]) : recipients[2].balance, reward / BASIS_POINTS * weights[2], "c balance");
+        assertEq(useToken ? token.balanceOf(owner) : owner.balance, 0, "owner balance");
+        assertEq(useToken ? token.balanceOf(nobody) : nobody.balance, 0, "nobody balance");
+        assertEq(useToken ? token.balanceOf(address(rd)) : address(rd).balance, reward % BASIS_POINTS, "rewards balance");
+    }
+
+    function testDistributeRewards(uint256 reward) public withContext(3) {
+        _distributeRewards(reward, false);
+        _distributeRewards(reward, true);
     }
 
     function testLowSend(uint256 rewards) public withContext(8) {
@@ -413,5 +421,17 @@ contract RewardDistributorTest is Test {
         expected = 0;
         actual = uncheckedInc(type(uint256).max);
         assertEq(actual, expected, "incorrect overflow increment");
+    }
+
+    function testCannotReceiveInERC20Mode() public {
+        recipients = makeRecipientGroup(3);
+        weights = makeRecipientWeights(3);
+        RewardDistributor rd = new RewardDistributor(address(1), recipients, weights);
+
+        vm.deal(address(this), 1);
+        (bool success, bytes memory ret) = address(rd).call{value: 1}("");
+
+        assertFalse(success);
+        assertEq(ret, abi.encodeWithSelector(CannotReceiveNative.selector));
     }
 }
