@@ -5,7 +5,7 @@ pragma solidity ^0.8.16;
 import "../src/RewardDistributor.sol";
 import "./Reverter.sol";
 import "./Empty.sol";
-import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
+import {ERC20PresetMinterPauser} from "openzeppelin-contracts/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
