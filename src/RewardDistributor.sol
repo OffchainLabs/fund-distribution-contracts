@@ -16,9 +16,10 @@ error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
 
-/// @title A distributor of ether or ERC20 tokens
-/// @notice You can use this contract to distribute ether according to defined weights between a group of participants managed by an owner.
+/// @title A distributor of ether or an ERC20 token
+/// @notice You can use this contract to distribute ether/token according to defined weights between a group of participants managed by an owner.
 /// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
+///      A RewardDistributor can only handle a single, specific asset defined at deployment.
 contract RewardDistributor is Ownable {
     using SafeERC20 for IERC20;
 
