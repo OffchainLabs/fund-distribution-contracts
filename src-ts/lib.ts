@@ -42,12 +42,10 @@ export const getRecipientsAndWeights = async (
 export const distributeRewards = async (
   connectedSigner: Wallet,
   distributorAddr: string,
-  _minBalanceEther?: number
+  _minBalanceWei?: BigNumber
 ) => {
   const chainId = await connectedSigner.getChainId();
-  const minBalanceWei = _minBalanceEther
-    ? utils.parseEther(_minBalanceEther.toString())
-    : BigNumber.from(0);
+  const minBalanceWei = _minBalanceWei || BigNumber.from(0);
   const distributor = RewardDistributor__factory.connect(
     distributorAddr,
     connectedSigner
