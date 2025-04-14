@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
-import { Wallet } from "ethers";
+import { ethers, Wallet } from "ethers";
 import { distributeRewards } from "../lib";
 dotenv.config();
 
@@ -13,14 +13,18 @@ const options = yargs(process.argv.slice(2))
   .options({
     rpcURL: { type: "string", demandOption: true },
     rewardDistAddr: { type: "string", demandOption: true },
-    minBalanceEther: { type: "number", demandOption: false, default: 0 },
+    minBalance: { type: "string", demandOption: false, default: "10000 wei" },
   })
   .parseSync();
 
 (async () => {
+  const wei = ethers.utils.parseUnits(
+    options.minBalance.split(" ")[0],
+    options.minBalance.split(" ")[1]
+  );
   await distributeRewards(
     new Wallet(CHILD_CHAIN_PK, new JsonRpcProvider(options.rpcURL)),
     options.rewardDistAddr,
-    options.minBalanceEther
+    wei
   );
 })();
