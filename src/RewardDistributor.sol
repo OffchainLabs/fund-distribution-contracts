@@ -15,6 +15,8 @@ error OwnerFailedRecieve(address owner, address recipient, uint256 value);
 error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
+error CannotCallRescueToToken();
+error CannotCallRescueWithValue();
 
 /// @title A distributor of ether or an ERC20 token
 /// @notice You can use this contract to distribute ether/token according to defined weights between a group of participants managed by an owner.
@@ -189,5 +191,28 @@ contract RewardDistributor is Ownable {
         currentRecipientWeights = recipientWeights;
 
         emit RecipientsUpdated(recipientGroup, recipients, recipientWeights, weights);
+    }
+
+    /**
+     * @notice Allows the owner to call any address with a value and data.
+     *         If the wrong asset is sent to the contract then this allows the owner to recover it.
+     * @dev    Calls to the token address are not allowed.
+     *         Calls with value are not allowed if the token address is 0.
+     * @param to Address to call
+     * @param value Callvalue to send
+     * @param data Calldata to send
+     */
+    function rescue(address to, uint256 value, bytes memory data) external onlyOwner {
+        if (address(token) == to) {
+            revert CannotCallRescueToToken();
+        }
+        if (address(token) == address(0) && value > 0) {
+            revert CannotCallRescueWithValue();
+        }
+
+        (bool success,) = to.call{value: value}(data);
+        if (!success) {
+            revert OwnerFailedRecieve(owner(), to, value);
+        }
     }
 }
