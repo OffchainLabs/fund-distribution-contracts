@@ -434,4 +434,24 @@ contract RewardDistributorTest is Test {
         assertFalse(success);
         assertEq(ret, abi.encodeWithSelector(CannotReceiveNative.selector));
     }
+
+    function testRescue() public {
+        recipients = makeRecipientGroup(3);
+        weights = makeRecipientWeights(3);
+        RewardDistributor rdEth = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rdToken = new RewardDistributor(address(1), recipients, weights);
+        
+        // rescue should be only owner
+        vm.prank(nobody);
+        vm.expectRevert("Ownable: caller is not the owner");
+        rdEth.rescue(address(0), 1, "");
+
+        // cannot send value in rdEth.rescue
+        vm.expectRevert(CannotCallRescueWithValue.selector);
+        rdEth.rescue(address(0), 1, "");
+
+        // cannot call token contract in rdToken.rescue
+        vm.expectRevert(CannotCallRescueToToken.selector);
+        rdToken.rescue(address(1), 1, "");
+    }
 }

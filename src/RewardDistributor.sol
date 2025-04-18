@@ -203,11 +203,11 @@ contract RewardDistributor is Ownable {
      * @param data Calldata to send
      */
     function rescue(address to, uint256 value, bytes memory data) external onlyOwner {
-        if (address(token) == to) {
-            revert CannotCallRescueToToken();
-        }
         if (address(token) == address(0) && value > 0) {
             revert CannotCallRescueWithValue();
+        }
+        if (address(token) == to) {
+            revert CannotCallRescueToToken();
         }
 
         (bool success,) = to.call{value: value}(data);
