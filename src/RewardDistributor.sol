@@ -11,7 +11,7 @@ error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error InvalidRecipientWeights(bytes32 currentRecipientWeights, bytes32 providedRecipientWeights);
-error OwnerFailedReceive(address owner, address recipient, uint256 value);
+error OwnerFailedRecieve(address owner, address recipient, uint256 value);
 error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
@@ -20,7 +20,7 @@ error CannotCallRescueWithValue();
 
 /// @title A distributor of ether or an ERC20 token
 /// @notice You can use this contract to distribute ether/token according to defined weights between a group of participants managed by an owner.
-/// @dev If a particular recipient is not able to receive funds at their address, the payment will fallback to the owner.
+/// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
 ///      A RewardDistributor can only handle a single, specific asset defined at deployment.
 ///      This contract assumes that the token does not have a blacklist, callback or other non standard ERC20 behaviors.
 contract RewardDistributor is Ownable {
@@ -42,10 +42,10 @@ contract RewardDistributor is Ownable {
     bytes32 public currentRecipientWeights;
 
     /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
-    event OwnerReceived(address indexed owner, address indexed recipient, uint256 value);
+    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
 
     /// @notice Address successfully received rewards.
-    event RecipientReceived(address indexed recipient, uint256 value);
+    event RecipientRecieved(address indexed recipient, uint256 value);
 
     /// @notice New recipients have been set
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
@@ -111,7 +111,7 @@ contract RewardDistributor is Ownable {
 
         // calculate individual reward
         uint256 rewards = address(token) == address(0) ? address(this).balance : token.balanceOf(address(this));
-        // the remainder will be kept in the contract
+        // the reminder will be kept in the contract
         uint256 rewardPerBps = rewards / BASIS_POINTS;
         if (rewardPerBps == 0) {
             revert NoFundsToDistribute();
@@ -138,7 +138,7 @@ contract RewardDistributor is Ownable {
             // if the funds failed to send we send them to the owner for safe keeping
             // then the owner will have the opportunity to distribute them out of band
             if (success) {
-                emit RecipientReceived(recipients[r], individualRewards);
+                emit RecipientRecieved(recipients[r], individualRewards);
             } else {
                 // this case will never be hit if we are using an ERC20 token
                 // cache owner in memory
@@ -148,9 +148,9 @@ contract RewardDistributor is Ownable {
                 // it's important that this fail in order to preserve the accounting in this contract.
                 // if we dont fail here we enable a re-entrancy attack
                 if (!ownerSuccess) {
-                    revert OwnerFailedReceive(_owner, recipients[r], individualRewards);
+                    revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
                 }
-                emit OwnerReceived(_owner, recipients[r], individualRewards);
+                emit OwnerRecieved(_owner, recipients[r], individualRewards);
             }
         }
     }
@@ -182,11 +182,11 @@ contract RewardDistributor is Ownable {
             revert InvalidTotalWeight(totalWeight);
         }
 
-        // create a commitment to the recipient group and update current
+        // create a committment to the recipient group and update current
         bytes32 recipientGroup = hashAddresses(recipients);
         currentRecipientGroup = recipientGroup;
 
-        // create a commitment to the recipient weights and update current
+        // create a committment to the recipient weights and update current
         bytes32 recipientWeights = hashWeights(weights);
         currentRecipientWeights = recipientWeights;
 
@@ -212,7 +212,7 @@ contract RewardDistributor is Ownable {
 
         (bool success,) = to.call{value: value}(data);
         if (!success) {
-            revert OwnerFailedReceive(owner(), to, value);
+            revert OwnerFailedRecieve(owner(), to, value);
         }
     }
 }

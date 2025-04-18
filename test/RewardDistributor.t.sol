@@ -9,8 +9,8 @@ import {ERC20PresetMinterPauser} from "openzeppelin-contracts/contracts/token/ER
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
-    event OwnerReceived(address indexed owner, address indexed recipient, uint256 value);
-    event RecipientReceived(address indexed recipient, uint256 value);
+    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
+    event RecipientRecieved(address indexed recipient, uint256 value);
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
@@ -191,11 +191,11 @@ contract RewardDistributorTest is Test {
         useToken ? token.mint(address(rd), reward) : vm.deal(address(rd), reward);
 
         vm.expectEmit(true, false, false, true);
-        emit RecipientReceived(recipients[0], reward / BASIS_POINTS * weights[0]);
+        emit RecipientRecieved(recipients[0], reward / BASIS_POINTS * weights[0]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientReceived(recipients[1], reward / BASIS_POINTS * weights[1]);
+        emit RecipientRecieved(recipients[1], reward / BASIS_POINTS * weights[1]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientReceived(recipients[2], reward / BASIS_POINTS * weights[2]);
+        emit RecipientRecieved(recipients[2], reward / BASIS_POINTS * weights[2]);
 
         vm.stopPrank();
         vm.startPrank(nobody);
@@ -239,11 +239,11 @@ contract RewardDistributorTest is Test {
         vm.deal(address(rd), reward);
 
         vm.expectEmit(true, false, false, true);
-        emit RecipientReceived(recipients[0], reward / BASIS_POINTS * weights[0]);
+        emit RecipientRecieved(recipients[0], reward / BASIS_POINTS * weights[0]);
         vm.expectEmit(true, false, false, true);
-        emit RecipientReceived(recipients[1], reward / BASIS_POINTS * weights[1]);
+        emit RecipientRecieved(recipients[1], reward / BASIS_POINTS * weights[1]);
         vm.expectEmit(true, false, false, true);
-        emit OwnerReceived(owner, recipients[2], reward / BASIS_POINTS * weights[2]);
+        emit OwnerRecieved(owner, recipients[2], reward / BASIS_POINTS * weights[2]);
 
         rd.distributeRewards(recipients, weights);
 
@@ -342,7 +342,7 @@ contract RewardDistributorTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                OwnerFailedReceive.selector, owner, recipients[2], (reward / BASIS_POINTS * weights[2])
+                OwnerFailedRecieve.selector, owner, recipients[2], (reward / BASIS_POINTS * weights[2])
             )
         );
 
