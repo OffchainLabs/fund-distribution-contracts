@@ -3,7 +3,10 @@ pragma solidity ^0.8.16;
 
 import {BASIS_POINTS, hashAddresses, hashWeights, uncheckedInc} from "./Util.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+error CannotReceiveNative();
 error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
@@ -12,11 +15,17 @@ error OwnerFailedRecieve(address owner, address recipient, uint256 value);
 error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
+error CannotCallRescueToToken();
+error CannotCallRescueWithValue();
 
-/// @title A distributor of ether
-/// @notice You can use this contract to distribute ether according to defined weights between a group of participants managed by an owner.
+/// @title A distributor of ether or an ERC20 token
+/// @notice You can use this contract to distribute ether/token according to defined weights between a group of participants managed by an owner.
 /// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
+///      A RewardDistributor can only handle a single, specific asset defined at deployment.
+///      This contract assumes that the token does not have a blacklist, callback or other non standard ERC20 behaviors.
 contract RewardDistributor is Ownable {
+    using SafeERC20 for IERC20;
+
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known group of contracts that won't consume more than this amount.
     uint256 public constant PER_RECIPIENT_GAS = 100_000;
@@ -24,6 +33,8 @@ contract RewardDistributor is Ownable {
     /// @notice The maximum number of addresses that may be recipients.
     /// @dev This ensures that all sends may always happen within a block.
     uint64 public constant MAX_RECIPIENTS = 64;
+
+    IERC20 public immutable token;
 
     /// @notice Hash of concat'ed recipient group.
     bytes32 public currentRecipientGroup;
@@ -40,15 +51,21 @@ contract RewardDistributor is Ownable {
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
 
     /// @notice It is assumed that all recipients are able to receive eth when called with value but no data
+    /// @param _token Address of the ERC20 token to distribute. Use address(0) for ether.
     /// @param recipients Addresses to receive rewards.
     /// @param weights Weights of each recipient in basis points.
-    constructor(address[] memory recipients, uint256[] memory weights) Ownable() {
+    constructor(address _token, address[] memory recipients, uint256[] memory weights) Ownable() {
         setRecipients(recipients, weights);
+        token = IERC20(_token);
     }
 
     /// @notice allows eth to be deposited into this contract
-    /// @dev this contract is expected to handle ether appearing in its balance as well as an explicit deposit
-    receive() external payable {}
+    /// @dev this contract is expected to handle ether appearing in its balance as well as an explicit deposit as long as token == address(0)
+    receive() external payable {
+        if (address(token) != address(0)) {
+            revert CannotReceiveNative();
+        }
+    }
 
     /**
      * @notice Distributes previous rewards then updates the recipients to a new group.
@@ -93,7 +110,7 @@ contract RewardDistributor is Ownable {
         }
 
         // calculate individual reward
-        uint256 rewards = address(this).balance;
+        uint256 rewards = address(token) == address(0) ? address(this).balance : token.balanceOf(address(this));
         // the reminder will be kept in the contract
         uint256 rewardPerBps = rewards / BASIS_POINTS;
         if (rewardPerBps == 0) {
@@ -109,13 +126,21 @@ contract RewardDistributor is Ownable {
             // if the recipient reentry to steal funds, the contract will not have sufficient
             // funds and revert when trying to send fund to the next recipient
             // if the recipient is the last, it doesn't matter since there are no extra fund to steal
-            (bool success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
+            bool success;
+            if (address(token) == address(0)) {
+                (success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
+            } else {
+                // we assume that this will never revert, because we know we have enough token and the token is "normal"
+                token.safeTransfer(recipients[r], individualRewards);
+                success = true;
+            }
 
             // if the funds failed to send we send them to the owner for safe keeping
             // then the owner will have the opportunity to distribute them out of band
             if (success) {
                 emit RecipientRecieved(recipients[r], individualRewards);
             } else {
+                // this case will never be hit if we are using an ERC20 token
                 // cache owner in memory
                 address _owner = owner();
                 (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
@@ -166,5 +191,28 @@ contract RewardDistributor is Ownable {
         currentRecipientWeights = recipientWeights;
 
         emit RecipientsUpdated(recipientGroup, recipients, recipientWeights, weights);
+    }
+
+    /**
+     * @notice Allows the owner to call any address with a value and data.
+     *         If the wrong asset is sent to the contract then this allows the owner to recover it.
+     * @dev    Calls to the token address are not allowed.
+     *         Calls with value are not allowed if the token address is 0.
+     * @param to Address to call
+     * @param value Callvalue to send
+     * @param data Calldata to send
+     */
+    function rescue(address to, uint256 value, bytes memory data) external onlyOwner {
+        if (address(token) == address(0) && value > 0) {
+            revert CannotCallRescueWithValue();
+        }
+        if (address(token) == to) {
+            revert CannotCallRescueToToken();
+        }
+
+        (bool success,) = to.call{value: value}(data);
+        if (!success) {
+            revert OwnerFailedRecieve(owner(), to, value);
+        }
     }
 }
