@@ -12,7 +12,9 @@
     "noFallthroughCasesInSwitch": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "types": ["node", "mocha"]
   },
-  "exclude": ["./lib/"]
+  "exclude": ["./lib/"],
+  "include": ["."]
 }
