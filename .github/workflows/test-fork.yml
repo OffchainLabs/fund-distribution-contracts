@@ -20,7 +20,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - run: yarn minimal-install
       - run: ETH_FORK_URL=${{ secrets.ETH_FORK_URL }} ARB_FORK_URL=${{ secrets.ARB_FORK_URL }} yarn test:fork
