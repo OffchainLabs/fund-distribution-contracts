@@ -22,5 +22,5 @@ jobs:
         with:
           version: stable
 
-      - run: yarn minimal-install
+      - run: yarn
       - run: yarn audit:ci

@@ -39,7 +39,6 @@ To completely remove fork test setup:
 ### Adding to Existing Projects
 To add the fork test setup to an existing hardhat+foundry project:
 - Copy `.github/workflows/test-fork.yml`
-    - `run: yarn minimal-install` may need to be changed to `run: yarn`
 - Set GitHub secrets for RPC url's
 - Copy `test/fork/` directory
 - Copy `test:fork` package script

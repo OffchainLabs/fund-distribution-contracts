@@ -22,5 +22,5 @@ jobs:
         with:
           version: stable
 
-      - run: yarn minimal-install
+      - run: yarn
       - run: ETH_FORK_URL=${{ secrets.ETH_FORK_URL }} ARB_FORK_URL=${{ secrets.ARB_FORK_URL }} yarn test:fork

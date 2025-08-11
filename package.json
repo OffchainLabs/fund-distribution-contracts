@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "repository": "https://github.com/OffchainLabs/blockchain-eng-template.git",
   "scripts": {
-    "prepare": "forge install && cd lib/arbitrum-sdk && yarn",
-    "minimal-install": "yarn --ignore-scripts && forge install",
+    "prepare": "forge install",
     "minimal-publish": "./scripts/template/publish.bash",
     "audit:ci": "audit-ci --config ./audit-ci.jsonc",
     "upload-all-selectors": "forge build && find ./out -name \"*.json\" -exec cast upload-signature {} +",
@@ -23,6 +22,7 @@
     "fix": "yarn format; yarn test:sigs; yarn test:storage; yarn gas-snapshot"
   },
   "devDependencies": {
+    "@arbitrum/sdk": "^4.0.4",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-foundry": "^1.1.1",
@@ -38,6 +38,7 @@
     "@typescript-eslint/parser": "^7.0.1",
     "audit-ci": "^6.6.1",
     "chai": "^4.2.0",
+    "dotenv": "^17.2.1",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",

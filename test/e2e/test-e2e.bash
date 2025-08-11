@@ -14,8 +14,6 @@ fi
 
 set -e
 
-cd lib/arbitrum-sdk && yarn gen:network && cd -
-
 yarn build
 
 yarn mocha test/e2e/ --timeout 30000000 --bail

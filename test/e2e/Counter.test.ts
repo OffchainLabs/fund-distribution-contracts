@@ -19,9 +19,14 @@ describe('E2E Sample', () => {
   })
 
   it('should have the correct network information', async function () {
-    expect(setup.l1Network.chainID).to.eq(1337)
-    expect(setup.l2Network.chainID).to.eq(412346)
-    if (setup.isTestingOrbit) expect(setup.l3Network.chainID).to.eq(333333)
+    expect((await setup.l1Provider.getNetwork()).chainId).to.eq(1337n)
+    expect((await setup.l2Provider.getNetwork()).chainId)
+      .to.eq(BigInt(setup.l2Network.chainId))
+      .to.eq(412346n)
+    if (setup.isTestingOrbit)
+      expect((await setup.l3Provider.getNetwork()).chainId)
+        .to.eq(BigInt(setup.l3Network.chainId))
+        .to.eq(333333n)
   })
 
   describe('Deployment', () => {

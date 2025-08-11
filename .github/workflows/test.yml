@@ -22,7 +22,7 @@ jobs:
         with:
           version: stable
 
-      - run: yarn minimal-install
+      - run: yarn
       - run: yarn test:unit
 
   test-contract-size:
@@ -37,7 +37,7 @@ jobs:
         with:
           version: stable
 
-      - run: yarn minimal-install
+      - run: yarn
       - run: yarn test:sizes
 
   test-gas-check:
@@ -52,7 +52,7 @@ jobs:
         with:
           version: stable
 
-      - run: yarn minimal-install
+      - run: yarn
       - run: yarn test:gas-check
 
   test-sigs:
@@ -67,7 +67,7 @@ jobs:
         with:
           version: stable
 
-      - run: yarn minimal-install
+      - run: yarn
       - run: yarn test:sigs
 
   test-storage:
@@ -82,7 +82,7 @@ jobs:
         with:
           version: stable
         
-      - run: yarn minimal-install
+      - run: yarn
       - run: yarn test:storage
   
   test-unused-errors:
