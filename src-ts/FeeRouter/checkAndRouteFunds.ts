@@ -83,6 +83,10 @@ export const checkAndRouteFunds = async (
 
   const rec = await (async () => {
     if (isEth) {
+      if ((await parentChainSigner.provider.getBalance(parentToChildRewardRouterAddr)).eq(0)) {
+        console.log("No funds to route, skipping");
+        process.exit(0);
+      }
       const rec = await (
         await parentToChildRewardRouter.routeNativeFunds(
           submissionFee,
@@ -95,6 +99,15 @@ export const checkAndRouteFunds = async (
       ).wait(1);
       return rec;
     } else {
+      if (
+        (await ERC20__factory.connect(
+          ethOrTokenAddress,
+          parentChainSigner
+        ).balanceOf(parentToChildRewardRouterAddr)).eq(0)
+      ) {
+        console.log("No funds to route, skipping");
+        process.exit(0);
+      }
       const rec = await (
         await parentToChildRewardRouter.routeToken(
           ethOrTokenAddress,
