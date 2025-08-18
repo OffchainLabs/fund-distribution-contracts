@@ -1,15 +1,25 @@
 [profile.default]
 src = 'src'
 out = 'out'
-libs = ['lib']
+libs = ['node_modules', 'lib']
+test = 'test'
+cache_path  = 'cache_forge'
 solc_version = '0.8.16'
-optimizer = true
 optimizer_runs = 20000
-via_ir = false
+script = 'scripts'
 
-[rpc_endpoints]
-arb1 = "https://arb1.arbitrum.io/rpc"
-arbgoerli = "https://goerli-rollup.arbitrum.io/rpc"
-arbnova = "https://nova.arbitrum.io/rpc"
-
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+multiline_func_header = "attributes_first"
+quote_style = "double"
+number_underscore = "preserve"
+hex_underscore = "remove"
+single_line_statement_blocks = "preserve"
+override_spacing = false
+wrap_comments = false
+ignore = []
+contract_new_lines = false
+sort_imports = false
