@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import {BASIS_POINTS, hashAddresses, hashWeights, uncheckedInc} from "./Util.sol";
-import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 error TooManyRecipients();
 error EmptyRecipients();

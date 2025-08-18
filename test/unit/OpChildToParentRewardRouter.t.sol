@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "../src/FeeRouter/OpChildToParentRewardRouter.sol";
-import "./util/TestToken.sol";
-import "./util/OpStandardBridgeMock.sol";
-import "./Empty.sol";
+import "../../src/FeeRouter/OpChildToParentRewardRouter.sol";
+import "../mocks/TestToken.sol";
+import "../mocks/OpStandardBridgeMock.sol";
+import "../mocks/Empty.sol";
 
 import "forge-std/Test.sol";
 

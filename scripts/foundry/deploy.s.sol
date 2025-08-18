@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "forge-std/Script.sol";
-import "../src/RewardDistributor.sol";
+import "../../src/RewardDistributor.sol";
 
 contract DeployScript is Script {
     function setUp() public {}

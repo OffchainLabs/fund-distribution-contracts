@@ -2,9 +2,9 @@
 pragma solidity ^0.8.16;
 
 // import "./src/RewardDistributor.sol";
-import "../src/RewardDistributor.sol";
-import "./Reverter.sol";
-import "./Empty.sol";
+import "../../src/RewardDistributor.sol";
+import "../mocks/Reverter.sol";
+import "../mocks/Empty.sol";
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
