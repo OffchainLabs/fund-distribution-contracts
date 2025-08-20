@@ -1,17 +1,15 @@
 import { JsonRpcProvider, Log } from '@ethersproject/providers'
-import { Wallet } from 'ethers'
 import {
   ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
-} from '../../typechain-types'
-import { L2ToL1TxEvent } from '../../lib/arbitrum-sdk/src/lib/abi/ArbSys'
-import { EventArgs } from '../../lib/arbitrum-sdk/src/lib/dataEntities/event'
-
+} from '../../../typechain-types'
 import {
-  L2TransactionReceipt,
-  L2ToL1Message,
-  L2ToL1MessageStatus,
-} from '../../lib/arbitrum-sdk/src'
+  ChildToParentTransactionEvent,
+  EventArgs,
+  ChildTransactionReceipt,
+  ChildToParentMessage,
+  ChildToParentMessageStatus,
+} from '@arbitrum/sdk'
 
 import {
   Chain,
@@ -30,6 +28,7 @@ import {
   publicActionsL2,
   walletActionsL1,
 } from 'viem/op-stack'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
 
 const wait = async (ms: number) => new Promise(res => setTimeout(res, ms))
 
@@ -55,9 +54,9 @@ export abstract class ChildToParentMessageRedeemer {
       toBlock: toBlock,
       address: this.childToParentRewardRouterAddr,
       topics: [
-        ChildToParentRewardRouter__factory.createInterface().getEventTopic(
+        ChildToParentRewardRouter__factory.createInterface().getEvent(
           'FundsRouted'
-        ),
+        ).topicHash,
       ],
     })
     if (logs.length) {
@@ -89,55 +88,66 @@ export abstract class ChildToParentMessageRedeemer {
 
 export class ArbChildToParentMessageRedeemer extends ChildToParentMessageRedeemer {
   protected async _handleLogs(logs: Log[], oneOff: boolean): Promise<void> {
-    const childChainProvider = new JsonRpcProvider(this.childChainRpc)
-    const parentChainSigner = new Wallet(
+    const childChainProvider = new DoubleProvider(this.childChainRpc)
+    const parentChainSigner = new DoubleWallet(
       this.parentChainPrivateKey,
-      new JsonRpcProvider(this.parentChainRpc)
+      new DoubleProvider(this.parentChainRpc)
     )
     for (let log of logs) {
-      const arbTransactionRec = new L2TransactionReceipt(
-        await childChainProvider.getTransactionReceipt(log.transactionHash)
+      const arbTransactionRec = new ChildTransactionReceipt(
+        await childChainProvider.v5.getTransactionReceipt(log.transactionHash)
       )
-      let l2ToL1Events =
-        arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[]
+      let l2ToL1Events = arbTransactionRec.getChildToParentEvents()
 
       if (l2ToL1Events.length != 1) {
         throw new Error('Only 1 l2 to l1 message per tx supported')
       }
 
       for (let l2ToL1Event of l2ToL1Events) {
-        const l2ToL1Message = L2ToL1Message.fromEvent(
-          parentChainSigner,
+        const l2ToL1Message = ChildToParentMessage.fromEvent(
+          parentChainSigner.v5,
           l2ToL1Event
         )
         if (!oneOff) {
-          console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`)
+          console.log(
+            `Waiting for ${arbTransactionRec.transactionHash} to be ready:`
+          )
           await l2ToL1Message.waitUntilReadyToExecute(
-            childChainProvider,
+            childChainProvider.v5,
             this.retryDelay
           )
         }
 
-        const status = await l2ToL1Message.status(childChainProvider)
+        const status = await l2ToL1Message.status(childChainProvider.v5)
         switch (status) {
-          case L2ToL1MessageStatus.CONFIRMED: {
-            console.log(l2ToL1Event.hash, 'confirmed; executing:')
+          case ChildToParentMessageStatus.CONFIRMED: {
+            console.log(
+              arbTransactionRec.transactionHash,
+              'confirmed; executing:'
+            )
             const rec = await (
-              await l2ToL1Message.execute(childChainProvider)
+              await l2ToL1Message.execute(childChainProvider.v5)
             ).wait(2)
-            console.log(`${l2ToL1Event.hash} executed:`, rec.transactionHash)
+            console.log(
+              `${arbTransactionRec.transactionHash} executed:`,
+              rec.transactionHash
+            )
             break
           }
-          case L2ToL1MessageStatus.EXECUTED: {
-            console.log(`${l2ToL1Event.hash} already executed`)
+          case ChildToParentMessageStatus.EXECUTED: {
+            console.log(`${arbTransactionRec.transactionHash} already executed`)
             break
           }
-          case L2ToL1MessageStatus.UNCONFIRMED: {
-            console.log(`${l2ToL1Event.hash} not yet confirmed`)
+          case ChildToParentMessageStatus.UNCONFIRMED: {
+            console.log(
+              `${arbTransactionRec.transactionHash} not yet confirmed`
+            )
             break
           }
           default: {
-            throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`)
+            throw new Error(
+              `Unhandled ChildToParentMessageStatus case: ${status}`
+            )
           }
         }
       }
