@@ -11,12 +11,7 @@ import {
 import { ArbChildToParentMessageRedeemer } from '../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer'
 import { checkAndRouteFunds } from '../../scripts/ts/FeeRouter/checkAndRouteFunds'
 import { Erc20Bridger } from '@arbitrum/sdk'
-import {
-  Contract,
-  ContractFactory,
-  parseEther,
-  Wallet,
-} from 'ethers'
+import { Contract, ContractFactory, parseEther, Wallet } from 'ethers'
 
 import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 import { BigNumber } from 'ethers-v5'
@@ -200,9 +195,7 @@ describe('Router e2e test', () => {
         await parentToChildRewardRouter.getAddress(),
         BigNumber.from(0)
       )
-      expect(
-        await setup.l2Provider.getBalance(destination)
-      ).to.eq(ethValue)
+      expect(await setup.l2Provider.getBalance(destination)).to.eq(ethValue)
     })
   })
 
@@ -215,7 +208,10 @@ describe('Router e2e test', () => {
     })
 
     it('funds and pokes child to parent router', async () => {
-      await l2TestToken.transfer(childToParentRewardRouter.getAddress(), tokenValue)
+      await l2TestToken.transfer(
+        childToParentRewardRouter.getAddress(),
+        tokenValue
+      )
 
       // prePokeBlock = setup.l2
       await (await childToParentRewardRouter.routeToken()).wait()
