@@ -6,12 +6,12 @@ import {
 } from '../../typechain-types'
 import { OpChildToParentMessageRedeemer } from '../../src-ts/FeeRouter/ChildToParentMessageRedeemer'
 import { BigNumber, ContractFactory, ethers, Wallet } from 'ethers'
-import { TestERC20__factory } from "../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory";
-import { TestERC20 } from "../../lib/arbitrum-sdk/src/lib/abi/TestERC20";
+import { TestERC20__factory } from '../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory'
+import { TestERC20 } from '../../lib/arbitrum-sdk/src/lib/abi/TestERC20'
 import { defineChain } from 'viem'
 import { chainConfig } from 'viem/op-stack'
-import { JsonRpcProvider } from '@ethersproject/providers';
-import { parseEther } from 'ethers/lib/utils';
+import { JsonRpcProvider } from '@ethersproject/providers'
+import { parseEther } from 'ethers/lib/utils'
 // import { BigNumber.from } from 'ethers/lib/utils';
 
 // Follow instructions to set up a local devnet here: https://docs.optimism.io/chain/testing/dev-node
@@ -69,10 +69,10 @@ const l1StdBridgeIface = new ethers.utils.Interface([
 ])
 
 async function deployTestToken(signer: Wallet) {
-    const testToken = await new TestERC20__factory().connect(signer).deploy();
-    await testToken.deployed();
-    await (await testToken.mint()).wait();
-    return IERC20__factory.connect(testToken.address, signer)
+  const testToken = await new TestERC20__factory().connect(signer).deploy()
+  await testToken.deployed()
+  await (await testToken.mint()).wait()
+  return IERC20__factory.connect(testToken.address, signer)
 }
 
 describe('Router e2e test', () => {
@@ -120,7 +120,9 @@ describe('Router e2e test', () => {
 
     // wait for eth
     while (
-      (await childChainSigner.provider.getBalance(childChainSigner.address)).eq('0')
+      (await childChainSigner.provider.getBalance(childChainSigner.address)).eq(
+        '0'
+      )
     ) {
       await wait(1000)
     }
@@ -222,7 +224,7 @@ describe('Router e2e test', () => {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         await redeemer.redeemChildToParentMessages(true)
-        
+
         const balance = await parentChainSigner.provider.getBalance(destination)
 
         if (balance.eq(ethValue)) {

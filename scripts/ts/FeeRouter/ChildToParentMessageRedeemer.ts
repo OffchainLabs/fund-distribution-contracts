@@ -1,17 +1,17 @@
-import { JsonRpcProvider, Log } from "@ethersproject/providers";
-import { Wallet } from "ethers";
+import { JsonRpcProvider, Log } from '@ethersproject/providers'
+import { Wallet } from 'ethers'
 import {
   ChildToParentRewardRouter__factory,
   ChildToParentRewardRouter,
-} from "../../typechain-types";
-import { L2ToL1TxEvent } from "../../lib/arbitrum-sdk/src/lib/abi/ArbSys";
-import { EventArgs } from "../../lib/arbitrum-sdk/src/lib/dataEntities/event";
+} from '../../typechain-types'
+import { L2ToL1TxEvent } from '../../lib/arbitrum-sdk/src/lib/abi/ArbSys'
+import { EventArgs } from '../../lib/arbitrum-sdk/src/lib/dataEntities/event'
 
 import {
   L2TransactionReceipt,
   L2ToL1Message,
   L2ToL1MessageStatus,
-} from "../../lib/arbitrum-sdk/src";
+} from '../../lib/arbitrum-sdk/src'
 
 import {
   Chain,
@@ -31,7 +31,7 @@ import {
   walletActionsL1,
 } from 'viem/op-stack'
 
-const wait = async (ms: number) => new Promise((res) => setTimeout(res, ms));
+const wait = async (ms: number) => new Promise(res => setTimeout(res, ms))
 
 export abstract class ChildToParentMessageRedeemer {
   constructor(
@@ -44,25 +44,28 @@ export abstract class ChildToParentMessageRedeemer {
     public readonly retryDelay = 1000 * 60 * 10
   ) {}
 
-  protected abstract _handleLogs(logs: Log[], oneOff: boolean): Promise<void>;
+  protected abstract _handleLogs(logs: Log[], oneOff: boolean): Promise<void>
 
   public async redeemChildToParentMessages(oneOff = false) {
-    const childChainProvider = new JsonRpcProvider(this.childChainRpc);
+    const childChainProvider = new JsonRpcProvider(this.childChainRpc)
 
-    const toBlock =
-      (await childChainProvider.getBlockNumber()) - this.blockLag;
+    const toBlock = (await childChainProvider.getBlockNumber()) - this.blockLag
     const logs = await childChainProvider.getLogs({
       fromBlock: this.startBlock,
       toBlock: toBlock,
       address: this.childToParentRewardRouterAddr,
-      topics: [ChildToParentRewardRouter__factory.createInterface().getEventTopic('FundsRouted')],
-    });
+      topics: [
+        ChildToParentRewardRouter__factory.createInterface().getEventTopic(
+          'FundsRouted'
+        ),
+      ],
+    })
     if (logs.length) {
       console.log(
         `Found ${logs.length} route events between blocks ${this.startBlock} and ${toBlock}`
-      );
+      )
     }
-    await this._handleLogs(logs, oneOff);
+    await this._handleLogs(logs, oneOff)
     return toBlock
   }
 
@@ -70,15 +73,15 @@ export abstract class ChildToParentMessageRedeemer {
     while (true) {
       let toBlock = 0
       try {
-        toBlock = await this.redeemChildToParentMessages(oneOff);
+        toBlock = await this.redeemChildToParentMessages(oneOff)
       } catch (err) {
-        console.log("err", err);
+        console.log('err', err)
       }
       if (oneOff) {
-        break;
+        break
       } else {
-        this.startBlock = toBlock + 1;
-        await wait(1000 * 60 * 60);
+        this.startBlock = toBlock + 1
+        await wait(1000 * 60 * 60)
       }
     }
   }
@@ -86,59 +89,61 @@ export abstract class ChildToParentMessageRedeemer {
 
 export class ArbChildToParentMessageRedeemer extends ChildToParentMessageRedeemer {
   protected async _handleLogs(logs: Log[], oneOff: boolean): Promise<void> {
-    const childChainProvider = new JsonRpcProvider(this.childChainRpc);
-    const parentChainSigner = new Wallet(this.parentChainPrivateKey, new JsonRpcProvider(this.parentChainRpc));
+    const childChainProvider = new JsonRpcProvider(this.childChainRpc)
+    const parentChainSigner = new Wallet(
+      this.parentChainPrivateKey,
+      new JsonRpcProvider(this.parentChainRpc)
+    )
     for (let log of logs) {
       const arbTransactionRec = new L2TransactionReceipt(
         await childChainProvider.getTransactionReceipt(log.transactionHash)
-      );
+      )
       let l2ToL1Events =
-        arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[];
+        arbTransactionRec.getL2ToL1Events() as EventArgs<L2ToL1TxEvent>[]
 
       if (l2ToL1Events.length != 1) {
-        throw new Error("Only 1 l2 to l1 message per tx supported");
+        throw new Error('Only 1 l2 to l1 message per tx supported')
       }
 
       for (let l2ToL1Event of l2ToL1Events) {
         const l2ToL1Message = L2ToL1Message.fromEvent(
           parentChainSigner,
           l2ToL1Event
-        );
+        )
         if (!oneOff) {
-          console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`);
+          console.log(`Waiting for ${l2ToL1Event.hash} to be ready:`)
           await l2ToL1Message.waitUntilReadyToExecute(
             childChainProvider,
             this.retryDelay
-          );
+          )
         }
 
-        const status = await l2ToL1Message.status(childChainProvider);
+        const status = await l2ToL1Message.status(childChainProvider)
         switch (status) {
           case L2ToL1MessageStatus.CONFIRMED: {
-            console.log(l2ToL1Event.hash, "confirmed; executing:");
+            console.log(l2ToL1Event.hash, 'confirmed; executing:')
             const rec = await (
               await l2ToL1Message.execute(childChainProvider)
-            ).wait(2);
-            console.log(`${l2ToL1Event.hash} executed:`, rec.transactionHash);
-            break;
+            ).wait(2)
+            console.log(`${l2ToL1Event.hash} executed:`, rec.transactionHash)
+            break
           }
           case L2ToL1MessageStatus.EXECUTED: {
-            console.log(`${l2ToL1Event.hash} already executed`);
-            break;
+            console.log(`${l2ToL1Event.hash} already executed`)
+            break
           }
           case L2ToL1MessageStatus.UNCONFIRMED: {
-            console.log(`${l2ToL1Event.hash} not yet confirmed`);
-            break;
+            console.log(`${l2ToL1Event.hash} not yet confirmed`)
+            break
           }
           default: {
-            throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`);
+            throw new Error(`Unhandled L2ToL1MessageStatus case: ${status}`)
           }
         }
       }
     }
   }
 }
-
 
 export type OpChildChainConfig = Chain & {
   contracts: {
@@ -160,7 +165,7 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
     startBlock: number = 0,
     public readonly childChainViem: OpChildChainConfig,
     public readonly parentChainViem: Chain,
-    retryDelay = 1000 * 60 * 10,
+    retryDelay = 1000 * 60 * 10
   ) {
     super(
       childChainRpc,
@@ -179,9 +184,7 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
 
     this.parentChainViemSigner = createWalletClient({
       chain: parentChainViem,
-      account: privateKeyToAccount(
-        parentChainPrivateKey as `0x${string}`
-      ),
+      account: privateKeyToAccount(parentChainPrivateKey as `0x${string}`),
       transport: http(parentChainRpc),
     })
       .extend(publicActions)
@@ -190,7 +193,10 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
   }
 
   protected async _handleLogs(logs: Log[], oneOff: boolean): Promise<void> {
-    if (!oneOff) throw new Error('OpChildToParentMessageRedeemer only supports one-off mode')
+    if (!oneOff)
+      throw new Error(
+        'OpChildToParentMessageRedeemer only supports one-off mode'
+      )
     for (const log of logs) {
       const receipt = await this.childChainViemProvider.getTransactionReceipt({
         hash: log.transactionHash as Hex,
@@ -201,7 +207,7 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
       // 'waiting-to-finalize'
       // 'ready-to-finalize'
       // 'finalized'
-      let status: GetWithdrawalStatusReturnType;
+      let status: GetWithdrawalStatusReturnType
       try {
         status = await this.parentChainViemSigner.getWithdrawalStatus({
           receipt,
@@ -211,9 +217,8 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
         // workaround
         if (e.metaMessages[0] === 'Error: Unproven()') {
           status = 'ready-to-prove'
-        }
-        else {
-          throw e;
+        } else {
+          throw e
         }
       }
 
@@ -260,4 +265,3 @@ export class OpChildToParentMessageRedeemer extends ChildToParentMessageRedeemer
     }
   }
 }
-
