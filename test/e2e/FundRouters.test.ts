@@ -44,7 +44,7 @@ describe('Router e2e test', () => {
       TestTokenAbi.abi,
       TestTokenAbi.bytecode,
       setup.l1Signer
-    ).deploy()) as Contract
+    ).deploy(100n ** 18n)) as Contract
     await testToken.deploymentTransaction()!.wait()
 
     console.log('Test token L1 deployed', await testToken.getAddress())
