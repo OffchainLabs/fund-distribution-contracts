@@ -1,9 +1,7 @@
-import { RewardDistributor__factory } from '../typechain-types'
-import { RecipientsUpdatedEventObject } from '../typechain-types/src/RewardDistributor'
-
-import { Provider } from '@ethersproject/providers'
-import { Wallet, BigNumber, utils } from 'ethers'
 import { readFileSync } from 'fs'
+import { RewardDistributor__factory } from '../../typechain-types'
+import { DoubleProvider, DoubleWallet } from '../template/util'
+import { RecipientsUpdatedEvent } from '../../typechain-types/src/RewardDistributor'
 
 interface RecipientsAndWeights {
   recipients: string[]
@@ -13,7 +11,7 @@ interface RecipientsAndWeights {
 }
 export const getRecipientsAndWeights = async (
   rewardDistAddress: string,
-  provider: Provider,
+  provider: DoubleProvider,
   fromBlock = 0
 ): Promise<RecipientsAndWeights> => {
   const distributor = RewardDistributor__factory.connect(
@@ -28,24 +26,22 @@ export const getRecipientsAndWeights = async (
   const latestLog = logs[logs.length - 1]
   if (!latestLog) throw new Error('No updates found')
 
-  const eventObj = distributor.interface.parseLog(latestLog)
-    .args as unknown as RecipientsUpdatedEventObject
-
+  const eventObj = distributor.interface.parseLog(latestLog)!.args as unknown as RecipientsUpdatedEvent.OutputObject
   return {
     recipients: eventObj.recipients,
     recipientGroup: eventObj.recipientGroup,
-    weights: eventObj.weights.map(w => w.toNumber()),
+    weights: eventObj.weights.map(w => Number(w)),
     recipientWeights: eventObj.recipientWeights,
   }
 }
 
 export const distributeRewards = async (
-  connectedSigner: Wallet,
+  connectedSigner: DoubleWallet,
   distributorAddr: string,
-  _minBalanceWei?: BigNumber
+  _minBalanceWei?: bigint
 ) => {
-  const chainId = await connectedSigner.getChainId()
-  const minBalanceWei = _minBalanceWei || BigNumber.from(0)
+  const chainId = await connectedSigner.v5.getChainId()
+  const minBalanceWei = _minBalanceWei || 0n
   const distributor = RewardDistributor__factory.connect(
     distributorAddr,
     connectedSigner
@@ -53,7 +49,7 @@ export const distributeRewards = async (
   console.log(connectedSigner.address)
 
   const bal = await connectedSigner.provider.getBalance(distributorAddr)
-  if (bal.lt(minBalanceWei)) {
+  if (bal < minBalanceWei) {
     console.log('Balance too low')
     console.log('Min balance', minBalanceWei.toString())
     console.log('Balance', bal.toString())
@@ -74,13 +70,13 @@ export const distributeRewards = async (
   if (!recAndWeights) {
     recAndWeights = await getRecipientsAndWeights(
       distributorAddr,
-      connectedSigner.provider
+      connectedSigner.doubleProvider
     )
   }
   const res = await distributor.distributeRewards(
     recAndWeights.recipients,
     recAndWeights.weights
   )
-  const rec = await res.wait()
-  console.log('Rewards distributed', rec.transactionHash)
+  const rec = (await res.wait())!
+  console.log('Rewards distributed', rec.hash)
 }
