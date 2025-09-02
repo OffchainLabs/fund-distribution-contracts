@@ -1,20 +1,13 @@
-import {
-  IERC20__factory,
-  IERC20,
-  OpChildToParentRewardRouter,
-  OpChildToParentRewardRouter__factory,
-} from '../../typechain-types'
-import { OpChildToParentMessageRedeemer } from '../../src-ts/FeeRouter/ChildToParentMessageRedeemer'
-import { BigNumber, ContractFactory, ethers, Wallet } from 'ethers'
-import { TestERC20__factory } from '../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory'
-import { TestERC20 } from '../../lib/arbitrum-sdk/src/lib/abi/TestERC20'
-import { defineChain } from 'viem'
-import { chainConfig } from 'viem/op-stack'
-import { JsonRpcProvider } from '@ethersproject/providers'
-import { parseEther } from 'ethers/lib/utils'
-// import { BigNumber.from } from 'ethers/lib/utils';
-
 // Follow instructions to set up a local devnet here: https://docs.optimism.io/chain/testing/dev-node
+
+import { defineChain } from "viem"
+import { chainConfig } from "viem/op-stack"
+import { OpChildToParentMessageRedeemer } from "../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer"
+import { IERC20__factory, OpChildToParentRewardRouter, IERC20, OpChildToParentRewardRouter__factory } from "../../typechain-types"
+import { Contract, ContractFactory, Interface, parseEther } from "ethers"
+import { DoubleProvider, DoubleWallet } from "../../scripts/template/util"
+
+import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 
 const devnetL1 = defineChain({
   id: 900,
@@ -64,40 +57,45 @@ const wait = (ms: number) => new Promise(res => setTimeout(res, ms))
 
 const l1StdBridgeAddr = devnetL2.contracts.l1StandardBridge[900].address
 
-const l1StdBridgeIface = new ethers.utils.Interface([
+const l1StdBridgeIface = new Interface([
   'function depositERC20(address _l1Token, address _l2Token, uint256 _amount, uint32 _minGasLimit, bytes calldata _extraData)',
 ])
 
-async function deployTestToken(signer: Wallet) {
-  const testToken = await new TestERC20__factory().connect(signer).deploy()
+async function deployTestToken(signer: DoubleWallet) {
+  // const testToken = await new connect(signer).deploy()
+  const testToken = (await new ContractFactory(
+    TestTokenAbi.abi,
+    TestTokenAbi.bytecode,
+    signer
+  ).deploy()) as Contract
   await testToken.deployed()
   await (await testToken.mint()).wait()
-  return IERC20__factory.connect(testToken.address, signer)
+  return IERC20__factory.connect(await testToken.getAddress(), signer)
 }
 
 describe('Router e2e test', () => {
   const funderPk =
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
-  const pk = Wallet.createRandom().privateKey
+  const pk = DoubleWallet.createRandom().privateKey
 
-  const funder = new Wallet(
+  const funder = new DoubleWallet(
     funderPk,
-    new JsonRpcProvider(devnetL1.rpcUrls.default.http[0]) // todo: use configs
+    new DoubleProvider(devnetL1.rpcUrls.default.http[0]) // todo: use configs
   )
-  const parentChainSigner = new Wallet(
+  const parentChainSigner = new DoubleWallet(
     pk,
-    new JsonRpcProvider(devnetL1.rpcUrls.default.http[0])
+    new DoubleProvider(devnetL1.rpcUrls.default.http[0])
   )
-  const childChainSigner = new Wallet(
+  const childChainSigner = new DoubleWallet(
     pk,
-    new JsonRpcProvider(devnetL2.rpcUrls.default.http[0])
+    new DoubleProvider(devnetL2.rpcUrls.default.http[0])
   )
 
   let childToParentRewardRouter: OpChildToParentRewardRouter
   let l1Token: IERC20
   let l2Token: IERC20
 
-  const destination = Wallet.createRandom().address
+  const destination = DoubleWallet.createRandom().address
 
   before(async () => {
     // fund the parent chain signer
@@ -120,8 +118,8 @@ describe('Router e2e test', () => {
 
     // wait for eth
     while (
-      (await childChainSigner.provider.getBalance(childChainSigner.address)).eq(
-        '0'
+      (await childChainSigner.provider.getBalance(childChainSigner.address)) === (
+        0n
       )
     ) {
       await wait(1000)
@@ -129,10 +127,10 @@ describe('Router e2e test', () => {
     console.log('eth received')
 
     l1Token = await deployTestToken(parentChainSigner)
-    const l1Addr = l1Token.address
+    const l1Addr = await l1Token.getAddress()
     console.log('deployed test token')
 
-    const opTokenFactoryIface = new ethers.utils.Interface([
+    const opTokenFactoryIface = new Interface([
       'function createOptimismMintableERC20(address,string,string)',
     ])
 
@@ -155,7 +153,7 @@ describe('Router e2e test', () => {
     // approve
     const approvalTx = await l1Token
       .connect(parentChainSigner)
-      .approve(l1StdBridgeAddr, BigNumber.from('50'))
+      .approve(l1StdBridgeAddr, 50n)
     await approvalTx.wait()
     console.log('approved tokens')
 
@@ -165,7 +163,7 @@ describe('Router e2e test', () => {
       data: l1StdBridgeIface.encodeFunctionData('depositERC20', [
         l1Addr,
         l2Addr,
-        BigNumber.from('50'),
+        50n,
         0,
         '0x',
       ]),
@@ -174,25 +172,25 @@ describe('Router e2e test', () => {
     console.log('deposited tokens')
 
     // wait for tokens
-    while ((await l2Token.balanceOf(childChainSigner.address)).eq('0')) {
+    while ((await l2Token.balanceOf(childChainSigner.address)) === 0n) {
       await wait(1000)
     }
     console.log('tokens received')
 
     childToParentRewardRouter = await new OpChildToParentRewardRouter__factory(
       childChainSigner
-    ).deploy(destination, 10, l1Token.address, l2Token.address)
+    ).deploy(destination, 10, l1Token.getAddress(), l2Token.getAddress())
 
-    await childToParentRewardRouter.deployed()
+    await childToParentRewardRouter.deploymentTransaction()!.wait()
     console.log('deployed child to parent router')
   })
 
   describe('ETH to Parent', () => {
-    const ethValue = BigNumber.from('1')
+    const ethValue = 1n
     it('should initiate a withdrawal on receipt of ETH', async () => {
       // send eth to the router
       const tx = await childChainSigner.sendTransaction({
-        to: childToParentRewardRouter.address,
+        to: childToParentRewardRouter.getAddress(),
         value: ethValue,
       })
       const rec = (await tx.wait())!
@@ -201,7 +199,7 @@ describe('Router e2e test', () => {
       const fundsRoutedLog = rec.logs.find(
         log =>
           log.topics[0] ===
-          childToParentRewardRouter.interface.getEventTopic('FundsRouted')
+          childToParentRewardRouter.interface.getEvent('FundsRouted').topicHash
       )
 
       if (!fundsRoutedLog) {
@@ -214,7 +212,7 @@ describe('Router e2e test', () => {
         devnetL2.rpcUrls.default.http[0],
         devnetL1.rpcUrls.default.http[0],
         pk,
-        childToParentRewardRouter.address,
+        await childToParentRewardRouter.getAddress(),
         0,
         0,
         devnetL2,
@@ -227,11 +225,11 @@ describe('Router e2e test', () => {
 
         const balance = await parentChainSigner.provider.getBalance(destination)
 
-        if (balance.eq(ethValue)) {
+        if (balance === (ethValue)) {
           break
         }
 
-        if (balance.gt('0')) {
+        if (balance > (0n)) {
           throw new Error('unexpected balance')
         }
 
@@ -241,14 +239,14 @@ describe('Router e2e test', () => {
   })
 
   describe('ERC20 to Parent', () => {
-    const erc20Amount = BigNumber.from('1')
+    const erc20Amount = 1n
 
     it('should initiate a withdrawal', async () => {
       // send tokens to the router
       await (
         await l2Token
           .connect(childChainSigner)
-          .transfer(childToParentRewardRouter.address, erc20Amount)
+          .transfer(childToParentRewardRouter.getAddress(), erc20Amount)
       ).wait()
 
       const pokeTx = await childToParentRewardRouter
@@ -260,7 +258,7 @@ describe('Router e2e test', () => {
       const fundsRoutedLog = pokeRec.logs.find(
         log =>
           log.topics[0] ===
-          childToParentRewardRouter.interface.getEventTopic('FundsRouted')
+          childToParentRewardRouter.interface.getEvent('FundsRouted').topicHash
       )
 
       if (!fundsRoutedLog) {
@@ -273,7 +271,7 @@ describe('Router e2e test', () => {
         devnetL2.rpcUrls.default.http[0],
         devnetL1.rpcUrls.default.http[0],
         pk,
-        childToParentRewardRouter.address,
+        await childToParentRewardRouter.getAddress(),
         0,
         0,
         devnetL2,
@@ -286,11 +284,11 @@ describe('Router e2e test', () => {
 
         const balance = await l1Token.balanceOf(destination)
 
-        if (balance.eq(erc20Amount)) {
+        if (balance === (erc20Amount)) {
           break
         }
 
-        if (balance.gt('0')) {
+        if (balance > 0n) {
           throw new Error('unexpected balance')
         }
 

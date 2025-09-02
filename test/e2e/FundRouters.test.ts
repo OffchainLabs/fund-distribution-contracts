@@ -193,7 +193,7 @@ describe('Router e2e test', () => {
         setup.l1Signer,
         setup.l2Signer,
         await parentToChildRewardRouter.getAddress(),
-        BigNumber.from(0)
+        0n
       )
       expect(await setup.l2Provider.getBalance(destination)).to.eq(ethValue)
     })
@@ -247,7 +247,7 @@ describe('Router e2e test', () => {
         setup.l1Signer,
         setup.l2Signer,
         await parentToChildRewardRouter.getAddress(),
-        BigNumber.from(0)
+        0n
       )
       // funds should be in destination
       expect((await l2TestToken.balanceOf(destination)).toHexString()).to.eq(
