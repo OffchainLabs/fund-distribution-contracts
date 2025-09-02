@@ -1,7 +1,7 @@
 import { getRecipientsAndWeights } from './lib'
 import { rewardDistributors, chainID } from './daoRewardDistributorContracts'
 import fs from 'fs'
-import { RewardDistributor__factory } from '../typechain-types'
+import { RewardDistributor__factory } from '../../typechain-types'
 
 const main = async () => {
   const recAndWeightsJsonData = []

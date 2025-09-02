@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { DoubleProvider } from '../template/util'
 
 export type chainID = 42161 | 42170
 enum FeeType {
@@ -12,7 +12,7 @@ interface Chain {
   id: chainID
   name: string
   startBlock: number
-  provider: JsonRpcProvider
+  provider: DoubleProvider
 }
 interface RewardDistributorData {
   address: string
@@ -24,14 +24,14 @@ const arbOne: Chain = {
   id: 42161,
   name: 'Arbitum One',
   startBlock: 70483300,
-  provider: new JsonRpcProvider('https://arb1.arbitrum.io/rpc'),
+  provider: new DoubleProvider('https://arb1.arbitrum.io/rpc'),
 }
 
 const nova: Chain = {
   id: 42170,
   name: 'Arbitum Nova',
   startBlock: 3162000,
-  provider: new JsonRpcProvider('https://nova.arbitrum.io/rpc'),
+  provider: new DoubleProvider('https://nova.arbitrum.io/rpc'),
 }
 export const rewardDistributors: RewardDistributorData[] = [
   {
