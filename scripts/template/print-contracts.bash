@@ -12,7 +12,7 @@ if [ $? -ne 0 ]; then
 fi
 
 OUTPUT_PATH="out/"
-SOURCE_PATH="contracts/"
+SOURCE_PATH="src/"
 
 # find all json files in the out directory
 FILES=$(find $OUTPUT_PATH -name "*.json")
