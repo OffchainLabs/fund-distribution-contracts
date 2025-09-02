@@ -1,22 +1,13 @@
-import { Wallet, BigNumber } from 'ethers'
-import {
-  ParentToChildRewardRouter__factory,
-  ParentToChildRewardRouter,
-} from '../../typechain-types'
-import { Inbox__factory } from '../../lib/arbitrum-sdk/src/lib/abi/factories/Inbox__factory'
-import { ERC20__factory } from '../../lib/arbitrum-sdk/src/lib/abi/factories/ERC20__factory'
-
-import {
-  L1TransactionReceipt,
-  L1ToL2MessageStatus,
-} from '../../lib/arbitrum-sdk/src'
+import { ParentToChildMessageStatus, ParentTransactionReceipt } from '@arbitrum/sdk'
+import { IERC20__factory, IInbox__factory, ParentToChildRewardRouter, ParentToChildRewardRouter__factory } from '../../../typechain-types'
+import { DoubleWallet } from '../../template/util'
 
 export const checkAndRouteFunds = async (
   ethOrTokenAddress: string,
-  parentChainSigner: Wallet,
-  childChainSigner: Wallet,
+  parentChainSigner: DoubleWallet,
+  childChainSigner: DoubleWallet,
   parentToChildRewardRouterAddr: string,
-  minBalance: BigNumber
+  minBalance: bigint
 ) => {
   const isEth = ethOrTokenAddress == 'ETH'
 
@@ -24,7 +15,7 @@ export const checkAndRouteFunds = async (
     isEth &&
     (
       await parentChainSigner.provider.getBalance(parentToChildRewardRouterAddr)
-    ).lt(minBalance)
+    ) < minBalance
   ) {
     return
   }
@@ -32,11 +23,11 @@ export const checkAndRouteFunds = async (
   if (
     !isEth &&
     (
-      await ERC20__factory.connect(
+      await IERC20__factory.connect(
         ethOrTokenAddress,
         parentChainSigner
       ).balanceOf(parentToChildRewardRouterAddr)
-    ).lt(minBalance)
+    ) < minBalance
   ) {
     return
   }
@@ -57,7 +48,7 @@ export const checkAndRouteFunds = async (
   }
   console.log('Calling parent to child router:')
 
-  const inbox = Inbox__factory.connect(
+  const inbox = IInbox__factory.connect(
     await parentToChildRewardRouter.inbox(),
     parentChainSigner.provider
   )
@@ -67,22 +58,22 @@ export const checkAndRouteFunds = async (
 
   const _submissionFee = await inbox.calculateRetryableSubmissionFee(
     dataLength,
-    await parentChainSigner.getGasPrice() // NOTE: I'm not sure why 0 doesn't work here, but it doesn't (on sepolia)
+    (await parentChainSigner.v5.getGasPrice()).toBigInt() // NOTE: I'm not sure why 0 doesn't work here, but it doesn't (on sepolia)
   )
   // add a 20% increase for insurance
-  const submissionFee = _submissionFee.mul(120).div(100)
+  const submissionFee = _submissionFee * 120n / 100n
 
-  const currentGasgasPrice = await childChainSigner.getGasPrice()
+  const currentGasgasPrice = (await childChainSigner.v5.getGasPrice()).toBigInt()
   const minGasPrice = await parentToChildRewardRouter.minGasPrice()
 
-  const gasPrice = currentGasgasPrice.gt(minGasPrice)
+  const gasPrice = currentGasgasPrice > minGasPrice
     ? currentGasgasPrice
     : minGasPrice
 
   // we use the minimum gas limit set in the contract (we presume it's more than enough)
   const gasLimit = await parentToChildRewardRouter.minGasLimit()
 
-  const value = submissionFee.add(gasPrice.mul(gasLimit))
+  const value = submissionFee + (gasPrice * gasLimit)
 
   const rec = await (async () => {
     if (isEth) {
@@ -96,7 +87,7 @@ export const checkAndRouteFunds = async (
           }
         )
       ).wait(1)
-      return rec
+      return rec!
     } else {
       const rec = await (
         await parentToChildRewardRouter.routeToken(
@@ -109,23 +100,23 @@ export const checkAndRouteFunds = async (
           }
         )
       ).wait(1)
-      return rec
+      return rec!
     }
   })()
 
-  const l1TxRec = new L1TransactionReceipt(rec)
-  const l1ToL2Msgs = await l1TxRec.getL1ToL2Messages(childChainSigner)
+  const l1TxRec = new ParentTransactionReceipt(await parentChainSigner.v5.provider.getTransactionReceipt(rec.hash))
+  const l1ToL2Msgs = await l1TxRec.getParentToChildMessages(childChainSigner.v5)
   if (l1ToL2Msgs.length != 1) throw new Error('Unexpected messages length')
 
   const l1ToL2Msg = l1ToL2Msgs[0]
   console.log('Waiting for result:')
   const result = await l1ToL2Msg.waitForStatus()
-  if (result.status == L1ToL2MessageStatus.FUNDS_DEPOSITED_ON_L2) {
+  if (result.status == ParentToChildMessageStatus.FUNDS_DEPOSITED_ON_CHILD) {
     console.log('Retryable failed; retrying:')
 
     const rec = await (await l1ToL2Msg.redeem()).wait()
     console.log('Successfully redeemed:', rec.transactionHash)
-  } else if (result.status == L1ToL2MessageStatus.REDEEMED) {
+  } else if (result.status == ParentToChildMessageStatus.REDEEMED) {
     console.log('Successfully redeemed')
   } else {
     throw new Error('Error: unexpected retryable status')
