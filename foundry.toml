@@ -8,6 +8,9 @@ solc_version = '0.8.16'
 optimizer_runs = 20000
 script = 'scripts'
 
+[lint]
+lint_on_build = false
+
 [fmt]
 line_length = 120
 tab_width = 4
