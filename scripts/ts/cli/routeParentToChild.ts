@@ -1,8 +1,8 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
-import { JsonRpcProvider } from '@ethersproject/providers'
-import { Wallet, utils } from 'ethers'
 import { checkAndRouteFunds } from '../FeeRouter/checkAndRouteFunds'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
+import { parseEther } from 'ethers'
 
 dotenv.config()
 
@@ -23,16 +23,16 @@ const options = yargs(process.argv.slice(2))
   .parseSync()
 
 ;(async () => {
-  const parentChildSigner = new Wallet(
+  const parentChildSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
-    new JsonRpcProvider(options.parentRPCUrl)
+    new DoubleProvider(options.parentRPCUrl)
   )
   console.log(`Signing with ${parentChildSigner.address} on parent chain 
     ${(await parentChildSigner.provider.getNetwork()).chainId}'`)
 
-  const childChainSigner = new Wallet(
+  const childChainSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
-    new JsonRpcProvider(options.childRPCUrl)
+    new DoubleProvider(options.childRPCUrl)
   )
 
   console.log(`Signing with ${childChainSigner.address} on child chain 
@@ -42,7 +42,7 @@ const options = yargs(process.argv.slice(2))
     parentChildSigner,
     childChainSigner,
     options.parentToChildRewardRouterAddr,
-    utils.parseEther(String(options.minBalanceEther))
+    parseEther(String(options.minBalanceEther))
   )
   console.log('done')
 })()

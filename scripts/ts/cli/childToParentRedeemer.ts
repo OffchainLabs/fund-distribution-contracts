@@ -6,9 +6,8 @@ import {
   OpChildToParentMessageRedeemer,
   ChildToParentMessageRedeemer,
 } from '../FeeRouter/ChildToParentMessageRedeemer'
-import { Wallet } from 'ethers'
-import { JsonRpcProvider } from '@ethersproject/providers'
 import chains from 'viem/chains'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
 
 dotenv.config()
 
@@ -35,11 +34,11 @@ const options = yargs(process.argv.slice(2))
   .parseSync()
 
 ;(async () => {
-  const parentChildSigner = new Wallet(
+  const parentChildSigner = new DoubleWallet(
     PARENT_CHAIN_PK,
-    new JsonRpcProvider(options.parentRPCUrl)
+    new DoubleProvider(options.parentRPCUrl)
   )
-  const childChainProvider = new JsonRpcProvider(options.childRPCUrl)
+  const childChainProvider = new DoubleProvider(options.childRPCUrl)
   const parentChainId = (await parentChildSigner.provider.getNetwork()).chainId
   const childChainId = (await childChainProvider.getNetwork()).chainId
   console.log(
@@ -48,8 +47,8 @@ const options = yargs(process.argv.slice(2))
 
   let redeemer: ChildToParentMessageRedeemer
   if (options.opStack) {
-    const childChain = Object.values(chains).find(c => c.id === childChainId)
-    const parentChain = Object.values(chains).find(c => c.id === parentChainId)
+    const childChain = Object.values(chains).find(c => c.id === Number(childChainId))
+    const parentChain = Object.values(chains).find(c => c.id === Number(parentChainId))
 
     if (!childChain || !parentChain) {
       throw new Error('Unsupported chain')

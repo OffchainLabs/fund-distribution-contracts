@@ -1,8 +1,8 @@
 import dotenv from 'dotenv'
 import yargs from 'yargs'
-import { JsonRpcProvider } from '@ethersproject/providers'
-import { ethers, Wallet } from 'ethers'
 import { distributeRewards } from '../lib'
+import { parseUnits } from 'ethers'
+import { DoubleProvider, DoubleWallet } from '../../template/util'
 dotenv.config()
 
 const CHILD_CHAIN_PK = process.env.CHILD_CHAIN_PK
@@ -18,12 +18,12 @@ const options = yargs(process.argv.slice(2))
   .parseSync()
 
 ;(async () => {
-  const wei = ethers.utils.parseUnits(
+  const wei = parseUnits(
     options.minBalance.split(' ')[0],
     options.minBalance.split(' ')[1]
   )
   await distributeRewards(
-    new Wallet(CHILD_CHAIN_PK, new JsonRpcProvider(options.rpcURL)),
+    new DoubleWallet(CHILD_CHAIN_PK, new DoubleProvider(options.rpcURL)),
     options.rewardDistAddr,
     wei
   )
