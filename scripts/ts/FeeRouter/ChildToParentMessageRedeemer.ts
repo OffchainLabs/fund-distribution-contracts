@@ -1,11 +1,6 @@
 import { JsonRpcProvider, Log } from '@ethersproject/providers'
+import { ChildToParentRewardRouter__factory } from '../../../typechain-types'
 import {
-  ChildToParentRewardRouter__factory,
-  ChildToParentRewardRouter,
-} from '../../../typechain-types'
-import {
-  ChildToParentTransactionEvent,
-  EventArgs,
   ChildTransactionReceipt,
   ChildToParentMessage,
   ChildToParentMessageStatus,
@@ -69,6 +64,7 @@ export abstract class ChildToParentMessageRedeemer {
   }
 
   public async run(oneOff = false) {
+    /* eslint-disable no-constant-condition */
     while (true) {
       let toBlock = 0
       try {
@@ -93,17 +89,17 @@ export class ArbChildToParentMessageRedeemer extends ChildToParentMessageRedeeme
       this.parentChainPrivateKey,
       new DoubleProvider(this.parentChainRpc)
     )
-    for (let log of logs) {
+    for (const log of logs) {
       const arbTransactionRec = new ChildTransactionReceipt(
         await childChainProvider.v5.getTransactionReceipt(log.transactionHash)
       )
-      let l2ToL1Events = arbTransactionRec.getChildToParentEvents()
+      const l2ToL1Events = arbTransactionRec.getChildToParentEvents()
 
       if (l2ToL1Events.length != 1) {
         throw new Error('Only 1 l2 to l1 message per tx supported')
       }
 
-      for (let l2ToL1Event of l2ToL1Events) {
+      for (const l2ToL1Event of l2ToL1Events) {
         const l2ToL1Message = ChildToParentMessage.fromEvent(
           parentChainSigner.v5,
           l2ToL1Event

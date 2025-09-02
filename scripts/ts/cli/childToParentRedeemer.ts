@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import yargs, { option } from 'yargs'
+import yargs from 'yargs'
 import {
   ArbChildToParentMessageRedeemer,
   OpChildChainConfig,
