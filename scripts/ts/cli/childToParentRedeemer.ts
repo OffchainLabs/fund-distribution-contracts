@@ -47,8 +47,12 @@ const options = yargs(process.argv.slice(2))
 
   let redeemer: ChildToParentMessageRedeemer
   if (options.opStack) {
-    const childChain = Object.values(chains).find(c => c.id === Number(childChainId))
-    const parentChain = Object.values(chains).find(c => c.id === Number(parentChainId))
+    const childChain = Object.values(chains).find(
+      c => c.id === Number(childChainId)
+    )
+    const parentChain = Object.values(chains).find(
+      c => c.id === Number(parentChainId)
+    )
 
     if (!childChain || !parentChain) {
       throw new Error('Unsupported chain')

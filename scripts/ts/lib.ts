@@ -26,7 +26,8 @@ export const getRecipientsAndWeights = async (
   const latestLog = logs[logs.length - 1]
   if (!latestLog) throw new Error('No updates found')
 
-  const eventObj = distributor.interface.parseLog(latestLog)!.args as unknown as RecipientsUpdatedEvent.OutputObject
+  const eventObj = distributor.interface.parseLog(latestLog)!
+    .args as unknown as RecipientsUpdatedEvent.OutputObject
   return {
     recipients: eventObj.recipients,
     recipientGroup: eventObj.recipientGroup,

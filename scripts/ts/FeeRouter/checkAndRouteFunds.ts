@@ -1,5 +1,13 @@
-import { ParentToChildMessageStatus, ParentTransactionReceipt } from '@arbitrum/sdk'
-import { IERC20__factory, IInbox__factory, ParentToChildRewardRouter, ParentToChildRewardRouter__factory } from '../../../typechain-types'
+import {
+  ParentToChildMessageStatus,
+  ParentTransactionReceipt,
+} from '@arbitrum/sdk'
+import {
+  IERC20__factory,
+  IInbox__factory,
+  ParentToChildRewardRouter,
+  ParentToChildRewardRouter__factory,
+} from '../../../typechain-types'
 import { DoubleWallet } from '../../template/util'
 
 export const checkAndRouteFunds = async (
@@ -13,21 +21,19 @@ export const checkAndRouteFunds = async (
 
   if (
     isEth &&
-    (
-      await parentChainSigner.provider.getBalance(parentToChildRewardRouterAddr)
-    ) < minBalance
+    (await parentChainSigner.provider.getBalance(
+      parentToChildRewardRouterAddr
+    )) < minBalance
   ) {
     return
   }
 
   if (
     !isEth &&
-    (
-      await IERC20__factory.connect(
-        ethOrTokenAddress,
-        parentChainSigner
-      ).balanceOf(parentToChildRewardRouterAddr)
-    ) < minBalance
+    (await IERC20__factory.connect(
+      ethOrTokenAddress,
+      parentChainSigner
+    ).balanceOf(parentToChildRewardRouterAddr)) < minBalance
   ) {
     return
   }
@@ -61,19 +67,20 @@ export const checkAndRouteFunds = async (
     (await parentChainSigner.v5.getGasPrice()).toBigInt() // NOTE: I'm not sure why 0 doesn't work here, but it doesn't (on sepolia)
   )
   // add a 20% increase for insurance
-  const submissionFee = _submissionFee * 120n / 100n
+  const submissionFee = (_submissionFee * 120n) / 100n
 
-  const currentGasgasPrice = (await childChainSigner.v5.getGasPrice()).toBigInt()
+  const currentGasgasPrice = (
+    await childChainSigner.v5.getGasPrice()
+  ).toBigInt()
   const minGasPrice = await parentToChildRewardRouter.minGasPrice()
 
-  const gasPrice = currentGasgasPrice > minGasPrice
-    ? currentGasgasPrice
-    : minGasPrice
+  const gasPrice =
+    currentGasgasPrice > minGasPrice ? currentGasgasPrice : minGasPrice
 
   // we use the minimum gas limit set in the contract (we presume it's more than enough)
   const gasLimit = await parentToChildRewardRouter.minGasLimit()
 
-  const value = submissionFee + (gasPrice * gasLimit)
+  const value = submissionFee + gasPrice * gasLimit
 
   const rec = await (async () => {
     if (isEth) {
@@ -104,7 +111,9 @@ export const checkAndRouteFunds = async (
     }
   })()
 
-  const l1TxRec = new ParentTransactionReceipt(await parentChainSigner.v5.provider.getTransactionReceipt(rec.hash))
+  const l1TxRec = new ParentTransactionReceipt(
+    await parentChainSigner.v5.provider.getTransactionReceipt(rec.hash)
+  )
   const l1ToL2Msgs = await l1TxRec.getParentToChildMessages(childChainSigner.v5)
   if (l1ToL2Msgs.length != 1) throw new Error('Unexpected messages length')
 

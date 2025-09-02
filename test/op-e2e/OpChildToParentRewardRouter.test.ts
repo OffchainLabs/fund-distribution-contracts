@@ -1,11 +1,16 @@
 // Follow instructions to set up a local devnet here: https://docs.optimism.io/chain/testing/dev-node
 
-import { defineChain } from "viem"
-import { chainConfig } from "viem/op-stack"
-import { OpChildToParentMessageRedeemer } from "../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer"
-import { IERC20__factory, OpChildToParentRewardRouter, IERC20, OpChildToParentRewardRouter__factory } from "../../typechain-types"
-import { Contract, ContractFactory, Interface, parseEther } from "ethers"
-import { DoubleProvider, DoubleWallet } from "../../scripts/template/util"
+import { defineChain } from 'viem'
+import { chainConfig } from 'viem/op-stack'
+import { OpChildToParentMessageRedeemer } from '../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer'
+import {
+  IERC20__factory,
+  OpChildToParentRewardRouter,
+  IERC20,
+  OpChildToParentRewardRouter__factory,
+} from '../../typechain-types'
+import { Contract, ContractFactory, Interface, parseEther } from 'ethers'
+import { DoubleProvider, DoubleWallet } from '../../scripts/template/util'
 
 import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 
@@ -118,9 +123,8 @@ describe('Router e2e test', () => {
 
     // wait for eth
     while (
-      (await childChainSigner.provider.getBalance(childChainSigner.address)) === (
-        0n
-      )
+      (await childChainSigner.provider.getBalance(childChainSigner.address)) ===
+      0n
     ) {
       await wait(1000)
     }
@@ -225,11 +229,11 @@ describe('Router e2e test', () => {
 
         const balance = await parentChainSigner.provider.getBalance(destination)
 
-        if (balance === (ethValue)) {
+        if (balance === ethValue) {
           break
         }
 
-        if (balance > (0n)) {
+        if (balance > 0n) {
           throw new Error('unexpected balance')
         }
 
@@ -284,7 +288,7 @@ describe('Router e2e test', () => {
 
         const balance = await l1Token.balanceOf(destination)
 
-        if (balance === (erc20Amount)) {
+        if (balance === erc20Amount) {
           break
         }
 
