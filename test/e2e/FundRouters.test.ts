@@ -49,8 +49,6 @@ describe('Router e2e test', () => {
 
     console.log('Test token L1 deployed', await testToken.getAddress())
 
-    await (await testToken.mint()).wait()
-
     // Initial token deposit:
     const erc20Bridger = new Erc20Bridger(setup.l2Network)
 

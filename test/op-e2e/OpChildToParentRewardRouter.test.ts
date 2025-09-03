@@ -74,7 +74,6 @@ async function deployTestToken(signer: DoubleWallet) {
     signer
   ).deploy(100n ** 18n)) as Contract
   await testToken.deployed()
-  await (await testToken.mint()).wait()
   return IERC20__factory.connect(await testToken.getAddress(), signer)
 }
 
