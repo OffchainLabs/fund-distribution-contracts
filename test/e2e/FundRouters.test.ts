@@ -10,7 +10,7 @@ import {
 } from '../../typechain-types'
 import { ArbChildToParentMessageRedeemer } from '../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer'
 import { checkAndRouteFunds } from '../../scripts/ts/FeeRouter/checkAndRouteFunds'
-import { Erc20Bridger } from '@arbitrum/sdk'
+import { Erc20Bridger, registerCustomArbitrumNetwork } from '@arbitrum/sdk'
 import { Contract, ContractFactory, parseEther, Wallet } from 'ethers'
 
 import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
@@ -50,6 +50,7 @@ describe('Router e2e test', () => {
     console.log('Test token L1 deployed', await testToken.getAddress())
 
     // Initial token deposit:
+    registerCustomArbitrumNetwork(setup.l2Network)
     const erc20Bridger = new Erc20Bridger(setup.l2Network)
 
     await (
@@ -91,6 +92,7 @@ describe('Router e2e test', () => {
       100000000,
       300000
     )
+    await parentToChildRewardRouter.deploymentTransaction()!.wait()
     console.log(
       'ParentToChildRewardRouter deployed',
       await parentToChildRewardRouter.getAddress()
@@ -108,6 +110,7 @@ describe('Router e2e test', () => {
       l2TokenAddress,
       setup.l2Network.tokenBridge!.childGatewayRouter
     )
+    await childToParentRewardRouter.deploymentTransaction()!.wait()
     console.log(
       'childToParentRewardRouter deployed:',
       await childToParentRewardRouter.getAddress()
@@ -119,6 +122,7 @@ describe('Router e2e test', () => {
     rewardDistributor = await new RewardDistributor__factory(
       setup.l2Signer
     ).deploy([childToParentRewardRouter.getAddress()], [10000])
+    await rewardDistributor.deploymentTransaction()!.wait()
     console.log(
       'Reward Distributor deployed:',
       await rewardDistributor.getAddress()
@@ -198,11 +202,11 @@ describe('Router e2e test', () => {
   })
 
   describe('token routing test', async () => {
-    const tokenValue = BigNumber.from(231)
+    const tokenValue = 231n
     it('destination has initial balance of 0', async () => {
       const initialBal = await l2TestToken.balanceOf(destination)
 
-      expect(initialBal.toNumber()).to.eq(0)
+      expect(initialBal).to.eq(0n)
     })
 
     it('funds and pokes child to parent router', async () => {
@@ -214,10 +218,8 @@ describe('Router e2e test', () => {
       // prePokeBlock = setup.l2
       await (await childToParentRewardRouter.routeToken()).wait()
       expect(
-        (
-          await l2TestToken.balanceOf(childToParentRewardRouter.getAddress())
-        ).toNumber()
-      ).to.eq(0)
+        await l2TestToken.balanceOf(childToParentRewardRouter.getAddress())
+      ).to.eq(0n)
     })
 
     it('redeems l2 to l1 message', async () => {
@@ -233,10 +235,8 @@ describe('Router e2e test', () => {
 
       // funds should be in parentToChildRewardRouter now
       expect(
-        (
-          await testToken.balanceOf(parentToChildRewardRouter.getAddress())
-        ).toHexString()
-      ).to.eq(tokenValue.toHexString())
+        await testToken.balanceOf(parentToChildRewardRouter.getAddress())
+      ).to.eq(tokenValue)
     })
 
     it('routes runds to destination ', async () => {
@@ -248,9 +248,7 @@ describe('Router e2e test', () => {
         0n
       )
       // funds should be in destination
-      expect((await l2TestToken.balanceOf(destination)).toHexString()).to.eq(
-        tokenValue.toHexString()
-      )
+      expect(await l2TestToken.balanceOf(destination)).to.eq(tokenValue)
     })
   })
 })
