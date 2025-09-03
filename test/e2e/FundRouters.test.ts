@@ -70,7 +70,7 @@ describe('Router e2e test', () => {
 
     console.log('waiting for retryables')
 
-    await depositRec.waitForChildTransactionReceipt(setup.l2Signer.v5)
+    await depositRec.waitForChildTransactionReceipt(setup.l2Signer.v5, 5)
     const l2TokenAddress = await erc20Bridger.getChildErc20Address(
       await testToken.getAddress(),
       setup.l1Provider.v5
@@ -110,7 +110,7 @@ describe('Router e2e test', () => {
       l2TokenAddress,
       setup.l2Network.tokenBridge!.childGatewayRouter
     )
-    await childToParentRewardRouter.deploymentTransaction()!.wait()
+    await childToParentRewardRouter.deploymentTransaction()!.wait(5)
     console.log(
       'childToParentRewardRouter deployed:',
       await childToParentRewardRouter.getAddress()
@@ -122,7 +122,7 @@ describe('Router e2e test', () => {
     rewardDistributor = await new RewardDistributor__factory(
       setup.l2Signer
     ).deploy([childToParentRewardRouter.getAddress()], [10000])
-    await rewardDistributor.deploymentTransaction()!.wait()
+    await rewardDistributor.deploymentTransaction()!.wait(5)
     console.log(
       'Reward Distributor deployed:',
       await rewardDistributor.getAddress()
@@ -148,7 +148,7 @@ describe('Router e2e test', () => {
           value: ethValue,
           to: rewardDistributor.getAddress(),
         })
-      ).wait()
+      ).wait(5)
 
       // poke reward distributor
       await (
@@ -156,7 +156,7 @@ describe('Router e2e test', () => {
           [childToParentRewardRouter.getAddress()],
           [10000]
         )
-      ).wait()
+      ).wait(5)
 
       // fund should be distributed and auto-routed
       expect(
@@ -210,13 +210,15 @@ describe('Router e2e test', () => {
     })
 
     it('funds and pokes child to parent router', async () => {
-      await l2TestToken.transfer(
-        childToParentRewardRouter.getAddress(),
-        tokenValue
-      )
+      await (
+        await l2TestToken.transfer(
+          childToParentRewardRouter.getAddress(),
+          tokenValue
+        )
+      ).wait(5)
 
       // prePokeBlock = setup.l2
-      await (await childToParentRewardRouter.routeToken()).wait()
+      await (await childToParentRewardRouter.routeToken()).wait(5)
       expect(
         await l2TestToken.balanceOf(childToParentRewardRouter.getAddress())
       ).to.eq(0n)
