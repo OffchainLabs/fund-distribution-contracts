@@ -4,7 +4,6 @@
   "repository": "https://github.com/OffchainLabs/blockchain-eng-template.git",
   "scripts": {
     "prepare": "forge install",
-    "minimal-publish": "./scripts/template/publish.bash",
     "audit:ci": "audit-ci --config ./audit-ci.jsonc",
     "upload-all-selectors": "forge build && find ./out -name \"*.json\" -exec cast upload-signature {} +",
     "format": "cat .prettierignore .gitignore > .pignore && prettier --ignore-path .pignore \"**/*.{js,ts,json}\" --write && rm .pignore && forge fmt",
