@@ -2,10 +2,10 @@
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
-import "nitro-contracts/src/libraries/AddressAliasHelper.sol";
-import "nitro-contracts/src/bridge/IInbox.sol";
-import "openzeppelin-contracts/contracts/utils/Address.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@arbitrum/nitro-contracts/src/libraries/AddressAliasHelper.sol";
+import "@arbitrum/nitro-contracts/src/bridge/IInbox.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IParentChainGatewayRouter {
     function outboundTransferCustomRefund(
