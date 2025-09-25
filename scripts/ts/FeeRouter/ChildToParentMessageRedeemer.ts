@@ -25,7 +25,6 @@ import {
 } from 'viem/op-stack'
 import { DoubleProvider, DoubleWallet } from '../../template/util'
 import { GenericEventFetcher } from 'eth-parallel-event-fetcher'
-import { ethers } from 'ethers'
 
 const wait = async (ms: number) => new Promise(res => setTimeout(res, ms))
 
