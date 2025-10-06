@@ -24,6 +24,7 @@ import {
   walletActionsL1,
 } from 'viem/op-stack'
 import { DoubleProvider, DoubleWallet } from '../../template/util'
+import { GenericEventFetcher } from 'eth-parallel-event-fetcher'
 
 const wait = async (ms: number) => new Promise(res => setTimeout(res, ms))
 
@@ -44,10 +45,11 @@ export abstract class ChildToParentMessageRedeemer {
     const childChainProvider = new JsonRpcProvider(this.childChainRpc)
 
     const toBlock = (await childChainProvider.getBlockNumber()) - this.blockLag
-    const logs = await childChainProvider.getLogs({
+    const fetcher = new GenericEventFetcher(childChainProvider)
+    const logs = await fetcher.getLogs({
       fromBlock: this.startBlock,
-      toBlock: toBlock,
       address: this.childToParentRewardRouterAddr,
+      toBlock: toBlock,
       topics: [
         ChildToParentRewardRouter__factory.createInterface().getEvent(
           'FundsRouted'
