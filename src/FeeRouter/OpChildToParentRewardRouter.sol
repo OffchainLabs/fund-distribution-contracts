@@ -54,6 +54,7 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
     function _sendToken(uint256 amount) internal override {
         // approve for transfer
         // (not actually necessary for non-native tokens)
+        IERC20(childChainTokenAddress).safeApprove(address(opStandardBridge), 0);
         IERC20(childChainTokenAddress).safeApprove(address(opStandardBridge), amount);
 
         opStandardBridge.bridgeERC20To(

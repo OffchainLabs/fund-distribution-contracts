@@ -98,15 +98,22 @@ contract ArbChildToParentRewardRouterTest is Test {
         childToParentRewardRouter.triggerSendNative(amount);
     }
 
-    function testSendToken(uint256 amount) external {
+    function testSendToken(uint256 amount) public {
         amount = bound(amount, 1, 10 ether);
         vm.prank(me);
         token.transfer(address(childToParentRewardRouter), 2 * amount);
 
         vm.expectEmit(true, true, false, true, address(token));
+        emit Approval(address(childToParentRewardRouter), address(gateway), 0);
+        vm.expectEmit(true, true, false, true, address(token));
         emit Approval(address(childToParentRewardRouter), address(gateway), amount);
         vm.expectEmit(true, false, false, true, address(gatewayRouter));
         emit OutboundTransfer(parentToken, parentTarget, amount, "");
         childToParentRewardRouter.triggerSendToken(amount);
+    }
+
+    function testSendTokenTwice(uint128 amountA, uint128 amountB) external {
+        testSendToken(amountA);
+        testSendToken(amountB);
     }
 }
