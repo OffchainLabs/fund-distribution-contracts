@@ -42,10 +42,7 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
         address _childChainGatewayRouter
     )
         ChildToParentRewardRouter(
-            _parentChainTarget,
-            _minDistributionIntervalSeconds,
-            _parentChainTokenAddress,
-            _childChainTokenAddress
+            _parentChainTarget, _minDistributionIntervalSeconds, _parentChainTokenAddress, _childChainTokenAddress
         )
     {
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);

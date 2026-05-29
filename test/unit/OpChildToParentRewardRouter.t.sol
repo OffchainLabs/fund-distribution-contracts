@@ -16,10 +16,7 @@ contract TestOpChildToParentRewardRouter is OpChildToParentRewardRouter {
         address _childChainTokenAddress
     )
         OpChildToParentRewardRouter(
-            _parentChainTarget,
-            _minDistributionIntervalSeconds,
-            _parentChainTokenAddress,
-            _childChainTokenAddress
+            _parentChainTarget, _minDistributionIntervalSeconds, _parentChainTokenAddress, _childChainTokenAddress
         )
     {}
 
