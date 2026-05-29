@@ -30,7 +30,7 @@ jobs:
           curl -fsSL "$url" | sudo tar -xz -C /usr/local/bin supersim
           supersim --version
 
-      - run: yarn
+      - run: yarn && yarn build
 
       - name: Start supersim
         run: |
