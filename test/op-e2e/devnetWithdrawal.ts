@@ -92,6 +92,9 @@ export async function createDisputeGame(
   const factory = new Contract(factoryAddr, factoryAbi, l1)
   const count: bigint = await factory.gameCount()
   const [, , proxy] = await factory.gameAtIndex(count - 1n)
+
+  await warp(l1, 1)
+
   return proxy
 }
 
