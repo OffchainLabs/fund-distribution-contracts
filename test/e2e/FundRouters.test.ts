@@ -16,6 +16,8 @@ import { Contract, ContractFactory, parseEther, Wallet } from 'ethers'
 import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 import { BigNumber } from 'ethers-v5'
 
+const wait = (ms: number) => new Promise(res => setTimeout(res, ms))
+
 describe('Router e2e test', () => {
   let setup: TestSetup
   let parentToChildRewardRouter: ParentToChildRewardRouter
@@ -105,7 +107,7 @@ describe('Router e2e test', () => {
       setup.l2Signer
     ).deploy(
       await parentToChildRewardRouter.getAddress(),
-      10,
+      1,
       await testToken.getAddress(),
       l2TokenAddress,
       setup.l2Network.tokenBridge!.childGatewayRouter
@@ -168,6 +170,8 @@ describe('Router e2e test', () => {
           childToParentRewardRouter.getAddress()
         )
       ).to.equal(0n)
+
+      await wait(1000) // wait one second to ensure min distribution interval has passed before next round
     })
 
     it('redeems l2 to l1 message', async () => {
@@ -236,6 +240,8 @@ describe('Router e2e test', () => {
           expect(
             await l2TestToken.balanceOf(childToParentRewardRouter.getAddress())
           ).to.eq(0n)
+
+          await wait(1000) // wait one second to ensure min distribution interval has passed before next round
         })
 
         it('redeems l2 to l1 message', async () => {

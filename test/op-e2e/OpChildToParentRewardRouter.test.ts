@@ -214,7 +214,7 @@ describe('Router e2e test', () => {
 
     childToParentRewardRouter = await new OpChildToParentRewardRouter__factory(
       childChainSigner
-    ).deploy(destination, 10, l1Token.getAddress(), l2Token.getAddress())
+    ).deploy(destination, 1, l1Token.getAddress(), l2Token.getAddress())
 
     await childToParentRewardRouter.deploymentTransaction()!.wait()
     console.log('deployed child to parent router')
@@ -297,6 +297,8 @@ describe('Router e2e test', () => {
           if (!fundsRoutedLog) {
             throw new Error('expected FundsRouted log')
           }
+
+          await wait(1000) // wait one second to ensure min distribution interval has passed before next round
         })
 
         it('should redeem the funds on the parent chain', async () => {
