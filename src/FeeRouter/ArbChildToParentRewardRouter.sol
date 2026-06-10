@@ -69,11 +69,6 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
                 revert TokenDisabled(_parentChainTokenAddress);
             }
         }
-
-        // perform a zero value approval to ensure token will not revert on first transfer
-        if (_parentChainTokenAddress != address(1)) {
-            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 0);
-        }
     }
 
     function _sendNative(uint256 amount) internal override {

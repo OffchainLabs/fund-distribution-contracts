@@ -38,6 +38,16 @@ abstract contract ChildToParentRewardRouter is DistributionInterval {
         parentChainTarget = _parentChainTarget;
         parentChainTokenAddress = _parentChainTokenAddress;
         childChainTokenAddress = _childChainTokenAddress;
+
+        // perform approvals to ensure token will not revert on distribution
+        if (_parentChainTokenAddress != address(1)) {
+            // first zero approval ensures first transfer will not revert due to zero to zero approval
+            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 0);
+
+            // ensure that token allows nonzero to zero approval for tokens that do not consume approval during bridging
+            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 1);
+            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 0);
+        }
     }
 
     /// @dev This receive function should NEVER revert
