@@ -45,9 +45,9 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
 
         // perform 0-1-0 approvals to ensure token will not revert due to nonstandard approval behavior
         if (_parentChainTokenAddress != address(1)) {
-            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 0);
-            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 1);
-            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 0);
+            IERC20(_childChainTokenAddress).safeApprove(address(opStandardBridge), 0);
+            IERC20(_childChainTokenAddress).safeApprove(address(opStandardBridge), 1);
+            IERC20(_childChainTokenAddress).safeApprove(address(opStandardBridge), 0);
         }
     }
 
