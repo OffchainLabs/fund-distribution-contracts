@@ -1,20 +1,22 @@
-import {
-  IERC20__factory,
-  IERC20,
-  OpChildToParentRewardRouter,
-  OpChildToParentRewardRouter__factory,
-} from '../../typechain-types'
-import { OpChildToParentMessageRedeemer } from '../../src-ts/FeeRouter/ChildToParentMessageRedeemer'
-import { BigNumber, ContractFactory, ethers, Wallet } from 'ethers'
-import { TestERC20__factory } from "../../lib/arbitrum-sdk/src/lib/abi/factories/TestERC20__factory";
-import { TestERC20 } from "../../lib/arbitrum-sdk/src/lib/abi/TestERC20";
+// Runs against a local supersim devnet (https://github.com/ethereum-optimism/supersim).
+// Start it (vanilla mode) with `supersim`: L1 chain 900 @ :8545, L2 OPChainA 901 @ :9545.
+// supersim runs no op-proposer/op-challenger, so devnetWithdrawal.ts drives the dispute
+// game (create + resolve) and warps anvil time so the redeemer can prove + finalize.
+
 import { defineChain } from 'viem'
 import { chainConfig } from 'viem/op-stack'
-import { JsonRpcProvider } from '@ethersproject/providers';
-import { parseEther } from 'ethers/lib/utils';
-// import { BigNumber.from } from 'ethers/lib/utils';
+import { OpChildToParentMessageRedeemer } from '../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer'
+import {
+  IERC20__factory,
+  OpChildToParentRewardRouter,
+  IERC20,
+  OpChildToParentRewardRouter__factory,
+} from '../../typechain-types'
+import { Contract, ContractFactory, Interface, parseEther } from 'ethers'
+import { DoubleProvider, DoubleWallet } from '../../scripts/template/util'
+import { createDisputeGame, resolveGame, warp } from './devnetWithdrawal'
 
-// Follow instructions to set up a local devnet here: https://docs.optimism.io/chain/testing/dev-node
+import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 
 const devnetL1 = defineChain({
   id: 900,
@@ -43,17 +45,17 @@ const devnetL2 = defineChain({
     ...chainConfig.contracts,
     portal: {
       900: {
-        address: '0xA439B64360C875951478b0Cf77698038df331255',
+        address: '0x75CEb25776D0402972B736F6E13Fd0616BE98f22',
       },
     },
     l1StandardBridge: {
       900: {
-        address: '0x9D34A2610Ea283f6d9AE29f9Cad82e00c4d38507',
+        address: '0x52AF4Dff31d13449b70993E21eb599C615a66541',
       },
     },
     disputeGameFactory: {
       900: {
-        address: '0xeCb92a686D1ab066fc4E559A305FEB75DD512377',
+        address: '0x51095EaC6e2b6DA9811C6fEBBdd67adD79135ce0',
       },
     },
   },
@@ -64,40 +66,72 @@ const wait = (ms: number) => new Promise(res => setTimeout(res, ms))
 
 const l1StdBridgeAddr = devnetL2.contracts.l1StandardBridge[900].address
 
-const l1StdBridgeIface = new ethers.utils.Interface([
+const l1StdBridgeIface = new Interface([
   'function depositERC20(address _l1Token, address _l2Token, uint256 _amount, uint32 _minGasLimit, bytes calldata _extraData)',
 ])
 
-async function deployTestToken(signer: Wallet) {
-    const testToken = await new TestERC20__factory().connect(signer).deploy();
-    await testToken.deployed();
-    await (await testToken.mint()).wait();
-    return IERC20__factory.connect(testToken.address, signer)
+const l1Provider = new DoubleProvider(devnetL1.rpcUrls.default.http[0])
+const l2Provider = new DoubleProvider(devnetL2.rpcUrls.default.http[0])
+const disputeGameFactoryAddr =
+  devnetL2.contracts.disputeGameFactory[900].address
+// supersim's permissioned proposer, the only account allowed to create games
+const PROPOSER = '0x147A0ea1b0A0c4A8917f3e448571112548159F2A'
+
+// supersim has no proposer/challenger, so manually post the output root as a
+// dispute game, let the redeemer prove, resolve the game, warp past the portal
+// delays, then let the redeemer finalize.
+async function driveWithdrawal(
+  redeemer: OpChildToParentMessageRedeemer,
+  l1Signer: DoubleWallet
+) {
+  const l2Block = await l2Provider.getBlockNumber()
+  const game = await createDisputeGame(
+    l1Provider,
+    l2Provider,
+    disputeGameFactoryAddr,
+    PROPOSER,
+    l2Block
+  )
+  await redeemer.redeemChildToParentMessages(true) // prove
+  await resolveGame(l1Provider, l1Signer, game)
+  await warp(l1Provider, 30) // past proof-maturity (12s) + finality (6s) delays
+  await redeemer.redeemChildToParentMessages(true) // finalize
+}
+
+async function deployTestToken(signer: DoubleWallet) {
+  // const testToken = await new connect(signer).deploy()
+  const testToken = (await new ContractFactory(
+    TestTokenAbi.abi,
+    TestTokenAbi.bytecode,
+    signer
+  ).deploy(100n ** 18n)) as Contract
+  await testToken.waitForDeployment()
+  return IERC20__factory.connect(await testToken.getAddress(), signer)
 }
 
 describe('Router e2e test', () => {
   const funderPk =
     '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
-  const pk = Wallet.createRandom().privateKey
+  const pk = DoubleWallet.createRandom().privateKey
 
-  const funder = new Wallet(
+  const funder = new DoubleWallet(
     funderPk,
-    new JsonRpcProvider(devnetL1.rpcUrls.default.http[0]) // todo: use configs
+    new DoubleProvider(devnetL1.rpcUrls.default.http[0]) // todo: use configs
   )
-  const parentChainSigner = new Wallet(
+  const parentChainSigner = new DoubleWallet(
     pk,
-    new JsonRpcProvider(devnetL1.rpcUrls.default.http[0])
+    new DoubleProvider(devnetL1.rpcUrls.default.http[0])
   )
-  const childChainSigner = new Wallet(
+  const childChainSigner = new DoubleWallet(
     pk,
-    new JsonRpcProvider(devnetL2.rpcUrls.default.http[0])
+    new DoubleProvider(devnetL2.rpcUrls.default.http[0])
   )
 
   let childToParentRewardRouter: OpChildToParentRewardRouter
   let l1Token: IERC20
   let l2Token: IERC20
 
-  const destination = Wallet.createRandom().address
+  const destination = DoubleWallet.createRandom().address
 
   before(async () => {
     // fund the parent chain signer
@@ -120,17 +154,18 @@ describe('Router e2e test', () => {
 
     // wait for eth
     while (
-      (await childChainSigner.provider.getBalance(childChainSigner.address)).eq('0')
+      (await childChainSigner.provider.getBalance(childChainSigner.address)) ===
+      0n
     ) {
       await wait(1000)
     }
     console.log('eth received')
 
     l1Token = await deployTestToken(parentChainSigner)
-    const l1Addr = l1Token.address
+    const l1Addr = await l1Token.getAddress()
     console.log('deployed test token')
 
-    const opTokenFactoryIface = new ethers.utils.Interface([
+    const opTokenFactoryIface = new Interface([
       'function createOptimismMintableERC20(address,string,string)',
     ])
 
@@ -153,7 +188,7 @@ describe('Router e2e test', () => {
     // approve
     const approvalTx = await l1Token
       .connect(parentChainSigner)
-      .approve(l1StdBridgeAddr, BigNumber.from('50'))
+      .approve(l1StdBridgeAddr, 50n)
     await approvalTx.wait()
     console.log('approved tokens')
 
@@ -163,7 +198,7 @@ describe('Router e2e test', () => {
       data: l1StdBridgeIface.encodeFunctionData('depositERC20', [
         l1Addr,
         l2Addr,
-        BigNumber.from('50'),
+        50n,
         0,
         '0x',
       ]),
@@ -172,25 +207,25 @@ describe('Router e2e test', () => {
     console.log('deposited tokens')
 
     // wait for tokens
-    while ((await l2Token.balanceOf(childChainSigner.address)).eq('0')) {
+    while ((await l2Token.balanceOf(childChainSigner.address)) === 0n) {
       await wait(1000)
     }
     console.log('tokens received')
 
     childToParentRewardRouter = await new OpChildToParentRewardRouter__factory(
       childChainSigner
-    ).deploy(destination, 10, l1Token.address, l2Token.address)
+    ).deploy(destination, 1, l1Token.getAddress(), l2Token.getAddress())
 
-    await childToParentRewardRouter.deployed()
+    await childToParentRewardRouter.deploymentTransaction()!.wait()
     console.log('deployed child to parent router')
   })
 
   describe('ETH to Parent', () => {
-    const ethValue = BigNumber.from('1')
+    const ethValue = 1n
     it('should initiate a withdrawal on receipt of ETH', async () => {
       // send eth to the router
       const tx = await childChainSigner.sendTransaction({
-        to: childToParentRewardRouter.address,
+        to: childToParentRewardRouter.getAddress(),
         value: ethValue,
       })
       const rec = (await tx.wait())!
@@ -199,7 +234,7 @@ describe('Router e2e test', () => {
       const fundsRoutedLog = rec.logs.find(
         log =>
           log.topics[0] ===
-          childToParentRewardRouter.interface.getEventTopic('FundsRouted')
+          childToParentRewardRouter.interface.getEvent('FundsRouted').topicHash
       )
 
       if (!fundsRoutedLog) {
@@ -212,88 +247,80 @@ describe('Router e2e test', () => {
         devnetL2.rpcUrls.default.http[0],
         devnetL1.rpcUrls.default.http[0],
         pk,
-        childToParentRewardRouter.address,
+        await childToParentRewardRouter.getAddress(),
         0,
         0,
         devnetL2,
         devnetL1
       )
 
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        await redeemer.redeemChildToParentMessages(true)
-        
-        const balance = await parentChainSigner.provider.getBalance(destination)
+      await driveWithdrawal(redeemer, parentChainSigner)
 
-        if (balance.eq(ethValue)) {
-          break
-        }
-
-        if (balance.gt('0')) {
-          throw new Error('unexpected balance')
-        }
-
-        await wait(10_000)
+      const balance = await parentChainSigner.provider.getBalance(destination)
+      if (balance !== ethValue) {
+        throw new Error(`unexpected balance ${balance}`)
       }
     })
   })
 
   describe('ERC20 to Parent', () => {
-    const erc20Amount = BigNumber.from('1')
+    const erc20Amounts = [1n, 2n]
 
-    it('should initiate a withdrawal', async () => {
-      // send tokens to the router
-      await (
-        await l2Token
-          .connect(childChainSigner)
-          .transfer(childToParentRewardRouter.address, erc20Amount)
-      ).wait()
+    erc20Amounts.forEach((erc20Amount, i) => {
+      const cumulative = erc20Amounts
+        .slice(0, i + 1)
+        .reduce((a, b) => a + b, 0n)
 
-      const pokeTx = await childToParentRewardRouter
-        .connect(childChainSigner)
-        .routeToken()
-      const pokeRec = (await pokeTx.wait())!
+      describe(`round ${i + 1} (amount=${erc20Amount})`, () => {
+        it('should initiate a withdrawal', async () => {
+          // send tokens to the router
+          await (
+            await l2Token
+              .connect(childChainSigner)
+              .transfer(childToParentRewardRouter.getAddress(), erc20Amount)
+          ).wait()
 
-      // make sure it emits the event
-      const fundsRoutedLog = pokeRec.logs.find(
-        log =>
-          log.topics[0] ===
-          childToParentRewardRouter.interface.getEventTopic('FundsRouted')
-      )
+          const pokeTx = await childToParentRewardRouter
+            .connect(childChainSigner)
+            .routeToken()
+          const pokeRec = (await pokeTx.wait())!
 
-      if (!fundsRoutedLog) {
-        throw new Error('expected FundsRouted log')
-      }
-    })
+          // assert FundsRouted to guard against routeToken() silently
+          // no-op'ing when called inside minDistributionIntervalSeconds
+          const fundsRoutedLog = pokeRec.logs.find(
+            log =>
+              log.topics[0] ===
+              childToParentRewardRouter.interface.getEvent('FundsRouted')
+                .topicHash
+          )
 
-    it('should redeem the funds on the parent chain', async () => {
-      const redeemer = new OpChildToParentMessageRedeemer(
-        devnetL2.rpcUrls.default.http[0],
-        devnetL1.rpcUrls.default.http[0],
-        pk,
-        childToParentRewardRouter.address,
-        0,
-        0,
-        devnetL2,
-        devnetL1
-      )
+          if (!fundsRoutedLog) {
+            throw new Error('expected FundsRouted log')
+          }
 
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        await redeemer.redeemChildToParentMessages(true)
+          await wait(1000) // wait one second to ensure min distribution interval has passed before next round
+        })
 
-        const balance = await l1Token.balanceOf(destination)
+        it('should redeem the funds on the parent chain', async () => {
+          const redeemer = new OpChildToParentMessageRedeemer(
+            devnetL2.rpcUrls.default.http[0],
+            devnetL1.rpcUrls.default.http[0],
+            pk,
+            await childToParentRewardRouter.getAddress(),
+            0,
+            0,
+            devnetL2,
+            devnetL1
+          )
 
-        if (balance.eq(erc20Amount)) {
-          break
-        }
+          await driveWithdrawal(redeemer, parentChainSigner)
 
-        if (balance.gt('0')) {
-          throw new Error('unexpected balance')
-        }
-
-        await wait(10_000)
-      }
+          const balance = await l1Token.balanceOf(destination)
+          if (balance !== cumulative) {
+            throw new Error(`unexpected balance ${balance}`)
+          }
+        })
+      })
     })
   })
 })

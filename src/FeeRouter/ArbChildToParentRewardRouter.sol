@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./ChildToParentRewardRouter.sol";
 
 interface IArbSys {
@@ -42,10 +42,7 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
         address _childChainGatewayRouter
     )
         ChildToParentRewardRouter(
-            _parentChainTarget,
-            _minDistributionIntervalSeconds,
-            _parentChainTokenAddress,
-            _childChainTokenAddress
+            _parentChainTarget, _minDistributionIntervalSeconds, _parentChainTokenAddress, _childChainTokenAddress
         )
     {
         childChainGatewayRouter = IChildChainGatewayRouter(_childChainGatewayRouter);
@@ -72,6 +69,13 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
                 revert TokenDisabled(_parentChainTokenAddress);
             }
         }
+
+        // perform 0-1-0 approvals to ensure token will not revert due to nonstandard approval behavior
+        if (_parentChainTokenAddress != address(1)) {
+            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 0);
+            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 1);
+            IERC20(_childChainTokenAddress).safeApprove(address(0xdead), 0);
+        }
     }
 
     function _sendNative(uint256 amount) internal override {
@@ -81,8 +85,11 @@ contract ArbChildToParentRewardRouter is ChildToParentRewardRouter {
     function _sendToken(uint256 amount) internal override {
         // get gateway from gateway router
         address gateway = childChainGatewayRouter.getGateway(parentChainTokenAddress);
+
         // approve for transfer
+        IERC20(childChainTokenAddress).safeApprove(gateway, 0);
         IERC20(childChainTokenAddress).safeApprove(gateway, amount);
+
         childChainGatewayRouter.outboundTransfer(parentChainTokenAddress, parentChainTarget, amount, "");
     }
 }
