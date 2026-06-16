@@ -202,12 +202,26 @@ contract RewardDistributorTest is Test {
         // anyone should be able to call distributeRewards
         rd.distributeRewards(recipients, weights);
 
-        assertEq(useToken ? token.balanceOf(recipients[0]) : recipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance");
-        assertEq(useToken ? token.balanceOf(recipients[1]) : recipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance");
-        assertEq(useToken ? token.balanceOf(recipients[2]) : recipients[2].balance, reward / BASIS_POINTS * weights[2], "c balance");
+        assertEq(
+            useToken ? token.balanceOf(recipients[0]) : recipients[0].balance,
+            reward / BASIS_POINTS * weights[0],
+            "a balance"
+        );
+        assertEq(
+            useToken ? token.balanceOf(recipients[1]) : recipients[1].balance,
+            reward / BASIS_POINTS * weights[1],
+            "b balance"
+        );
+        assertEq(
+            useToken ? token.balanceOf(recipients[2]) : recipients[2].balance,
+            reward / BASIS_POINTS * weights[2],
+            "c balance"
+        );
         assertEq(useToken ? token.balanceOf(owner) : owner.balance, 0, "owner balance");
         assertEq(useToken ? token.balanceOf(nobody) : nobody.balance, 0, "nobody balance");
-        assertEq(useToken ? token.balanceOf(address(rd)) : address(rd).balance, reward % BASIS_POINTS, "rewards balance");
+        assertEq(
+            useToken ? token.balanceOf(address(rd)) : address(rd).balance, reward % BASIS_POINTS, "rewards balance"
+        );
     }
 
     function testDistributeRewards(uint256 reward) public withContext(3) {

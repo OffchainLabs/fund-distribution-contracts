@@ -11,7 +11,13 @@ import {
 import { ArbChildToParentMessageRedeemer } from '../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer'
 import { checkAndRouteFunds } from '../../scripts/ts/FeeRouter/checkAndRouteFunds'
 import { Erc20Bridger, registerCustomArbitrumNetwork } from '@arbitrum/sdk'
-import { Contract, ContractFactory, parseEther, Wallet, ZeroAddress } from 'ethers'
+import {
+  Contract,
+  ContractFactory,
+  parseEther,
+  Wallet,
+  ZeroAddress,
+} from 'ethers'
 
 import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 import { BigNumber } from 'ethers-v5'
