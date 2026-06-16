@@ -1,15 +1,21 @@
 #!/bin/bash
 
-export ORBIT_TEST="1"
+source .env
 
-cd lib/arbitrum-sdk && yarn gen:network && cd -
+# send output to null
+cast chain-id --rpc-url $LOCAL_L3_URL &> /dev/null
 
-# if the above command fails, exit
+# if the above command fails set ORBIT_TEST = 0
 if [ $? -ne 0 ]; then
-    echo "Failed to generate network"
-    exit 1
+    export ORBIT_TEST=0
+else
+    export ORBIT_TEST=1
 fi
 
-yarn hardhat compile 
+set -e
+
+yarn build
 
 yarn mocha test/e2e/ --timeout 30000000 --bail
+
+exit $?

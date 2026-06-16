@@ -1,0 +1,54 @@
+name: Test OP E2E
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  op-e2e:
+    name: OP L1 + L2 (supersim)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install supersim
+        env:
+          SUPERSIM_VERSION: 0.1.0-alpha.59
+        run: |
+          url="https://github.com/ethereum-optimism/supersim/releases/download/${SUPERSIM_VERSION}/supersim_Linux_x86_64.tar.gz"
+          curl -fsSL "$url" | sudo tar -xz -C /usr/local/bin supersim
+          supersim --version
+
+      - run: yarn && yarn build
+
+      - name: Start supersim
+        run: |
+          nohup supersim > supersim.log 2>&1 &
+          echo $! > supersim.pid
+          for i in $(seq 1 60); do
+            if cast block-number --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1 \
+               && cast block-number --rpc-url http://127.0.0.1:9545 >/dev/null 2>&1; then
+              echo "supersim ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "supersim failed to start" >&2
+          cat supersim.log >&2
+          exit 1
+
+      - run: yarn test:op-e2e

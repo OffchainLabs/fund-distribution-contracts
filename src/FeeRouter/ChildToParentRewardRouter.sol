@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "./DistributionInterval.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @notice Receives native funds and a single ERC20 funds (set on deployment) and sends them to a target contract on its parent chain.
 ///         Funds can only be sent once every minDistributionIntervalSeconds to prevent griefing
