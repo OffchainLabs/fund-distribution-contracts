@@ -44,9 +44,7 @@ contract ParentToChildRewardRouterTest is Test {
         assertEq(address(parentToChildRewardRouter).balance, 1 ether, "funds received");
         assertEq(inbox.msgNum(), 0, "inbox msg num 0");
         parentToChildRewardRouter.routeNativeFunds{value: 2 ether}({
-            maxSubmissionCost: 1 ether,
-            gasLimit: 1 ether,
-            maxFeePerGas: 1
+            maxSubmissionCost: 1 ether, gasLimit: 1 ether, maxFeePerGas: 1
         });
 
         assertEq(inbox.msgNum(), 1, "create retryable ticket called");
@@ -63,9 +61,7 @@ contract ParentToChildRewardRouterTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(IncorrectValue.selector, 2 ether, 1.9 ether));
         parentToChildRewardRouter.routeNativeFunds{value: 1.9 ether}({
-            maxSubmissionCost: 1 ether,
-            gasLimit: 1 ether,
-            maxFeePerGas: 1
+            maxSubmissionCost: 1 ether, gasLimit: 1 ether, maxFeePerGas: 1
         });
         assertEq(inbox.msgNum(), 0, "create retryable ticket not called");
 
@@ -77,9 +73,7 @@ contract ParentToChildRewardRouterTest is Test {
         (bool sent,) = address(parentToChildRewardRouter).call{value: 1 ether}("");
         assertTrue(sent, "funds sent");
         parentToChildRewardRouter.routeNativeFunds{value: 2 ether}({
-            maxSubmissionCost: 1 ether,
-            gasLimit: 1 ether,
-            maxFeePerGas: 1
+            maxSubmissionCost: 1 ether, gasLimit: 1 ether, maxFeePerGas: 1
         });
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -89,9 +83,7 @@ contract ParentToChildRewardRouterTest is Test {
             )
         );
         parentToChildRewardRouter.routeNativeFunds{value: 2 ether}({
-            maxSubmissionCost: 1 ether,
-            gasLimit: 1 ether,
-            maxFeePerGas: 1
+            maxSubmissionCost: 1 ether, gasLimit: 1 ether, maxFeePerGas: 1
         });
         vm.stopPrank();
     }

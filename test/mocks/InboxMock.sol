@@ -13,7 +13,11 @@ contract InboxMock {
         uint256, // gasLimit,
         uint256, // maxFeePerGas,
         bytes calldata // data
-    ) external payable returns (uint256) {
+    )
+        external
+        payable
+        returns (uint256)
+    {
         return msgNum++;
     }
 }

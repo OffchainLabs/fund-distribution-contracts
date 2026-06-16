@@ -16,6 +16,8 @@ import { Contract, ContractFactory, parseEther, Wallet } from 'ethers'
 import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 import { BigNumber } from 'ethers-v5'
 
+const wait = (ms: number) => new Promise(res => setTimeout(res, ms))
+
 describe('Router e2e test', () => {
   let setup: TestSetup
   let parentToChildRewardRouter: ParentToChildRewardRouter
@@ -105,7 +107,7 @@ describe('Router e2e test', () => {
       setup.l2Signer
     ).deploy(
       await parentToChildRewardRouter.getAddress(),
-      10,
+      1,
       await testToken.getAddress(),
       l2TokenAddress,
       setup.l2Network.tokenBridge!.childGatewayRouter
@@ -168,6 +170,8 @@ describe('Router e2e test', () => {
           childToParentRewardRouter.getAddress()
         )
       ).to.equal(0n)
+
+      await wait(1000) // wait one second to ensure min distribution interval has passed before next round
     })
 
     it('redeems l2 to l1 message', async () => {
@@ -202,55 +206,73 @@ describe('Router e2e test', () => {
   })
 
   describe('token routing test', async () => {
-    const tokenValue = 231n
+    const tokenValues = [231n, 137n]
     it('destination has initial balance of 0', async () => {
       const initialBal = await l2TestToken.balanceOf(destination)
 
       expect(initialBal).to.eq(0n)
     })
 
-    it('funds and pokes child to parent router', async () => {
-      await (
-        await l2TestToken.transfer(
-          childToParentRewardRouter.getAddress(),
-          tokenValue
-        )
-      ).wait(5)
+    tokenValues.forEach((tokenValue, i) => {
+      const cumulative = tokenValues.slice(0, i + 1).reduce((a, b) => a + b, 0n)
 
-      // prePokeBlock = setup.l2
-      await (await childToParentRewardRouter.routeToken()).wait(5)
-      expect(
-        await l2TestToken.balanceOf(childToParentRewardRouter.getAddress())
-      ).to.eq(0n)
-    })
+      describe(`round ${i + 1} (amount=${tokenValue})`, async () => {
+        it('funds and pokes child to parent router', async () => {
+          await (
+            await l2TestToken.transfer(
+              childToParentRewardRouter.getAddress(),
+              tokenValue
+            )
+          ).wait(5)
 
-    it('redeems l2 to l1 message', async () => {
-      await new ArbChildToParentMessageRedeemer(
-        setup.l2Provider.v5.connection.url,
-        setup.l1Provider.v5.connection.url,
-        setup.l1Signer.privateKey,
-        await childToParentRewardRouter.getAddress(),
-        0,
-        0,
-        1000
-      ).redeemChildToParentMessages()
+          // assert FundsRouted to guard against routeToken() silently
+          // no-op'ing when called inside minDistributionIntervalSeconds
+          const receipt = await (
+            await childToParentRewardRouter.routeToken()
+          ).wait(5)
+          const fundsRouted = receipt!.logs
+            .map(l => childToParentRewardRouter.interface.parseLog(l))
+            .find(e => e?.name === 'FundsRouted')
+          expect(fundsRouted, 'FundsRouted not emitted').to.exist
+          expect(fundsRouted!.args[0]).to.eq(await testToken.getAddress())
+          expect(fundsRouted!.args[1]).to.eq(tokenValue)
 
-      // funds should be in parentToChildRewardRouter now
-      expect(
-        await testToken.balanceOf(parentToChildRewardRouter.getAddress())
-      ).to.eq(tokenValue)
-    })
+          expect(
+            await l2TestToken.balanceOf(childToParentRewardRouter.getAddress())
+          ).to.eq(0n)
 
-    it('routes runds to destination ', async () => {
-      await checkAndRouteFunds(
-        await testToken.getAddress(),
-        setup.l1Signer,
-        setup.l2Signer,
-        await parentToChildRewardRouter.getAddress(),
-        0n
-      )
-      // funds should be in destination
-      expect(await l2TestToken.balanceOf(destination)).to.eq(tokenValue)
+          await wait(1000) // wait one second to ensure min distribution interval has passed before next round
+        })
+
+        it('redeems l2 to l1 message', async () => {
+          await new ArbChildToParentMessageRedeemer(
+            setup.l2Provider.v5.connection.url,
+            setup.l1Provider.v5.connection.url,
+            setup.l1Signer.privateKey,
+            await childToParentRewardRouter.getAddress(),
+            0,
+            0,
+            1000
+          ).redeemChildToParentMessages()
+
+          // funds should be in parentToChildRewardRouter now
+          expect(
+            await testToken.balanceOf(parentToChildRewardRouter.getAddress())
+          ).to.eq(tokenValue)
+        })
+
+        it('routes runds to destination ', async () => {
+          await checkAndRouteFunds(
+            await testToken.getAddress(),
+            setup.l1Signer,
+            setup.l2Signer,
+            await parentToChildRewardRouter.getAddress(),
+            0n
+          )
+          // funds should be in destination
+          expect(await l2TestToken.balanceOf(destination)).to.eq(cumulative)
+        })
+      })
     })
   })
 })

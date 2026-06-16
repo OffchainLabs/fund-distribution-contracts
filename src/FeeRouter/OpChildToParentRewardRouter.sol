@@ -33,10 +33,7 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
         address _childChainTokenAddress
     )
         ChildToParentRewardRouter(
-            _parentChainTarget,
-            _minDistributionIntervalSeconds,
-            _parentChainTokenAddress,
-            _childChainTokenAddress
+            _parentChainTarget, _minDistributionIntervalSeconds, _parentChainTokenAddress, _childChainTokenAddress
         )
     {
         // ensure this is an OP Stack chain
@@ -44,6 +41,13 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
         if (!success || data.length != 32 || abi.decode(data, (address)) != 0x4200000000000000000000000000000000000007)
         {
             revert NotOpStack();
+        }
+
+        // perform 0-1-0 approvals to ensure token will not revert due to nonstandard approval behavior
+        if (_parentChainTokenAddress != address(1)) {
+            IERC20(_childChainTokenAddress).safeApprove(address(opStandardBridge), 0);
+            IERC20(_childChainTokenAddress).safeApprove(address(opStandardBridge), 1);
+            IERC20(_childChainTokenAddress).safeApprove(address(opStandardBridge), 0);
         }
     }
 
@@ -54,6 +58,7 @@ contract OpChildToParentRewardRouter is ChildToParentRewardRouter {
     function _sendToken(uint256 amount) internal override {
         // approve for transfer
         // (not actually necessary for non-native tokens)
+        IERC20(childChainTokenAddress).safeApprove(address(opStandardBridge), 0);
         IERC20(childChainTokenAddress).safeApprove(address(opStandardBridge), amount);
 
         opStandardBridge.bridgeERC20To(

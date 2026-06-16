@@ -16,10 +16,7 @@ contract TestOpChildToParentRewardRouter is OpChildToParentRewardRouter {
         address _childChainTokenAddress
     )
         OpChildToParentRewardRouter(
-            _parentChainTarget,
-            _minDistributionIntervalSeconds,
-            _parentChainTokenAddress,
-            _childChainTokenAddress
+            _parentChainTarget, _minDistributionIntervalSeconds, _parentChainTokenAddress, _childChainTokenAddress
         )
     {}
 
@@ -70,15 +67,22 @@ contract OpChildToParentRewardRouterTest is Test {
         childToParentRewardRouter.triggerSendNative(amount);
     }
 
-    function testSendToken(uint256 amount) external {
+    function testSendToken(uint256 amount) public {
         amount = bound(amount, 1, 10 ether);
         vm.prank(me);
         token.transfer(address(childToParentRewardRouter), 2 * amount);
 
         vm.expectEmit(true, true, false, true, address(token));
+        emit Approval(address(childToParentRewardRouter), 0x4200000000000000000000000000000000000010, 0);
+        vm.expectEmit(true, true, false, true, address(token));
         emit Approval(address(childToParentRewardRouter), 0x4200000000000000000000000000000000000010, amount);
         vm.expectEmit(false, false, false, true, 0x4200000000000000000000000000000000000010);
         emit BridgeERC20To(address(token), parentToken, parentTarget, amount, 0, "");
         childToParentRewardRouter.triggerSendToken(amount);
+    }
+
+    function testSendTokenTwice(uint128 amountA, uint128 amountB) external {
+        testSendToken(amountA);
+        testSendToken(amountB);
     }
 }
