@@ -11,7 +11,13 @@ import {
 import { ArbChildToParentMessageRedeemer } from '../../scripts/ts/FeeRouter/ChildToParentMessageRedeemer'
 import { checkAndRouteFunds } from '../../scripts/ts/FeeRouter/checkAndRouteFunds'
 import { Erc20Bridger, registerCustomArbitrumNetwork } from '@arbitrum/sdk'
-import { Contract, ContractFactory, parseEther, Wallet } from 'ethers'
+import {
+  Contract,
+  ContractFactory,
+  parseEther,
+  Wallet,
+  ZeroAddress,
+} from 'ethers'
 
 import TestTokenAbi from '../../out/TestToken.sol/TestToken.json'
 import { BigNumber } from 'ethers-v5'
@@ -123,7 +129,7 @@ describe('Router e2e test', () => {
 
     rewardDistributor = await new RewardDistributor__factory(
       setup.l2Signer
-    ).deploy([childToParentRewardRouter.getAddress()], [10000])
+    ).deploy(ZeroAddress, [childToParentRewardRouter.getAddress()], [10000])
     await rewardDistributor.deploymentTransaction()!.wait(5)
     console.log(
       'Reward Distributor deployed:',
