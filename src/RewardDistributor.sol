@@ -49,12 +49,14 @@ contract RewardDistributor is Ownable {
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
 
     /// @notice It is assumed that all recipients are able to receive eth when called with value but no data
+    /// @param _owner Address that manages the recipient group.
     /// @param _token Address of the ERC20 token to distribute. Use address(0) for ether.
     /// @param recipients Addresses to receive rewards.
     /// @param weights Weights of each recipient in basis points.
-    constructor(address _token, address[] memory recipients, uint256[] memory weights) Ownable() {
+    constructor(address _owner, address _token, address[] memory recipients, uint256[] memory weights) Ownable() {
         setRecipients(recipients, weights);
         token = IERC20(_token);
+        transferOwnership(_owner);
     }
 
     /// @notice allows eth to be deposited into this contract
