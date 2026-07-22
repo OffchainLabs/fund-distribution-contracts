@@ -47,24 +47,13 @@
     // cleanly-patchable transitive deps are pinned via `resolutions` in
     // package.json instead.
     // ---------------------------------------------------------------------
-    // minimatch ReDoS (3.x/5.x/9.x all in tree: eslint, hardhat, nitro-contracts, ...)
-    "GHSA-3ppc-4f35-3m26",
-    "GHSA-7r86-cg39-jmmj",
-    "GHSA-23c5-xmqv-rm74",
-    // picomatch ReDoS / glob matching (2.x and 4.x both in tree)
-    "GHSA-c2c7-rcm5-vvqj",
-    "GHSA-3v7f-55p6-f55p",
     // ws DoS / uninitialized memory (ethers v5 pins 7.x, others use 8.x)
     "GHSA-96hv-2xvq-fx4p",
     "GHSA-58qx-3vcg-4xpx",
-    // ajv ReDoS via $data option (6.x and 8.x both in tree)
-    "GHSA-2g4f-4pwh-qvx6",
     // bn.js infinite loop (4.x and 5.x both in tree; crypto libs)
     "GHSA-378v-28hj-76wf",
     // uuid missing buffer bounds check (older majors required by CJS consumers)
     "GHSA-w5hq-g745-h8pq",
-    // yaml stack overflow (1.x via nitro-contracts; 2.x elsewhere)
-    "GHSA-48c2-rrv3-qjmp",
     // jsdiff DoS (4.x/5.x/7.x in tree via ts-node, mocha, hardhat)
     "GHSA-73rr-hh4g-fpgx",
     // elliptic risky crypto primitive — no patched version exists (patched: <0.0.0)
