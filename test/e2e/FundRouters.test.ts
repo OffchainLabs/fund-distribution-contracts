@@ -129,7 +129,12 @@ describe('Router e2e test', () => {
 
     rewardDistributor = await new RewardDistributor__factory(
       setup.l2Signer
-    ).deploy(ZeroAddress, [childToParentRewardRouter.getAddress()], [10000])
+    ).deploy(
+      await setup.l2Signer.getAddress(),
+      ZeroAddress,
+      [childToParentRewardRouter.getAddress()],
+      [10000]
+    )
     await rewardDistributor.deploymentTransaction()!.wait(5)
     console.log(
       'Reward Distributor deployed:',
