@@ -61,11 +61,6 @@
     "GHSA-2g4f-4pwh-qvx6",
     // bn.js infinite loop (4.x and 5.x both in tree; crypto libs)
     "GHSA-378v-28hj-76wf",
-    // brace-expansion DoS (1.x and 2.x both in tree)
-    "GHSA-f886-m6hf-6m8v",
-    // js-yaml prototype pollution / DoS (3.x and 4.x both in tree)
-    "GHSA-mh29-5h37-fv8m",
-    "GHSA-h67p-54hq-rp68",
     // uuid missing buffer bounds check (older majors required by CJS consumers)
     "GHSA-w5hq-g745-h8pq",
     // yaml stack overflow (1.x via nitro-contracts; 2.x elsewhere)
@@ -73,6 +68,8 @@
     // jsdiff DoS (4.x/5.x/7.x in tree via ts-node, mocha, hardhat)
     "GHSA-73rr-hh4g-fpgx",
     // elliptic risky crypto primitive — no patched version exists (patched: <0.0.0)
-    "GHSA-848j-6mx2-7j84"
+    "GHSA-848j-6mx2-7j84",
+    // adm-zip crafted ZIP memory allocation DoS (hardhat pins ^0.4.16, fix is in 0.6.0)
+    "GHSA-xcpc-8h2w-3j85"
   ]
 }
