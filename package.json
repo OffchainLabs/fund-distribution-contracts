@@ -99,7 +99,7 @@
     "fast-uri": "^3.1.2",
     "form-data": "^4.0.4",
     "tmp": "^0.2.7",
-    "immutable": "^4.3.8",
+    "immutable": "^4.3.9",
     "@isaacs/brace-expansion": "^5.0.1"
   }
 }
