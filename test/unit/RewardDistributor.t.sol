@@ -62,20 +62,27 @@ contract RewardDistributorTest is Test {
         emit RecipientsUpdated(
             keccak256(abi.encodePacked(recipients)), recipients, keccak256(abi.encodePacked(weights)), weights
         );
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(recipients)));
         assertEq(rd.owner(), owner);
     }
 
+    function testConstructorSetsExplicitOwner() public withContext(3) {
+        vm.stopPrank();
+        vm.startPrank(nobody);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        assertEq(rd.owner(), owner);
+    }
+
     function testConstructorDoesNotAcceptEmpty() public withContext(0) {
         vm.expectRevert(EmptyRecipients.selector);
-        new RewardDistributor(address(0), recipients, weights);
+        new RewardDistributor(owner, address(0), recipients, weights);
     }
 
     function testConstructorDoesNotAcceptPastLimit() public withContext(65) {
         vm.expectRevert(TooManyRecipients.selector);
-        new RewardDistributor(address(0), recipients, weights);
+        new RewardDistributor(owner, address(0), recipients, weights);
     }
 
     function testConstructorInputLengthMismatch() public withContext(3) {
@@ -83,11 +90,11 @@ contract RewardDistributorTest is Test {
         shortWeights[0] = weights[0];
         shortWeights[1] = weights[1];
         vm.expectRevert(InputLengthMismatch.selector);
-        new RewardDistributor(address(0), recipients, shortWeights);
+        new RewardDistributor(owner, address(0), recipients, shortWeights);
     }
 
     function testUpdateDoesNotAcceptInvalidValues() public withContext(5) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -125,7 +132,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeAndUpdateRecipients() public withContext(64) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -146,7 +153,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeAndUpdateRecipientsNotOwner() public withContext(64) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         vm.stopPrank();
         vm.startPrank(nobody);
@@ -160,7 +167,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeAndUpdateRecipientsBadPrevious() public withContext(64) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
@@ -185,7 +192,7 @@ contract RewardDistributorTest is Test {
 
         ERC20PresetMinterPauser token = new ERC20PresetMinterPauser("token", "TKN");
 
-        RewardDistributor rd = new RewardDistributor(useToken ? address(token) : address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, useToken ? address(token) : address(0), recipients, weights);
 
         // increase the balance of rd
         useToken ? token.mint(address(rd), reward) : vm.deal(address(rd), reward);
@@ -232,7 +239,7 @@ contract RewardDistributorTest is Test {
     function testLowSend(uint256 rewards) public withContext(8) {
         vm.assume(rewards < BASIS_POINTS);
 
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         vm.deal(address(rd), rewards);
 
@@ -242,7 +249,7 @@ contract RewardDistributorTest is Test {
 
     function testDistributeRewardsDoesRefundsOwner(uint256 reward) public withContext(3) {
         vm.assume(reward >= BASIS_POINTS);
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address to have this code
@@ -270,7 +277,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsDoesNotDistributeToEmpty() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -284,7 +291,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsDoesNotDistributeWrongRecipients() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -304,7 +311,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsDoesNotDistributeWrongWeights() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -325,7 +332,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsDoesNotDistributeToWrongCount() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -342,7 +349,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsFailsToRefundsOwner() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address and the owner to have this code
@@ -364,7 +371,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsInputLengthMismatch() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
         uint256[] memory shortWeights = new uint256[](2);
         shortWeights[0] = weights[0];
         shortWeights[1] = weights[1];
@@ -378,7 +385,7 @@ contract RewardDistributorTest is Test {
         for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Reverter());
         }
-        RewardDistributor rd = new RewardDistributor(address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
         assertEq(MAX_RECIPIENTS, rd.MAX_RECIPIENTS());
 
         uint256 rewards = 5 ether;
@@ -440,7 +447,7 @@ contract RewardDistributorTest is Test {
     function testCannotReceiveInERC20Mode() public {
         recipients = makeRecipientGroup(3);
         weights = makeRecipientWeights(3);
-        RewardDistributor rd = new RewardDistributor(address(1), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, address(1), recipients, weights);
 
         vm.deal(address(this), 1);
         (bool success, bytes memory ret) = address(rd).call{value: 1}("");

@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { RewardDistributor__factory } from '../../typechain-types'
 import { DoubleProvider, DoubleWallet } from '../template/util'
 import { RecipientsUpdatedEvent } from '../../typechain-types/src/RewardDistributor'
@@ -57,10 +57,11 @@ export const distributeRewards = async (
     return
   }
 
-  const dataBuf = await readFileSync(
-    './src-ts/data/recipientAndWeightsData.json'
-  ).toString()
-  const data = JSON.parse(dataBuf).data
+  // Optional override file; when absent, fall back to on-chain recipient data below.
+  const dataPath = './src-ts/data/recipientAndWeightsData.json'
+  const data = existsSync(dataPath)
+    ? JSON.parse(readFileSync(dataPath).toString()).data
+    : []
 
   let recAndWeights = data.find(
     (datum: any) =>

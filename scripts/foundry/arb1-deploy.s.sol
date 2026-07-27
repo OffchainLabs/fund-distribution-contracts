@@ -20,29 +20,25 @@ contract DeployScript is Script {
 
         recipients[0] = l2TreasuryTimelock;
         RewardDistributor rd_l2base =
-            new RewardDistributor({_token: address(0), recipients: recipients, weights: weights});
-        rd_l2base.transferOwnership(l2Executor);
+            new RewardDistributor({_owner: l2Executor, _token: address(0), recipients: recipients, weights: weights});
         console.log("Deployed L2 Base at: ");
         console.log(address(rd_l2base));
 
         recipients[0] = l2TreasuryTimelock;
         RewardDistributor rd_l2surplus =
-            new RewardDistributor({_token: address(0), recipients: recipients, weights: weights});
-        rd_l2surplus.transferOwnership(l2Executor);
+            new RewardDistributor({_owner: l2Executor, _token: address(0), recipients: recipients, weights: weights});
         console.log("Deployed L2 Surplus at: ");
         console.log(address(rd_l2surplus));
 
         recipients[0] = l2OffchainLabsMultisig;
         RewardDistributor rd_l1base =
-            new RewardDistributor({_token: address(0), recipients: recipients, weights: weights});
-        rd_l1base.transferOwnership(l2Executor);
+            new RewardDistributor({_owner: l2Executor, _token: address(0), recipients: recipients, weights: weights});
         console.log("Deployed L1 Base at: ");
         console.log(address(rd_l1base));
 
         recipients[0] = l2TreasuryTimelock;
         RewardDistributor rd_l1surplus =
-            new RewardDistributor({_token: address(0), recipients: recipients, weights: weights});
-        rd_l1surplus.transferOwnership(l2Executor);
+            new RewardDistributor({_owner: l2Executor, _token: address(0), recipients: recipients, weights: weights});
         console.log("Deployed L1 Surplus at: ");
         console.log(address(rd_l1surplus));
 
