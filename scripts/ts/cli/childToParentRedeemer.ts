@@ -7,6 +7,7 @@ import {
   ChildToParentMessageRedeemer,
 } from '../FeeRouter/ChildToParentMessageRedeemer'
 import chains from 'viem/chains'
+import { registerCustomArbitrumNetwork } from '@arbitrum/sdk'
 import { DoubleProvider, DoubleWallet } from '../../template/util'
 
 dotenv.config()
@@ -32,6 +33,14 @@ const options = yargs(process.argv.slice(2))
     opStack: { type: 'boolean', demandOption: false, default: false },
   })
   .parseSync()
+
+// register a custom Orbit chain not in the SDK's built-in list
+const childNetworkJson = process.env.CHILD_NETWORK_JSON
+if (childNetworkJson) {
+  const network = JSON.parse(childNetworkJson)
+  registerCustomArbitrumNetwork(network)
+  console.log(`Registered custom child network ${network.chainId}`)
+}
 
 ;(async () => {
   const parentChildSigner = new DoubleWallet(
