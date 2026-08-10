@@ -59,6 +59,12 @@
     // elliptic risky crypto primitive — no patched version exists (patched: <0.0.0)
     "GHSA-848j-6mx2-7j84",
     // adm-zip crafted ZIP memory allocation DoS (hardhat pins ^0.4.16, fix is in 0.6.0)
-    "GHSA-xcpc-8h2w-3j85"
+    "GHSA-xcpc-8h2w-3j85",
+    // brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash
+    "GHSA-mh99-v99m-4gvg",
+    // brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation
+    "GHSA-rgw5-rvv9-x895",
+    // JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported
+    "GHSA-5p4m-2wfm-xmqj"
   ]
 }
