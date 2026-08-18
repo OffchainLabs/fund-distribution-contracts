@@ -26,11 +26,11 @@ contract RewardDistributor is Ownable {
 
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known group of contracts that won't consume more than this amount.
-    uint256 public constant PER_RECIPIENT_GAS = 100_000;
+    uint256 public constant PER_RECIPIENT_GAS = 500_000;
 
     /// @notice The maximum number of addresses that may be recipients.
     /// @dev This ensures that all sends may always happen within a block.
-    uint64 public constant MAX_RECIPIENTS = 64;
+    uint64 public constant MAX_RECIPIENTS = 25;
 
     IERC20 public immutable token;
 
@@ -87,6 +87,9 @@ contract RewardDistributor is Ownable {
     /**
      * @notice Sends rewards to the current group of recipients.
      * @dev The remainder will be kept in the contract.
+     *      If a recipient fails to receive their reward, their funds will be sent to the contract owner.
+     *      If the contract owner cannot receive funds, the whole call reverts. 
+     *      Ownership can always be transferred to another address that can receive funds.
      * @param recipients Group of addresses to receive rewards.
      * @param weights Weights of each recipient in basis points.
      */
