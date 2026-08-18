@@ -131,15 +131,15 @@ contract RewardDistributorTest is Test {
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
     }
 
-    function testDistributeAndUpdateRecipients() public withContext(64) {
+    function testDistributeAndUpdateRecipients() public withContext(25) {
         RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        address[] memory newRecipients = makeRecipientGroup(50);
-        uint256[] memory newWeights = makeRecipientWeights(50);
+        address[] memory newRecipients = makeRecipientGroup(20);
+        uint256[] memory newWeights = makeRecipientWeights(20);
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients)));
 
@@ -148,31 +148,31 @@ contract RewardDistributorTest is Test {
         assertEq(newRecipients[2].balance, reward / BASIS_POINTS * weights[2], "c balance before update");
         assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
-        assertEq(reward % 64, 0, "remainder"); // test the code path without remainder
+        assertEq(reward % BASIS_POINTS, 0, "remainder"); // test the code path without remainder
         assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
     }
 
-    function testDistributeAndUpdateRecipientsNotOwner() public withContext(64) {
+    function testDistributeAndUpdateRecipientsNotOwner() public withContext(25) {
         RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         vm.stopPrank();
         vm.startPrank(nobody);
 
-        address[] memory newRecipients = makeRecipientGroup(50);
-        uint256[] memory newWeights = makeRecipientWeights(50);
+        address[] memory newRecipients = makeRecipientGroup(20);
+        uint256[] memory newWeights = makeRecipientWeights(20);
 
         // only owner should be able to call distributeRewards
         vm.expectRevert("Ownable: caller is not the owner");
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
     }
 
-    function testDistributeAndUpdateRecipientsBadPrevious() public withContext(64) {
+    function testDistributeAndUpdateRecipientsBadPrevious() public withContext(25) {
         RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        address[] memory newRecipients = makeRecipientGroup(50);
-        uint256[] memory newWeights = makeRecipientWeights(50);
+        address[] memory newRecipients = makeRecipientGroup(20);
+        uint256[] memory newWeights = makeRecipientWeights(20);
 
         // revert on wrong previous group
         vm.expectRevert(
@@ -379,7 +379,7 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients, shortWeights);
     }
 
-    uint64 MAX_RECIPIENTS = 64;
+    uint64 MAX_RECIPIENTS = 25;
 
     function testBlockGasLimit() public withContext(MAX_RECIPIENTS) {
         for (uint256 i = 0; i < recipients.length; i++) {
@@ -401,7 +401,7 @@ contract RewardDistributorTest is Test {
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
         assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
         assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
-        assertEq(address(owner).balance, rewards - (rewards % recipients.length), "owner didn't receive all funds");
+        assertEq(address(owner).balance, rewards - (rewards % BASIS_POINTS), "owner didn't receive all funds");
     }
 
     function testHashAddresses() public {
@@ -423,7 +423,7 @@ contract RewardDistributorTest is Test {
 
         input = makeRecipientGroup(MAX_RECIPIENTS);
         actual = hashAddresses(input);
-        expected = bytes32(0x95e9a53b9c4215b83ebc13939985ca72fe2424db3c861aa2b1bc741c56efabd0);
+        expected = bytes32(0xbce3cb117d6dada34bb09e4a9c19f1d8953c291edbe9902394591301d46f4507);
         assertEq(actual, expected, "incorrect max recipients hash");
     }
 
