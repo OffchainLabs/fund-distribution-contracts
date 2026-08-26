@@ -5,6 +5,7 @@ import {BASIS_POINTS, hashAddresses, hashWeights, uncheckedInc} from "./Util.sol
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 error CannotReceiveNative();
 error TooManyRecipients();
@@ -21,16 +22,16 @@ error InvalidTotalWeight(uint256 totalWeight);
 /// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
 ///      A RewardDistributor can only handle a single, specific asset defined at deployment.
 ///      This contract assumes that the token does not have a blacklist or other non standard behavior.
-contract RewardDistributor is Ownable {
+contract RewardDistributor is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @notice Amount of gas forwarded to each transfer call.
     /// @dev The recipient group is assumed to be a known group of contracts that won't consume more than this amount.
-    uint256 public constant PER_RECIPIENT_GAS = 500_000;
+    uint256 public constant PER_RECIPIENT_GAS = 1_000_000;
 
     /// @notice The maximum number of addresses that may be recipients.
     /// @dev This ensures that all sends may always happen within a block.
-    uint64 public constant MAX_RECIPIENTS = 25;
+    uint64 public constant MAX_RECIPIENTS = 10;
 
     IERC20 public immutable token;
 
@@ -93,7 +94,7 @@ contract RewardDistributor is Ownable {
      * @param recipients Group of addresses to receive rewards.
      * @param weights Weights of each recipient in basis points.
      */
-    function distributeRewards(address[] memory recipients, uint256[] memory weights) public {
+    function distributeRewards(address[] memory recipients, uint256[] memory weights) public nonReentrant {
         if (recipients.length == 0) {
             revert EmptyRecipients();
         }
