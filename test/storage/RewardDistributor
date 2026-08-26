@@ -4,8 +4,10 @@
 +=========================================================================================================+
 | _owner                  | address | 0    | 0      | 20    | src/RewardDistributor.sol:RewardDistributor |
 |-------------------------+---------+------+--------+-------+---------------------------------------------|
-| currentRecipientGroup   | bytes32 | 1    | 0      | 32    | src/RewardDistributor.sol:RewardDistributor |
+| _status                 | uint256 | 1    | 0      | 32    | src/RewardDistributor.sol:RewardDistributor |
 |-------------------------+---------+------+--------+-------+---------------------------------------------|
-| currentRecipientWeights | bytes32 | 2    | 0      | 32    | src/RewardDistributor.sol:RewardDistributor |
+| currentRecipientGroup   | bytes32 | 2    | 0      | 32    | src/RewardDistributor.sol:RewardDistributor |
+|-------------------------+---------+------+--------+-------+---------------------------------------------|
+| currentRecipientWeights | bytes32 | 3    | 0      | 32    | src/RewardDistributor.sol:RewardDistributor |
 ╰-------------------------+---------+------+--------+-------+---------------------------------------------╯
 

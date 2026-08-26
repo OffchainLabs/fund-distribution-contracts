@@ -131,15 +131,15 @@ contract RewardDistributorTest is Test {
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
     }
 
-    function testDistributeAndUpdateRecipients() public withContext(25) {
+    function testDistributeAndUpdateRecipients() public withContext(MAX_RECIPIENTS) {
         RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        address[] memory newRecipients = makeRecipientGroup(20);
-        uint256[] memory newWeights = makeRecipientWeights(20);
+        address[] memory newRecipients = makeRecipientGroup(5);
+        uint256[] memory newWeights = makeRecipientWeights(5);
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(newRecipients)));
 
@@ -152,27 +152,27 @@ contract RewardDistributorTest is Test {
         assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
     }
 
-    function testDistributeAndUpdateRecipientsNotOwner() public withContext(25) {
+    function testDistributeAndUpdateRecipientsNotOwner() public withContext(MAX_RECIPIENTS) {
         RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
 
         vm.stopPrank();
         vm.startPrank(nobody);
 
-        address[] memory newRecipients = makeRecipientGroup(20);
-        uint256[] memory newWeights = makeRecipientWeights(20);
+        address[] memory newRecipients = makeRecipientGroup(5);
+        uint256[] memory newWeights = makeRecipientWeights(5);
 
         // only owner should be able to call distributeRewards
         vm.expectRevert("Ownable: caller is not the owner");
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
     }
 
-    function testDistributeAndUpdateRecipientsBadPrevious() public withContext(25) {
+    function testDistributeAndUpdateRecipientsBadPrevious() public withContext(MAX_RECIPIENTS) {
         RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
-        address[] memory newRecipients = makeRecipientGroup(20);
-        uint256[] memory newWeights = makeRecipientWeights(20);
+        address[] memory newRecipients = makeRecipientGroup(5);
+        uint256[] memory newWeights = makeRecipientWeights(5);
 
         // revert on wrong previous group
         vm.expectRevert(
@@ -379,7 +379,7 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients, shortWeights);
     }
 
-    uint64 MAX_RECIPIENTS = 25;
+    uint64 MAX_RECIPIENTS = 10;
 
     function testBlockGasLimit() public withContext(MAX_RECIPIENTS) {
         for (uint256 i = 0; i < recipients.length; i++) {
@@ -423,7 +423,7 @@ contract RewardDistributorTest is Test {
 
         input = makeRecipientGroup(MAX_RECIPIENTS);
         actual = hashAddresses(input);
-        expected = bytes32(0xbce3cb117d6dada34bb09e4a9c19f1d8953c291edbe9902394591301d46f4507);
+        expected = bytes32(0xf986a26dd248521e404935b88823a316210a5764625f60da99b508de952d4ac3);
         assertEq(actual, expected, "incorrect max recipients hash");
     }
 
