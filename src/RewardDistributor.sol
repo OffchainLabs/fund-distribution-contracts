@@ -89,7 +89,7 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
      * @notice Sends rewards to the current group of recipients.
      * @dev The remainder will be kept in the contract.
      *      If a recipient fails to receive their reward, their funds will be sent to the contract owner.
-     *      If the contract owner cannot receive funds, the whole call reverts. 
+     *      If the contract owner cannot receive funds, the whole call reverts.
      *      Ownership can always be transferred to another address that can receive funds.
      * @param recipients Group of addresses to receive rewards.
      * @param weights Weights of each recipient in basis points.
