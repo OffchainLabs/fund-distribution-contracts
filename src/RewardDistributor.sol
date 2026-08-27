@@ -16,6 +16,7 @@ error OwnerFailedRecieve(address owner, address recipient, uint256 value);
 error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
+error InsufficientGas();
 
 /// @title A distributor of ether or an ERC20 token
 /// @notice You can use this contract to distribute ether/token according to defined weights between a group of participants managed by an owner.
@@ -132,6 +133,13 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
             // if the recipient is the last, it doesn't matter since there are no extra fund to steal
             bool success;
             if (address(token) == address(0)) {
+                // EIP-150 forwards at most 63/64 of the remaining gas, so the recipient is only
+                // offered the full PER_RECIPIENT_GAS if 64/63 of it remains. Without this check a
+                // caller can under-gas the call, fail an otherwise healthy recipient, and divert
+                // its share to the owner. We multiply by 1.05 for buffer.
+                if (gasleft() <= PER_RECIPIENT_GAS * 105 / 100) {
+                    revert InsufficientGas();
+                }
                 (success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
             } else {
                 // we assume that this will never revert, because we know we have enough token and the token is "normal"
