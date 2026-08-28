@@ -5,6 +5,7 @@ pragma solidity ^0.8.16;
 import "../../src/RewardDistributor.sol";
 import "../mocks/Reverter.sol";
 import "../mocks/Empty.sol";
+import "../mocks/Returner.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import "forge-std/Test.sol";
 
@@ -402,6 +403,28 @@ contract RewardDistributorTest is Test {
         assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
         assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
         assertEq(address(owner).balance, rewards - (rewards % BASIS_POINTS), "owner didn't receive all funds");
+    }
+
+    function testRecipientReturndataIsNotCharged() public withContext(MAX_RECIPIENTS) {
+        // the largest payload a recipient can return within PER_RECIPIENT_GAS
+        for (uint256 i = 0; i < recipients.length; i++) {
+            recipients[i] = address(new Returner(697_088));
+        }
+        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+
+        uint256 rewards = 5 ether;
+        vm.deal(address(rd), rewards);
+
+        uint256 gasleftPrior = gasleft();
+        rd.distributeRewards(recipients, weights);
+        uint256 gasUsed = gasleftPrior - gasleft();
+
+        // returndata must not be copied into this contract's memory: memory is never freed, so the
+        // group's combined returndata would cost a quadratic amount and exceed any block gas limit
+        uint256 targetBlockGasLimit = 16_000_000;
+        assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
+        assertEq(address(owner).balance, 0, "owner received a share");
+        assertEq(recipients[0].balance, rewards / BASIS_POINTS * weights[0], "recipient not paid");
     }
 
     function testHashAddresses() public {
