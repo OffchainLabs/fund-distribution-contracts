@@ -140,7 +140,13 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
                 if (gasleft() <= PER_RECIPIENT_GAS * 105 / 100) {
                     revert InsufficientGas();
                 }
-                (success,) = recipients[r].call{value: individualRewards, gas: PER_RECIPIENT_GAS}("");
+                // assembly so the recipient's returndata is not copied into this contract's memory.
+                // memory is never freed, so copying would let the recipient group charge this call
+                // a cost quadratic in their combined returndata, exceeding the block gas limit.
+                address recipient = recipients[r];
+                assembly {
+                    success := call(PER_RECIPIENT_GAS, recipient, individualRewards, 0, 0, 0, 0)
+                }
             } else {
                 // we assume that this will never revert, because we know we have enough token and the token is "normal"
                 token.safeTransfer(recipients[r], individualRewards);
