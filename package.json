@@ -79,7 +79,7 @@
     "hardhat-gas-reporter": "^1.0.8",
     "prettier": "^3.2.5",
     "solidity-coverage": "^0.8.0",
-    "toml": "3.0.0",
+    "toml": "4.2.0",
     "ts-node": "^8.0.0",
     "typechain": "^8.3.0",
     "typescript": "~5.5.0",
