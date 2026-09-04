@@ -6,7 +6,7 @@ A set of smart contracts that handle fund distribution across multiple chains.
 
 A smart contract that pushes the funds that accrued in it to a group of addresses. You can use this contract to distribute native token between the participants according to preset weights.
 
-The participants are managed by an owner - accrued reward must be distributed to the participants before the configuration can be changed. The owner cannot deny a particular participant from receiving their share of the reward, but can deny the reward from being distributed to all participants. If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
+The participants are managed by an owner - accrued reward must be distributed to the participants before the configuration can be changed. The owner cannot deny a particular participant from receiving their share of the reward, but can deny the reward from being distributed to all participants. If a particular recipient is not able to receive funds at their address, the payment will fallback to a designated fallback recipient, which the owner can update.
 
 This contract is expected to handle native token simply appearing in its balance (opposed to having an explicit `receive` function called).
 

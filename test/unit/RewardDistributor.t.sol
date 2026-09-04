@@ -10,13 +10,15 @@ import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/prese
 import "forge-std/Test.sol";
 
 contract RewardDistributorTest is Test {
-    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
+    event FallbackRecieved(address indexed fallbackRecipient, address indexed recipient, uint256 value);
+    event FallbackRecipientUpdated(address indexed fallbackRecipient);
     event RecipientRecieved(address indexed recipient, uint256 value);
     event RecipientsUpdated(bytes32 recipientGroup, address[] recipients, bytes32 recipientWeights, uint256[] weights);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     address owner = vm.addr(0x04);
     address nobody = vm.addr(0x05);
+    address fallbackRecipient = vm.addr(0x06);
     address[] recipients;
     uint256[] weights;
 
@@ -26,6 +28,7 @@ contract RewardDistributorTest is Test {
         // clear accounts
         vm.deal(owner, 0);
         vm.deal(nobody, 0);
+        vm.deal(fallbackRecipient, 0);
 
         // set owner as caller before execution
         vm.startPrank(owner);
@@ -63,27 +66,54 @@ contract RewardDistributorTest is Test {
         emit RecipientsUpdated(
             keccak256(abi.encodePacked(recipients)), recipients, keccak256(abi.encodePacked(weights)), weights
         );
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         assertEq(rd.currentRecipientGroup(), keccak256(abi.encodePacked(recipients)));
         assertEq(rd.owner(), owner);
+        assertEq(rd.fallbackRecipient(), fallbackRecipient);
+    }
+
+    function testConstructorDoesNotAcceptEmptyFallback() public withContext(3) {
+        vm.expectRevert(EmptyFallbackRecipient.selector);
+        new RewardDistributor(owner, address(0), address(0), recipients, weights);
+    }
+
+    function testSetFallbackRecipient() public withContext(3) {
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
+
+        vm.expectEmit(true, false, false, true);
+        emit FallbackRecipientUpdated(nobody);
+        rd.setFallbackRecipient(nobody);
+        assertEq(rd.fallbackRecipient(), nobody);
+
+        vm.expectRevert(EmptyFallbackRecipient.selector);
+        rd.setFallbackRecipient(address(0));
+    }
+
+    function testSetFallbackRecipientNotOwner() public withContext(3) {
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
+
+        vm.stopPrank();
+        vm.startPrank(nobody);
+        vm.expectRevert("Ownable: caller is not the owner");
+        rd.setFallbackRecipient(nobody);
     }
 
     function testConstructorSetsExplicitOwner() public withContext(3) {
         vm.stopPrank();
         vm.startPrank(nobody);
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
         assertEq(rd.owner(), owner);
     }
 
     function testConstructorDoesNotAcceptEmpty() public withContext(0) {
         vm.expectRevert(EmptyRecipients.selector);
-        new RewardDistributor(owner, address(0), recipients, weights);
+        new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
     }
 
     function testConstructorDoesNotAcceptPastLimit() public withContext(65) {
         vm.expectRevert(TooManyRecipients.selector);
-        new RewardDistributor(owner, address(0), recipients, weights);
+        new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
     }
 
     function testConstructorInputLengthMismatch() public withContext(3) {
@@ -91,11 +121,11 @@ contract RewardDistributorTest is Test {
         shortWeights[0] = weights[0];
         shortWeights[1] = weights[1];
         vm.expectRevert(InputLengthMismatch.selector);
-        new RewardDistributor(owner, address(0), recipients, shortWeights);
+        new RewardDistributor(owner, fallbackRecipient, address(0), recipients, shortWeights);
     }
 
     function testUpdateDoesNotAcceptInvalidValues() public withContext(5) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -133,7 +163,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeAndUpdateRecipients() public withContext(MAX_RECIPIENTS) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -154,7 +184,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeAndUpdateRecipientsNotOwner() public withContext(MAX_RECIPIENTS) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         vm.stopPrank();
         vm.startPrank(nobody);
@@ -168,7 +198,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeAndUpdateRecipientsBadPrevious() public withContext(MAX_RECIPIENTS) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
         uint256 reward = 1e8;
         vm.deal(address(rd), reward);
 
@@ -193,7 +223,9 @@ contract RewardDistributorTest is Test {
 
         ERC20PresetMinterPauser token = new ERC20PresetMinterPauser("token", "TKN");
 
-        RewardDistributor rd = new RewardDistributor(owner, useToken ? address(token) : address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(
+            owner, fallbackRecipient, useToken ? address(token) : address(0), recipients, weights
+        );
 
         // increase the balance of rd
         useToken ? token.mint(address(rd), reward) : vm.deal(address(rd), reward);
@@ -240,7 +272,7 @@ contract RewardDistributorTest is Test {
     function testLowSend(uint256 rewards) public withContext(8) {
         vm.assume(rewards < BASIS_POINTS);
 
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         vm.deal(address(rd), rewards);
 
@@ -248,9 +280,9 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(recipients, weights);
     }
 
-    function testDistributeRewardsDoesRefundsOwner(uint256 reward) public withContext(3) {
+    function testDistributeRewardsDoesRefundsFallback(uint256 reward) public withContext(3) {
         vm.assume(reward >= BASIS_POINTS);
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // the empty contract will revert when sending funds to it, as it doesn't
         // have a fallback. We set the c address to have this code
@@ -265,20 +297,21 @@ contract RewardDistributorTest is Test {
         vm.expectEmit(true, false, false, true);
         emit RecipientRecieved(recipients[1], reward / BASIS_POINTS * weights[1]);
         vm.expectEmit(true, false, false, true);
-        emit OwnerRecieved(owner, recipients[2], reward / BASIS_POINTS * weights[2]);
+        emit FallbackRecieved(fallbackRecipient, recipients[2], reward / BASIS_POINTS * weights[2]);
 
         rd.distributeRewards(recipients, weights);
 
         assertEq(recipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance");
         assertEq(recipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance");
         assertEq(recipients[2].balance, 0, "c balance");
-        assertEq(owner.balance, reward / BASIS_POINTS * weights[2], "owner balance");
+        assertEq(fallbackRecipient.balance, reward / BASIS_POINTS * weights[2], "fallback balance");
+        assertEq(owner.balance, 0, "owner balance");
         assertEq(nobody.balance, 0, "nobody balance");
         assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
     }
 
     function testDistributeRewardsDoesNotDistributeToEmpty() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -292,7 +325,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsDoesNotDistributeWrongRecipients() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -312,7 +345,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsDoesNotDistributeWrongWeights() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -333,7 +366,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsDoesNotDistributeToWrongCount() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -349,14 +382,14 @@ contract RewardDistributorTest is Test {
         rd.distributeRewards(shortRecipients, shortWeights);
     }
 
-    function testDistributeRewardsFailsToRefundsOwner() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+    function testDistributeRewardsFailsToRefundsFallback() public withContext(3) {
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         // the empty contract will revert when sending funds to it, as it doesn't
-        // have a fallback. We set the c address and the owner to have this code
+        // have a fallback. We set the c address and the fallback recipient to have this code
         Empty ec = new Empty();
         vm.etch(recipients[2], address(ec).code);
-        vm.etch(owner, address(ec).code);
+        vm.etch(fallbackRecipient, address(ec).code);
 
         // increase the balance of rd
         uint256 reward = 1e8;
@@ -364,7 +397,7 @@ contract RewardDistributorTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                OwnerFailedRecieve.selector, owner, recipients[2], (reward / BASIS_POINTS * weights[2])
+                FallbackFailedRecieve.selector, fallbackRecipient, recipients[2], (reward / BASIS_POINTS * weights[2])
             )
         );
 
@@ -372,7 +405,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDistributeRewardsInputLengthMismatch() public withContext(3) {
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
         uint256[] memory shortWeights = new uint256[](2);
         shortWeights[0] = weights[0];
         shortWeights[1] = weights[1];
@@ -386,7 +419,7 @@ contract RewardDistributorTest is Test {
         for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Reverter());
         }
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
         assertEq(MAX_RECIPIENTS, rd.MAX_RECIPIENTS());
 
         uint256 rewards = 5 ether;
@@ -402,7 +435,7 @@ contract RewardDistributorTest is Test {
         // block.gaslimit >= PER_RECIPIENT_GAS * MAX_RECIPIENTS + SEND_ALL_FIXED_GAS
         assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
         assertGe(gasUsed, rd.PER_RECIPIENT_GAS() * rd.MAX_RECIPIENTS(), "reverter contracts didnt use all gas");
-        assertEq(address(owner).balance, rewards - (rewards % BASIS_POINTS), "owner didn't receive all funds");
+        assertEq(fallbackRecipient.balance, rewards - (rewards % BASIS_POINTS), "fallback didn't receive all funds");
     }
 
     function testRecipientReturndataIsNotCharged() public withContext(MAX_RECIPIENTS) {
@@ -410,7 +443,7 @@ contract RewardDistributorTest is Test {
         for (uint256 i = 0; i < recipients.length; i++) {
             recipients[i] = address(new Returner(697_088));
         }
-        RewardDistributor rd = new RewardDistributor(owner, address(0), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
 
         uint256 rewards = 5 ether;
         vm.deal(address(rd), rewards);
@@ -423,7 +456,7 @@ contract RewardDistributorTest is Test {
         // group's combined returndata would cost a quadratic amount and exceed any block gas limit
         uint256 targetBlockGasLimit = 16_000_000;
         assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
-        assertEq(address(owner).balance, 0, "owner received a share");
+        assertEq(fallbackRecipient.balance, 0, "fallback received a share");
         assertEq(recipients[0].balance, rewards / BASIS_POINTS * weights[0], "recipient not paid");
     }
 
@@ -470,7 +503,7 @@ contract RewardDistributorTest is Test {
     function testCannotReceiveInERC20Mode() public {
         recipients = makeRecipientGroup(3);
         weights = makeRecipientWeights(3);
-        RewardDistributor rd = new RewardDistributor(owner, address(1), recipients, weights);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(1), recipients, weights);
 
         vm.deal(address(this), 1);
         (bool success, bytes memory ret) = address(rd).call{value: 1}("");

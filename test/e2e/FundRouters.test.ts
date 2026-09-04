@@ -131,6 +131,7 @@ describe('Router e2e test', () => {
       setup.l2Signer
     ).deploy(
       await setup.l2Signer.getAddress(),
+      await setup.l2Signer.getAddress(),
       ZeroAddress,
       [childToParentRewardRouter.getAddress()],
       [10000]
