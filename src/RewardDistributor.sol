@@ -71,7 +71,6 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
         uint256[] memory weights
     ) Ownable() {
         setRecipients(recipients, weights);
-        // the deployer is still the owner at this point, so the onlyOwner check passes
         setFallbackRecipient(_fallbackRecipient);
         token = IERC20(_token);
         transferOwnership(_owner);
