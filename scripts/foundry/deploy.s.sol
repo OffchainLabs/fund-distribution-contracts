@@ -15,8 +15,13 @@ contract DeployScript is Script {
         weights[0] = 10000;
 
         vm.startBroadcast();
-        RewardDistributor rd =
-            new RewardDistributor({_owner: msg.sender, _token: address(0), recipients: recipients, weights: weights});
+        RewardDistributor rd = new RewardDistributor({
+            _owner: msg.sender,
+            _fallbackRecipient: msg.sender,
+            _token: address(0),
+            recipients: recipients,
+            weights: weights
+        });
         console.log("Deployed RewardDistributor at: ");
         console.log(address(rd));
         vm.stopBroadcast();

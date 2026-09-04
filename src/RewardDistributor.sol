@@ -12,7 +12,8 @@ error TooManyRecipients();
 error EmptyRecipients();
 error InvalidRecipientGroup(bytes32 currentRecipientGroup, bytes32 providedRecipientGroup);
 error InvalidRecipientWeights(bytes32 currentRecipientWeights, bytes32 providedRecipientWeights);
-error OwnerFailedRecieve(address owner, address recipient, uint256 value);
+error FallbackFailedRecieve(address fallbackRecipient, address recipient, uint256 value);
+error EmptyFallbackRecipient();
 error NoFundsToDistribute();
 error InputLengthMismatch();
 error InvalidTotalWeight(uint256 totalWeight);
@@ -20,7 +21,7 @@ error InsufficientGas();
 
 /// @title A distributor of ether or an ERC20 token
 /// @notice You can use this contract to distribute ether/token according to defined weights between a group of participants managed by an owner.
-/// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the owner.
+/// @dev If a particular recipient is not able to recieve funds at their address, the payment will fallback to the fallback recipient.
 ///      A RewardDistributor can only handle a single, specific asset defined at deployment.
 ///      This contract assumes that the token does not have a blacklist or other non standard behavior.
 contract RewardDistributor is Ownable, ReentrancyGuard {
@@ -41,8 +42,14 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
     /// @notice Hash of concat'ed recipient weights.
     bytes32 public currentRecipientWeights;
 
-    /// @notice The recipient couldn't receive rewards, so fallback to owner was triggered.
-    event OwnerRecieved(address indexed owner, address indexed recipient, uint256 value);
+    /// @notice The address that will receive funds if a recipient cannot receive them.
+    address public fallbackRecipient;
+
+    /// @notice The recipient couldn't receive rewards, so the fallback recipient received them instead.
+    event FallbackRecieved(address indexed fallbackRecipient, address indexed recipient, uint256 value);
+
+    /// @notice A new fallback recipient has been set
+    event FallbackRecipientUpdated(address indexed fallbackRecipient);
 
     /// @notice Address successfully received rewards.
     event RecipientRecieved(address indexed recipient, uint256 value);
@@ -52,11 +59,20 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
 
     /// @notice It is assumed that all recipients are able to receive eth when called with value but no data
     /// @param _owner Address that manages the recipient group.
+    /// @param _fallbackRecipient Address that will receive funds if a recipient cannot receive them.
     /// @param _token Address of the ERC20 token to distribute. Use address(0) for ether.
     /// @param recipients Addresses to receive rewards.
     /// @param weights Weights of each recipient in basis points.
-    constructor(address _owner, address _token, address[] memory recipients, uint256[] memory weights) Ownable() {
+    constructor(
+        address _owner,
+        address _fallbackRecipient,
+        address _token,
+        address[] memory recipients,
+        uint256[] memory weights
+    ) Ownable() {
         setRecipients(recipients, weights);
+        // the deployer is still the owner at this point, so the onlyOwner check passes
+        setFallbackRecipient(_fallbackRecipient);
         token = IERC20(_token);
         transferOwnership(_owner);
     }
@@ -89,9 +105,9 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
     /**
      * @notice Sends rewards to the current group of recipients.
      * @dev The remainder will be kept in the contract.
-     *      If a recipient fails to receive their reward, their funds will be sent to the contract owner.
-     *      If the contract owner cannot receive funds, the whole call reverts.
-     *      Ownership can always be transferred to another address that can receive funds.
+     *      If a recipient fails to receive their reward, their funds will be sent to the fallback recipient.
+     *      If the fallback recipient cannot receive funds, the whole call reverts.
+     *      The fallback recipient can always be updated to another address that can receive funds.
      * @param recipients Group of addresses to receive rewards.
      * @param weights Weights of each recipient in basis points.
      */
@@ -136,7 +152,7 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
                 // EIP-150 forwards at most 63/64 of the remaining gas, so the recipient is only
                 // offered the full PER_RECIPIENT_GAS if 64/63 of it remains. Without this check a
                 // caller can under-gas the call, fail an otherwise healthy recipient, and divert
-                // its share to the owner. We multiply by 1.05 for buffer.
+                // its share to the fallback recipient. We multiply by 1.05 for buffer.
                 if (gasleft() <= PER_RECIPIENT_GAS * 105 / 100) {
                     revert InsufficientGas();
                 }
@@ -153,22 +169,22 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
                 success = true;
             }
 
-            // if the funds failed to send we send them to the owner for safe keeping
-            // then the owner will have the opportunity to distribute them out of band
+            // if the funds failed to send we send them to the fallback recipient for safe keeping
+            // then the fallback recipient will have the opportunity to distribute them out of band
             if (success) {
                 emit RecipientRecieved(recipients[r], individualRewards);
             } else {
                 // this case will never be hit if we are using an ERC20 token
-                // cache owner in memory
-                address _owner = owner();
-                (bool ownerSuccess,) = _owner.call{value: individualRewards}("");
+                // cache fallbackRecipient in memory
+                address _fallbackRecipient = fallbackRecipient;
+                (bool fallbackSuccess,) = _fallbackRecipient.call{value: individualRewards}("");
                 // if this is the case then revert and sort it out
                 // it's important that this fail in order to preserve the accounting in this contract.
                 // if we dont fail here we enable a re-entrancy attack
-                if (!ownerSuccess) {
-                    revert OwnerFailedRecieve(_owner, recipients[r], individualRewards);
+                if (!fallbackSuccess) {
+                    revert FallbackFailedRecieve(_fallbackRecipient, recipients[r], individualRewards);
                 }
-                emit OwnerRecieved(_owner, recipients[r], individualRewards);
+                emit FallbackRecieved(_fallbackRecipient, recipients[r], individualRewards);
             }
         }
     }
@@ -209,5 +225,15 @@ contract RewardDistributor is Ownable, ReentrancyGuard {
         currentRecipientWeights = recipientWeights;
 
         emit RecipientsUpdated(recipientGroup, recipients, recipientWeights, weights);
+    }
+
+    /// @notice Sets the address that will receive funds when a recipient cannot receive them.
+    /// @param _fallbackRecipient Address that will receive funds if a recipient cannot receive them.
+    function setFallbackRecipient(address _fallbackRecipient) public onlyOwner {
+        if (_fallbackRecipient == address(0)) {
+            revert EmptyFallbackRecipient();
+        }
+        fallbackRecipient = _fallbackRecipient;
+        emit FallbackRecipientUpdated(_fallbackRecipient);
     }
 }

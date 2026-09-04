@@ -43,7 +43,11 @@ contract DeployScript is Script {
         recipients[6] = Opensea;
         weights[6] = 133;
         RewardDistributor rd_l2base = new RewardDistributor({
-            _owner: l2ExecutorNova, _token: address(0), recipients: recipients, weights: weights
+            _owner: l2ExecutorNova,
+            _fallbackRecipient: l2ExecutorNova,
+            _token: address(0),
+            recipients: recipients,
+            weights: weights
         });
         console.log("Deployed Nova L2 Base at: ");
         console.log(address(rd_l2base));
@@ -54,21 +58,33 @@ contract DeployScript is Script {
 
         recipients[0] = l1TimelockAlias;
         RewardDistributor rd_l2surplus = new RewardDistributor({
-            _owner: l2ExecutorNova, _token: address(0), recipients: recipients, weights: weights
+            _owner: l2ExecutorNova,
+            _fallbackRecipient: l2ExecutorNova,
+            _token: address(0),
+            recipients: recipients,
+            weights: weights
         });
         console.log("Deployed Nova L2 Surplus at: ");
         console.log(address(rd_l2surplus));
 
         recipients[0] = l2OffchainLabsMultisigNova;
         RewardDistributor rd_l1base = new RewardDistributor({
-            _owner: l2ExecutorNova, _token: address(0), recipients: recipients, weights: weights
+            _owner: l2ExecutorNova,
+            _fallbackRecipient: l2ExecutorNova,
+            _token: address(0),
+            recipients: recipients,
+            weights: weights
         });
         console.log("Deployed Nova L1 Base at: ");
         console.log(address(rd_l1base));
 
         recipients[0] = l1TimelockAlias;
         RewardDistributor rd_l1surplus = new RewardDistributor({
-            _owner: l2ExecutorNova, _token: address(0), recipients: recipients, weights: weights
+            _owner: l2ExecutorNova,
+            _fallbackRecipient: l2ExecutorNova,
+            _token: address(0),
+            recipients: recipients,
+            weights: weights
         });
         console.log("Deployed Nova L1 Surplus at: ");
         console.log(address(rd_l1surplus));
