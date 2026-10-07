@@ -11,7 +11,7 @@ contract WethUnwrapper {
     IWETH public immutable weth;
     address public immutable recipient;
 
-    event Unwrapped(uint256 amount);
+    event Sent(uint256 amount);
 
     constructor(IWETH _weth, address _recipient) {
         weth = _weth;
@@ -27,6 +27,6 @@ contract WethUnwrapper {
         (bool success,) = recipient.call{value: amount}("");
         require(success, "send failed");
 
-        emit Unwrapped(amount);
+        emit Sent(amount);
     }
 }
