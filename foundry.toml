@@ -2,6 +2,7 @@
 src = 'src'
 out = 'out'
 libs = ['node_modules', 'lib']
+auto_detect_remappings = false
 test = 'test'
 cache_path  = 'cache_forge'
 solc_version = '0.8.16'
