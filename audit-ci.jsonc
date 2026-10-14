@@ -61,11 +61,11 @@
     // adm-zip DoS / extraction issues (hardhat pins ^0.4.16, fixes are in 0.6.x)
     "GHSA-xcpc-8h2w-3j85",
     "GHSA-7q85-xj36-vmfc",
-    "GHSA-rcw4-f5rp-g42v",
+    "GHSA-8238-w5pm-2374",
+    "GHSA-c6fg-446q-cg94",
     "GHSA-j5f4-cc29-5x44",
     "GHSA-p634-w6r4-rjp2",
-    "GHSA-c6fg-446q-cg94",
-    "GHSA-8238-w5pm-2374",
+    "GHSA-rcw4-f5rp-g42v",
     // braces stack-exhaustion DoS — no patched version exists (patched: <0.0.0)
     "GHSA-vfj7-8cjw-p6xm",
     // sprintf-js DoS via unbounded precision — no patched version exists (patched: <0.0.0)
