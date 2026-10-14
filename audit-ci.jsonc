@@ -58,17 +58,13 @@
     "GHSA-73rr-hh4g-fpgx",
     // elliptic risky crypto primitive — no patched version exists (patched: <0.0.0)
     "GHSA-848j-6mx2-7j84",
-    // adm-zip DoS / extraction issues (hardhat pins ^0.4.16, fixes are in 0.6.x)
+    // adm-zip crafted ZIP memory allocation DoS (hardhat pins ^0.4.16, fix is in 0.6.0)
     "GHSA-xcpc-8h2w-3j85",
-    "GHSA-7q85-xj36-vmfc",
-    "GHSA-rcw4-f5rp-g42v",
-    "GHSA-j5f4-cc29-5x44",
-    "GHSA-p634-w6r4-rjp2",
-    "GHSA-c6fg-446q-cg94",
-    "GHSA-8238-w5pm-2374",
-    // braces stack-exhaustion DoS — no patched version exists (patched: <0.0.0)
-    "GHSA-vfj7-8cjw-p6xm",
-    // sprintf-js DoS via unbounded precision — no patched version exists (patched: <0.0.0)
-    "GHSA-hp3w-g68c-fv3c"
+    // brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash
+    "GHSA-mh99-v99m-4gvg",
+    // brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation
+    "GHSA-rgw5-rvv9-x895",
+    // JS-YAML: Quadratic CPU consumption in !!omap resolution (3.x and 4.x) — CVE-2026-59870 fix not backported
+    "GHSA-5p4m-2wfm-xmqj"
   ]
 }
