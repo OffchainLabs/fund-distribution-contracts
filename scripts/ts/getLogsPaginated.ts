@@ -12,7 +12,7 @@ export async function getLogsPaginated(
   const to =
     typeof filter.toBlock === 'number'
       ? filter.toBlock
-      : (await provider.getBlock(filter.toBlock || 'latest')).number
+      : await provider.getBlockNumber()
   return getRange(provider, filter, from, to)
 }
 
