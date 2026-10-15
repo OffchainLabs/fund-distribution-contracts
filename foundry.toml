@@ -9,6 +9,14 @@ solc_version = '0.8.16'
 optimizer_runs = 20000
 script = 'scripts'
 
+auto_detect_solc = false
+evm_version = "osaka"
+optimizer = true
+via_ir = false
+bytecode_hash = "none"
+cbor_metadata = false
+libraries = []
+
 [lint]
 lint_on_build = false
 
