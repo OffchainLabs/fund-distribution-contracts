@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'fs'
 import { RewardDistributor__factory } from '../../typechain-types'
 import { DoubleProvider, DoubleWallet } from '../template/util'
 import { RecipientsUpdatedEvent } from '../../typechain-types/src/RewardDistributor'
+import { getLogsPaginated } from './getLogsPaginated'
 
 interface RecipientsAndWeights {
   recipients: string[]
@@ -19,9 +20,10 @@ export const getRecipientsAndWeights = async (
     provider
   )
 
-  const logs = await provider.getLogs({
+  const logs = await getLogsPaginated(provider.v5, {
     fromBlock,
-    ...distributor.filters.RecipientsUpdated(),
+    address: rewardDistAddress,
+    topics: [distributor.interface.getEvent('RecipientsUpdated').topicHash],
   })
   const latestLog = logs[logs.length - 1]
   if (!latestLog) throw new Error('No updates found')
