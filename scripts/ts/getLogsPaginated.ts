@@ -8,12 +8,19 @@ export async function getLogsPaginated(
   provider: providers.JsonRpcProvider,
   filter: providers.Filter
 ): Promise<providers.Log[]> {
-  const from = typeof filter.fromBlock === 'number' ? filter.fromBlock : 0
-  const to =
-    typeof filter.toBlock === 'number'
-      ? filter.toBlock
-      : (await provider.getBlock(filter.toBlock || 'latest')).number
+  const from = await resolveBlock(provider, filter.fromBlock ?? 0)
+  const to = await resolveBlock(provider, filter.toBlock ?? 'latest')
   return getRange(provider, filter, from, to)
+}
+
+async function resolveBlock(
+  provider: providers.JsonRpcProvider,
+  tag: providers.BlockTag
+): Promise<number> {
+  if (typeof tag === 'number') return tag
+  const block = await provider.getBlock(tag)
+  if (!block) throw new Error(`Block not found: ${tag}`)
+  return block.number
 }
 
 async function getRange(
