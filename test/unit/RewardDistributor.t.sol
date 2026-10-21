@@ -6,6 +6,8 @@ import "../../src/RewardDistributor.sol";
 import "../mocks/Reverter.sol";
 import "../mocks/Empty.sol";
 import "../mocks/Returner.sol";
+import "../mocks/Reenterer.sol";
+import "../mocks/GasBurner.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import "forge-std/Test.sol";
 
@@ -111,7 +113,7 @@ contract RewardDistributorTest is Test {
         new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
     }
 
-    function testConstructorDoesNotAcceptPastLimit() public withContext(65) {
+    function testConstructorDoesNotAcceptPastLimit() public withContext(MAX_RECIPIENTS + 1) {
         vm.expectRevert(TooManyRecipients.selector);
         new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
     }
@@ -134,8 +136,8 @@ contract RewardDistributorTest is Test {
         address[] memory newRecipients;
         uint256[] memory newWeights;
 
-        newRecipients = makeRecipientGroup(65);
-        newWeights = makeRecipientWeights(65);
+        newRecipients = makeRecipientGroup(MAX_RECIPIENTS + 1);
+        newWeights = makeRecipientWeights(MAX_RECIPIENTS + 1);
         vm.expectRevert(TooManyRecipients.selector);
         rd.distributeAndUpdateRecipients(recipients, weights, newRecipients, newWeights);
 
@@ -458,6 +460,62 @@ contract RewardDistributorTest is Test {
         assertGt(targetBlockGasLimit, gasUsed, "past target block gas limit");
         assertEq(fallbackRecipient.balance, 0, "fallback received a share");
         assertEq(recipients[0].balance, rewards / BASIS_POINTS * weights[0], "recipient not paid");
+    }
+
+    function testRecipientCannotReenter() public withContext(3) {
+        // a recipient that calls distributeRewards again while being paid
+        Reenterer reenterer = new Reenterer();
+        recipients[0] = address(reenterer);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
+        reenterer.setCall(address(rd), abi.encodeCall(rd.distributeRewards, (recipients, weights)));
+
+        uint256 reward = 1e8;
+        vm.deal(address(rd), reward);
+
+        rd.distributeRewards(recipients, weights);
+
+        // a nested distribution pays out the later recipients' shares early, so their sends and the
+        // fallback send fail and every distribution reverts. The InsufficientGas check also stops the
+        // nested call, so check that nonReentrant is what refused it.
+        assertEq(
+            reenterer.returnData(),
+            abi.encodeWithSignature("Error(string)", "ReentrancyGuard: reentrant call"),
+            "nested call not refused by nonReentrant"
+        );
+        assertEq(recipients[0].balance, reward / BASIS_POINTS * weights[0], "a balance");
+        assertEq(recipients[1].balance, reward / BASIS_POINTS * weights[1], "b balance");
+        assertEq(recipients[2].balance, reward / BASIS_POINTS * weights[2], "c balance");
+        assertEq(fallbackRecipient.balance, 0, "fallback balance");
+        assertEq(address(rd).balance, reward % BASIS_POINTS, "rewards balance");
+    }
+
+    function testGasLimitCannotDivertRecipientShare() public withContext(1) {
+        // a healthy recipient that needs almost all of PER_RECIPIENT_GAS
+        recipients[0] = address(new GasBurner(990_000));
+        // a deployed fallback recipient, so paying it costs no new-account gas
+        vm.etch(fallbackRecipient, address(new Returner(0)).code);
+        RewardDistributor rd = new RewardDistributor(owner, fallbackRecipient, address(0), recipients, weights);
+        uint256 reward = 1e8;
+
+        // every gas limit around the threshold either reverts with InsufficientGas or pays the recipient in full.
+        // A lower limit starves the recipient, and without the check only the nonReentrant exit running out of
+        // gas would stop its share from going to the fallback, so require the explicit revert.
+        uint256 paid;
+        uint256 reverted;
+        for (uint256 gasLimit = 950_000; gasLimit <= 1_100_000; gasLimit += 1_000) {
+            vm.deal(address(rd), reward);
+            vm.deal(recipients[0], 0);
+            try rd.distributeRewards{gas: gasLimit}(recipients, weights) {
+                assertEq(recipients[0].balance, reward, "recipient not paid");
+                paid++;
+            } catch (bytes memory err) {
+                assertEq(err, abi.encodeWithSelector(InsufficientGas.selector), "unexpected revert");
+                reverted++;
+            }
+            assertEq(fallbackRecipient.balance, 0, "fallback received a share");
+        }
+        assertGt(paid, 0, "no gas limit paid the recipient");
+        assertGt(reverted, 0, "no gas limit reverted");
     }
 
     function testHashAddresses() public {
