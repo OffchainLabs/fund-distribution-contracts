@@ -65,10 +65,6 @@
     "GHSA-c6fg-446q-cg94",
     "GHSA-j5f4-cc29-5x44",
     "GHSA-p634-w6r4-rjp2",
-    "GHSA-rcw4-f5rp-g42v",
-    // braces stack-exhaustion DoS — no patched version exists (patched: <0.0.0)
-    "GHSA-vfj7-8cjw-p6xm",
-    // sprintf-js DoS via unbounded precision — no patched version exists (patched: <0.0.0)
-    "GHSA-hp3w-g68c-fv3c"
+    "GHSA-rcw4-f5rp-g42v"
   ]
 }
