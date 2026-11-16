@@ -10,8 +10,8 @@
 |---------------+---------+------+--------+-------+-----------------------------------------|
 | recipient     | address | 2    | 0      | 20    | src/TopUp/EthForwarder.sol:EthForwarder |
 |---------------+---------+------+--------+-------+-----------------------------------------|
-| remainder     | address | 3    | 0      | 20    | src/TopUp/EthForwarder.sol:EthForwarder |
+| targetBalance | uint256 | 3    | 0      | 32    | src/TopUp/EthForwarder.sol:EthForwarder |
 |---------------+---------+------+--------+-------+-----------------------------------------|
-| targetBalance | uint256 | 4    | 0      | 32    | src/TopUp/EthForwarder.sol:EthForwarder |
+| remainder     | address | 4    | 0      | 20    | src/TopUp/EthForwarder.sol:EthForwarder |
 ╰---------------+---------+------+--------+-------+-----------------------------------------╯
 

@@ -78,7 +78,7 @@ contract EthRateLimitedBufferTest is Test {
         buffer = new EthRateLimitedBuffer(owner, pauser, address(new Empty()), 10 ether, 4 ether, 100);
         vm.deal(address(buffer), 20 ether);
 
-        vm.expectRevert(EthRateLimitedBuffer.TransferFailed.selector);
+        vm.expectRevert(AbsTopUp.TransferFailed.selector);
         buffer.forward();
     }
 
@@ -148,7 +148,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testPauseOnlyPauserOrOwner() public {
-        vm.expectRevert(AbsOwnablePausable.NotPauser.selector);
+        vm.expectRevert(AbsTopUp.NotPauser.selector);
         buffer.pause();
 
         vm.prank(owner);
@@ -174,7 +174,7 @@ contract EthRateLimitedBufferTest is Test {
         buffer.setPauser(other);
         assertEq(buffer.pauser(), other);
 
-        vm.expectRevert(AbsOwnablePausable.NotPauser.selector);
+        vm.expectRevert(AbsTopUp.NotPauser.selector);
         vm.prank(pauser);
         buffer.pause();
 
