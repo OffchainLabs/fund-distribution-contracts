@@ -158,6 +158,21 @@ contract EthForwarderTest is Test {
         assertEq(remainder.balance, 0);
     }
 
+    function testSetTarget() public {
+        vm.deal(address(forwarder), 20 ether);
+        vm.deal(recipient, 3 ether);
+
+        vm.expectEmit(false, false, false, true, address(forwarder));
+        emit TargetSet(15 ether);
+        vm.prank(owner);
+        forwarder.setTarget(15 ether);
+        assertEq(forwarder.targetBalance(), 15 ether);
+
+        forwarder.forward();
+        assertEq(recipient.balance, 15 ether);
+        assertEq(remainder.balance, 8 ether);
+    }
+
     function testSetTargetZeroSendsAllToRemainder() public {
         vm.deal(address(forwarder), 20 ether);
 
