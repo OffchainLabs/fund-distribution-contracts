@@ -21,10 +21,10 @@ contract EthRateLimitedBuffer is AbsTopUp {
         address _owner,
         address _pauser,
         address _recipient,
-        uint256 _target,
+        uint256 _targetBalance,
         uint256 _maxAllowance,
         uint256 _window
-    ) AbsTopUp(_owner, _pauser, _recipient, _target) {
+    ) AbsTopUp(_owner, _pauser, _recipient, _targetBalance) {
         if (_window == 0) revert ZeroWindow();
         maxAllowance = _maxAllowance;
         window = _window;

@@ -11,16 +11,16 @@ abstract contract AbsTopUp is Ownable, Pausable {
 
     event PauserSet(address pauser);
     event RecipientSet(address recipient);
-    event TargetSet(uint256 target);
+    event TargetBalanceSet(uint256 targetBalance);
 
     error NotPauser();
     error TransferFailed();
 
-    constructor(address _owner, address _pauser, address _recipient, uint256 _target) {
+    constructor(address _owner, address _pauser, address _recipient, uint256 _targetBalance) {
         _transferOwnership(_owner);
         pauser = _pauser;
         recipient = _recipient;
-        targetBalance = _target;
+        targetBalance = _targetBalance;
     }
 
     receive() external payable {}
@@ -44,9 +44,9 @@ abstract contract AbsTopUp is Ownable, Pausable {
         emit RecipientSet(_recipient);
     }
 
-    function setTarget(uint256 _target) external onlyOwner {
-        targetBalance = _target;
-        emit TargetSet(_target);
+    function setTargetBalance(uint256 _targetBalance) external onlyOwner {
+        targetBalance = _targetBalance;
+        emit TargetBalanceSet(_targetBalance);
     }
 
     function _shortfall() internal view returns (uint256) {

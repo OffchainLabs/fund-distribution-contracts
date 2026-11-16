@@ -9,8 +9,8 @@ contract EthForwarder is AbsTopUp {
     event Forwarded(uint256 toRecipient, uint256 toRemainder);
     event RemainderSet(address remainder);
 
-    constructor(address _owner, address _pauser, address _recipient, address _remainder, uint256 _target)
-        AbsTopUp(_owner, _pauser, _recipient, _target)
+    constructor(address _owner, address _pauser, address _recipient, address _remainder, uint256 _targetBalance)
+        AbsTopUp(_owner, _pauser, _recipient, _targetBalance)
     {
         remainder = _remainder;
     }

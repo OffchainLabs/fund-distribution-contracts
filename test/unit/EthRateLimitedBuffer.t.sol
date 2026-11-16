@@ -16,7 +16,7 @@ contract EthRateLimitedBufferTest is Test {
     event Forwarded(uint256 amount);
     event PauserSet(address pauser);
     event RecipientSet(address recipient);
-    event TargetSet(uint256 target);
+    event TargetBalanceSet(uint256 targetBalance);
     event MaxAllowanceSet(uint256 maxAllowance);
     event WindowSet(uint256 window);
 
@@ -197,13 +197,13 @@ contract EthRateLimitedBufferTest is Test {
         assertEq(recipient.balance, 0);
     }
 
-    function testSetTarget() public {
+    function testSetTargetBalance() public {
         vm.deal(address(buffer), 20 ether);
 
         vm.expectEmit(false, false, false, true, address(buffer));
-        emit TargetSet(1 ether);
+        emit TargetBalanceSet(1 ether);
         vm.prank(owner);
-        buffer.setTarget(1 ether);
+        buffer.setTargetBalance(1 ether);
 
         buffer.forward();
         assertEq(recipient.balance, 1 ether);
@@ -215,7 +215,7 @@ contract EthRateLimitedBufferTest is Test {
         vm.expectRevert("Ownable: caller is not the owner");
         buffer.setRecipient(address(0x3333));
         vm.expectRevert("Ownable: caller is not the owner");
-        buffer.setTarget(1);
+        buffer.setTargetBalance(1);
         vm.expectRevert("Ownable: caller is not the owner");
         buffer.setMaxAllowance(1);
         vm.expectRevert("Ownable: caller is not the owner");
