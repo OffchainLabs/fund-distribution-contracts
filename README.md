@@ -40,10 +40,6 @@ Anyone can call `forward` to top a recipient up to a target balance, limited by 
 
     Forwards ETH held by the buffer
 
-2. SafeEthRateLimitedBuffer.sol
-
-    Forwards ETH held by a Safe. The buffer must be enabled as a module on the Safe.
-
 ## Forwarders
 
 Anyone can call `forward` to top a recipient up to a target balance and send the rest to a remainder address. The forwarder keeps nothing. The owner can change the pauser, recipient, remainder and target. The pauser or owner can pause `forward`; only the owner can unpause.
