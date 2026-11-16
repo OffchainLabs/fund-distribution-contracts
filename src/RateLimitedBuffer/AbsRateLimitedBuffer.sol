@@ -2,8 +2,10 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
-abstract contract AbsRateLimitedBuffer is Ownable {
+abstract contract AbsRateLimitedBuffer is Ownable, Pausable {
+    address public pauser;
     address public recipient;
     uint256 public target;
     uint256 public maxAllowance;
@@ -13,16 +15,26 @@ abstract contract AbsRateLimitedBuffer is Ownable {
     uint256 internal lastUpdate;
 
     event Forwarded(uint256 amount);
+    event PauserSet(address pauser);
     event RecipientSet(address recipient);
     event TargetSet(uint256 target);
     event MaxAllowanceSet(uint256 maxAllowance);
     event WindowSet(uint256 window);
 
     error ZeroWindow();
+    error NotPauser();
 
-    constructor(address owner_, address recipient_, uint256 target_, uint256 maxAllowance_, uint256 window_) {
+    constructor(
+        address owner_,
+        address pauser_,
+        address recipient_,
+        uint256 target_,
+        uint256 maxAllowance_,
+        uint256 window_
+    ) {
         if (window_ == 0) revert ZeroWindow();
         _transferOwnership(owner_);
+        pauser = pauser_;
         recipient = recipient_;
         target = target_;
         maxAllowance = maxAllowance_;
@@ -30,7 +42,7 @@ abstract contract AbsRateLimitedBuffer is Ownable {
         _setAllowance(maxAllowance_);
     }
 
-    function forward() external {
+    function forward() external whenNotPaused {
         uint256 amount = forwardAmount();
         if (amount > 0) {
             _setAllowance(allowance() - amount);
@@ -47,6 +59,20 @@ abstract contract AbsRateLimitedBuffer is Ownable {
         uint256 recipientBalance = _recipientBalance();
         uint256 shortfall = target > recipientBalance ? target - recipientBalance : 0;
         return _min(_min(shortfall, allowance()), _balance());
+    }
+
+    function pause() external {
+        if (msg.sender != pauser && msg.sender != owner()) revert NotPauser();
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    function setPauser(address pauser_) external onlyOwner {
+        pauser = pauser_;
+        emit PauserSet(pauser_);
     }
 
     function setRecipient(address recipient_) external onlyOwner {

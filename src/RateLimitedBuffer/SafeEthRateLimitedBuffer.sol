@@ -18,11 +18,12 @@ contract SafeEthRateLimitedBuffer is AbsRateLimitedBuffer {
     constructor(
         ISafe safe_,
         address owner_,
+        address pauser_,
         address recipient_,
         uint256 target_,
         uint256 maxAllowance_,
         uint256 window_
-    ) AbsRateLimitedBuffer(owner_, recipient_, target_, maxAllowance_, window_) {
+    ) AbsRateLimitedBuffer(owner_, pauser_, recipient_, target_, maxAllowance_, window_) {
         safe = safe_;
     }
 

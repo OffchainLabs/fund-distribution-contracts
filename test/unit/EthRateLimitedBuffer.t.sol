@@ -11,19 +11,22 @@ contract EthRateLimitedBufferTest is Test {
     EthRateLimitedBuffer buffer;
     address owner = address(0x1111);
     address recipient = address(0x2222);
+    address pauser = address(0x4444);
 
     event Forwarded(uint256 amount);
+    event PauserSet(address pauser);
     event RecipientSet(address recipient);
     event TargetSet(uint256 target);
     event MaxAllowanceSet(uint256 maxAllowance);
     event WindowSet(uint256 window);
 
     function setUp() public {
-        buffer = new EthRateLimitedBuffer(owner, recipient, 10 ether, 4 ether, 100);
+        buffer = new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, 4 ether, 100);
     }
 
     function testConstructor() public {
         assertEq(buffer.owner(), owner);
+        assertEq(buffer.pauser(), pauser);
         assertEq(buffer.recipient(), recipient);
         assertEq(buffer.target(), 10 ether);
         assertEq(buffer.maxAllowance(), 4 ether);
@@ -33,7 +36,7 @@ contract EthRateLimitedBufferTest is Test {
 
     function testConstructorZeroWindow() public {
         vm.expectRevert(AbsRateLimitedBuffer.ZeroWindow.selector);
-        new EthRateLimitedBuffer(owner, recipient, 10 ether, 4 ether, 0);
+        new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, 4 ether, 0);
     }
 
     function testForwardLimitedByAllowance() public {
@@ -72,7 +75,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testForwardRecipientRejects() public {
-        buffer = new EthRateLimitedBuffer(owner, address(new Empty()), 10 ether, 4 ether, 100);
+        buffer = new EthRateLimitedBuffer(owner, pauser, address(new Empty()), 10 ether, 4 ether, 100);
         vm.deal(address(buffer), 20 ether);
 
         vm.expectRevert(EthRateLimitedBuffer.TransferFailed.selector);
@@ -103,7 +106,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testForwardZeroSendsNothing() public {
-        buffer = new EthRateLimitedBuffer(owner, address(new Empty()), 10 ether, 4 ether, 100);
+        buffer = new EthRateLimitedBuffer(owner, pauser, address(new Empty()), 10 ether, 4 ether, 100);
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit Forwarded(0);
@@ -118,6 +121,66 @@ contract EthRateLimitedBufferTest is Test {
 
         buffer.forward();
         assertEq(buffer.allowance(), 0.4 ether);
+    }
+
+    function testPauseBlocksForward() public {
+        vm.deal(address(buffer), 20 ether);
+
+        vm.prank(pauser);
+        buffer.pause();
+
+        vm.expectRevert("Pausable: paused");
+        buffer.forward();
+    }
+
+    function testUnpauseResumesForward() public {
+        vm.deal(address(buffer), 20 ether);
+        buffer.forward();
+        vm.prank(pauser);
+        buffer.pause();
+        vm.warp(block.timestamp + 50);
+
+        vm.prank(owner);
+        buffer.unpause();
+        buffer.forward();
+
+        assertEq(recipient.balance, 6 ether);
+    }
+
+    function testPauseOnlyPauserOrOwner() public {
+        vm.expectRevert(AbsRateLimitedBuffer.NotPauser.selector);
+        buffer.pause();
+
+        vm.prank(owner);
+        buffer.pause();
+        assertTrue(buffer.paused());
+    }
+
+    function testUnpauseOnlyOwner() public {
+        vm.prank(pauser);
+        buffer.pause();
+
+        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(pauser);
+        buffer.unpause();
+    }
+
+    function testSetPauser() public {
+        address other = address(0x3333);
+
+        vm.expectEmit(false, false, false, true, address(buffer));
+        emit PauserSet(other);
+        vm.prank(owner);
+        buffer.setPauser(other);
+        assertEq(buffer.pauser(), other);
+
+        vm.expectRevert(AbsRateLimitedBuffer.NotPauser.selector);
+        vm.prank(pauser);
+        buffer.pause();
+
+        vm.prank(other);
+        buffer.pause();
+        assertTrue(buffer.paused());
     }
 
     function testSetRecipient() public {
@@ -147,6 +210,8 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testSettersOnlyOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        buffer.setPauser(address(0x3333));
         vm.expectRevert("Ownable: caller is not the owner");
         buffer.setRecipient(address(0x3333));
         vm.expectRevert("Ownable: caller is not the owner");
