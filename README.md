@@ -40,11 +40,7 @@ Anyone can call `forward` to top a recipient up to a target balance, limited by 
 
     Forwards ETH held by the buffer
 
-2. ERC20RateLimitedBuffer.sol
-
-    Forwards an ERC20 token held by the buffer
-
-3. SafeEthRateLimitedBuffer.sol
+2. SafeEthRateLimitedBuffer.sol
 
     Forwards ETH held by a Safe. The buffer must be enabled as a module on the Safe.
 
