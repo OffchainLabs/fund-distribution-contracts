@@ -10,7 +10,7 @@
 |-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
 | recipient       | address | 2    | 0      | 20    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
 |-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| target          | uint256 | 3    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+| targetBalance   | uint256 | 3    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
 |-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
 | maxAllowance    | uint256 | 4    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
 |-----------------+---------+------+--------+-------+---------------------------------------------------------------------|

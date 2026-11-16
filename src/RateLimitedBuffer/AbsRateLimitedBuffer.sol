@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     address public recipient;
-    uint256 public target;
+    uint256 public targetBalance;
     uint256 public maxAllowance;
     uint256 public window;
 
@@ -31,7 +31,7 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     ) AbsOwnablePausable(owner_, pauser_) {
         if (window_ == 0) revert ZeroWindow();
         recipient = recipient_;
-        target = target_;
+        targetBalance = target_;
         maxAllowance = maxAllowance_;
         window = window_;
         _setAllowance(maxAllowance_);
@@ -56,7 +56,7 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
 
     function forwardAmount() public view returns (uint256) {
         uint256 recipientBalance = _recipientBalance();
-        uint256 shortfall = target > recipientBalance ? target - recipientBalance : 0;
+        uint256 shortfall = targetBalance > recipientBalance ? targetBalance - recipientBalance : 0;
         return _min(_min(shortfall, allowance()), _balance());
     }
 
@@ -66,7 +66,7 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     }
 
     function setTarget(uint256 target_) external onlyOwner {
-        target = target_;
+        targetBalance = target_;
         emit TargetSet(target_);
     }
 

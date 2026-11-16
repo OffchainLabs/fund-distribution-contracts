@@ -6,7 +6,7 @@ import "../AbsOwnablePausable.sol";
 abstract contract AbsForwarder is AbsOwnablePausable {
     address public recipient;
     address public remainder;
-    uint256 public target;
+    uint256 public targetBalance;
 
     event Forwarded(uint256 toRecipient, uint256 toRemainder);
     event RecipientSet(address recipient);
@@ -18,7 +18,7 @@ abstract contract AbsForwarder is AbsOwnablePausable {
     {
         recipient = recipient_;
         remainder = remainder_;
-        target = target_;
+        targetBalance = target_;
     }
 
     function forward() external whenNotPaused {
@@ -31,7 +31,7 @@ abstract contract AbsForwarder is AbsOwnablePausable {
     function forwardAmounts() public view returns (uint256 toRecipient, uint256 toRemainder) {
         uint256 balance = _balance();
         uint256 recipientBalance = _recipientBalance();
-        uint256 shortfall = target > recipientBalance ? target - recipientBalance : 0;
+        uint256 shortfall = targetBalance > recipientBalance ? targetBalance - recipientBalance : 0;
         toRecipient = shortfall < balance ? shortfall : balance;
         toRemainder = balance - toRecipient;
     }
@@ -47,7 +47,7 @@ abstract contract AbsForwarder is AbsOwnablePausable {
     }
 
     function setTarget(uint256 target_) external onlyOwner {
-        target = target_;
+        targetBalance = target_;
         emit TargetSet(target_);
     }
 

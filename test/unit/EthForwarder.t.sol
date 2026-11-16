@@ -28,7 +28,7 @@ contract EthForwarderTest is Test {
         assertEq(forwarder.pauser(), pauser);
         assertEq(forwarder.recipient(), recipient);
         assertEq(forwarder.remainder(), remainder);
-        assertEq(forwarder.target(), 10 ether);
+        assertEq(forwarder.targetBalance(), 10 ether);
     }
 
     function testForwardAmountsSplitsShortfallAndRest() public {

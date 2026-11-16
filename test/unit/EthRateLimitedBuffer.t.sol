@@ -28,7 +28,7 @@ contract EthRateLimitedBufferTest is Test {
         assertEq(buffer.owner(), owner);
         assertEq(buffer.pauser(), pauser);
         assertEq(buffer.recipient(), recipient);
-        assertEq(buffer.target(), 10 ether);
+        assertEq(buffer.targetBalance(), 10 ether);
         assertEq(buffer.maxAllowance(), 4 ether);
         assertEq(buffer.window(), 100);
         assertEq(buffer.allowance(), 4 ether);
