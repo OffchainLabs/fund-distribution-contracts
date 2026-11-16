@@ -31,10 +31,6 @@ contract SafeEthRateLimitedBuffer is AbsRateLimitedBuffer {
         return address(safe).balance;
     }
 
-    function _recipientBalance() internal view override returns (uint256) {
-        return recipient.balance;
-    }
-
     function _send(uint256 amount) internal override {
         if (!safe.execTransactionFromModule(recipient, amount, "", 0)) revert SafeTransferFailed();
     }

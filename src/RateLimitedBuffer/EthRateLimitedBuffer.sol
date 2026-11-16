@@ -21,10 +21,6 @@ contract EthRateLimitedBuffer is AbsRateLimitedBuffer {
         return address(this).balance;
     }
 
-    function _recipientBalance() internal view override returns (uint256) {
-        return recipient.balance;
-    }
-
     function _send(uint256 amount) internal override {
         (bool success,) = recipient.call{value: amount}("");
         if (!success) revert TransferFailed();

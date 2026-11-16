@@ -55,7 +55,7 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     }
 
     function forwardAmount() public view returns (uint256) {
-        uint256 recipientBalance = _recipientBalance();
+        uint256 recipientBalance = recipient.balance;
         uint256 shortfall = targetBalance > recipientBalance ? targetBalance - recipientBalance : 0;
         return _min(_min(shortfall, allowance()), _balance());
     }
@@ -93,8 +93,6 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     }
 
     function _balance() internal view virtual returns (uint256);
-
-    function _recipientBalance() internal view virtual returns (uint256);
 
     function _send(uint256 amount) internal virtual;
 }
