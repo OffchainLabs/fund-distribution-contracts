@@ -16,8 +16,8 @@
 |-----------------+---------+------+--------+-------+---------------------------------------------------------|
 | window          | uint256 | 5    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
 |-----------------+---------+------+--------+-------+---------------------------------------------------------|
-| storedAllowance | uint256 | 6    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+| storedAllowance | uint192 | 6    | 0      | 24    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
 |-----------------+---------+------+--------+-------+---------------------------------------------------------|
-| lastUpdate      | uint256 | 7    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+| lastUpdate      | uint64  | 6    | 24     | 8     | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
 ╰-----------------+---------+------+--------+-------+---------------------------------------------------------╯
 

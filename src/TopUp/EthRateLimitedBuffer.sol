@@ -8,14 +8,15 @@ contract EthRateLimitedBuffer is AbsTopUp {
     uint256 public maxAllowance;
     uint256 public window;
 
-    uint256 internal storedAllowance;
-    uint256 internal lastUpdate;
+    uint192 internal storedAllowance;
+    uint64 internal lastUpdate;
 
     event Forwarded(uint256 amount);
     event MaxAllowanceSet(uint256 maxAllowance);
     event WindowSet(uint256 window);
 
     error ZeroWindow();
+    error MaxAllowanceTooHigh();
 
     constructor(
         address _owner,
@@ -26,15 +27,17 @@ contract EthRateLimitedBuffer is AbsTopUp {
         uint256 _window
     ) AbsTopUp(_owner, _pauser, _recipient, _targetBalance) {
         if (_window == 0) revert ZeroWindow();
+        if (_maxAllowance > type(uint192).max) revert MaxAllowanceTooHigh();
         maxAllowance = _maxAllowance;
         window = _window;
         _setAllowance(_maxAllowance);
     }
 
     function forward() external whenNotPaused {
-        uint256 amount = forwardAmount();
+        uint256 _allowance = allowance();
+        uint256 amount = _forwardAmount(_allowance);
         if (amount > 0) {
-            _setAllowance(allowance() - amount);
+            _setAllowance(_allowance - amount);
             _send(recipient, amount);
         }
         emit Forwarded(amount);
@@ -49,10 +52,11 @@ contract EthRateLimitedBuffer is AbsTopUp {
     }
 
     function forwardAmount() public view returns (uint256) {
-        return Math.min(Math.min(_shortfall(), allowance()), address(this).balance);
+        return _forwardAmount(allowance());
     }
 
     function setMaxAllowance(uint256 _maxAllowance) external onlyOwner {
+        if (_maxAllowance > type(uint192).max) revert MaxAllowanceTooHigh();
         _setAllowance(Math.min(allowance(), _maxAllowance));
         maxAllowance = _maxAllowance;
         emit MaxAllowanceSet(_maxAllowance);
@@ -65,8 +69,12 @@ contract EthRateLimitedBuffer is AbsTopUp {
         emit WindowSet(_window);
     }
 
+    function _forwardAmount(uint256 _allowance) internal view returns (uint256) {
+        return Math.min(Math.min(_shortfall(), _allowance), address(this).balance);
+    }
+
     function _setAllowance(uint256 _allowance) internal {
-        storedAllowance = _allowance;
-        lastUpdate = block.timestamp;
+        storedAllowance = uint192(_allowance);
+        lastUpdate = uint64(block.timestamp);
     }
 }

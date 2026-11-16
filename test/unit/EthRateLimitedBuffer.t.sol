@@ -266,14 +266,47 @@ contract EthRateLimitedBufferTest is Test {
         assertEq(buffer.allowance(), 3 ether);
     }
 
+    function testMaxAllowanceTooHigh() public {
+        uint256 tooHigh = uint256(type(uint192).max) + 1;
+        vm.expectRevert(EthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
+        new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, tooHigh, 100);
+
+        vm.expectRevert(EthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
+        vm.prank(owner);
+        buffer.setMaxAllowance(tooHigh);
+        assertEq(buffer.maxAllowance(), 4 ether);
+    }
+
+    function testForwardAfterLongWarp() public {
+        vm.deal(address(buffer), 20 ether);
+        buffer.forward();
+        assertEq(buffer.allowance(), 0);
+
+        vm.warp(block.timestamp + 100 * 365 days);
+        assertEq(buffer.allowance(), 4 ether);
+        vm.deal(recipient, 9 ether);
+        buffer.forward();
+        assertEq(recipient.balance, 10 ether);
+        assertEq(buffer.allowance(), 3 ether);
+
+        vm.warp(block.timestamp + 25);
+        assertEq(buffer.allowance(), 4 ether);
+        vm.deal(recipient, 0);
+        buffer.forward();
+        assertEq(buffer.allowance(), 0);
+
+        vm.warp(block.timestamp + 50);
+        assertEq(buffer.allowance(), 2 ether);
+    }
+
     function testSetWindowZero() public {
         vm.expectRevert(EthRateLimitedBuffer.ZeroWindow.selector);
         vm.prank(owner);
         buffer.setWindow(0);
     }
 
-    function testMaxUint256AllowanceDoesNotOverflow() public {
-        uint256 max = type(uint256).max;
+    function testMaxUint192AllowanceDoesNotOverflow() public {
+        uint256 max = type(uint192).max;
         buffer = new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, max, 100);
         vm.deal(address(buffer), 30 ether);
 
@@ -306,6 +339,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testFuzzAllowanceMatchesFormula(uint256 max, uint256 window, uint256 spent, uint256 elapsed) public {
+        max = bound(max, 0, type(uint192).max);
         window = bound(window, 1, type(uint64).max);
         spent = bound(spent, 0, max);
         elapsed = bound(elapsed, 0, type(uint64).max);
