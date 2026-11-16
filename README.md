@@ -44,6 +44,18 @@ Anyone can call `forward` to top a recipient up to a target balance, limited by 
 
     Forwards ETH held by a Safe. The buffer must be enabled as a module on the Safe.
 
+## Forwarders
+
+Anyone can call `forward` to top a recipient up to a target balance and send the rest to a remainder address. The forwarder keeps nothing. The owner can change the recipient, remainder and target.
+
+1. EthForwarder.sol
+
+    Forwards ETH
+
+2. ERC20Forwarder.sol
+
+    Forwards a single ERC20 token
+
 ## Installation
 
 1. Install [Foundry](https://github.com/foundry-rs/foundry):
