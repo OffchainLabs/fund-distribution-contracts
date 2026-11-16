@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "../../src/TopUp/EthRateLimitedBuffer.sol";
+import "../../src/TopUp/SafeEthRateLimitedBuffer.sol";
 
+import "../mocks/SafeMock.sol";
 import "../mocks/Empty.sol";
 
 import "forge-std/Test.sol";
 
-contract EthRateLimitedBufferTest is Test {
-    EthRateLimitedBuffer buffer;
+contract SafeEthRateLimitedBufferTest is Test {
+    SafeMock safe;
+    SafeEthRateLimitedBuffer buffer;
     address owner = address(0x1111);
     address recipient = address(0x2222);
     address pauser = address(0x4444);
@@ -21,10 +23,22 @@ contract EthRateLimitedBufferTest is Test {
     event WindowSet(uint256 window);
 
     function setUp() public {
-        buffer = new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, 4 ether, 100);
+        safe = new SafeMock();
+        buffer = _deploy(recipient, 10 ether, 4 ether, 100);
+    }
+
+    function _deploy(address _recipient, uint256 _targetBalance, uint256 _maxAllowance, uint256 _window)
+        internal
+        returns (SafeEthRateLimitedBuffer b)
+    {
+        b = new SafeEthRateLimitedBuffer(
+            ISafe(address(safe)), owner, pauser, _recipient, _targetBalance, _maxAllowance, _window
+        );
+        safe.enableModule(address(b));
     }
 
     function testConstructor() public {
+        assertEq(address(buffer.safe()), address(safe));
         assertEq(buffer.owner(), owner);
         assertEq(buffer.pauser(), pauser);
         assertEq(buffer.recipient(), recipient);
@@ -35,12 +49,12 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testConstructorZeroWindow() public {
-        vm.expectRevert(EthRateLimitedBuffer.ZeroWindow.selector);
-        new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, 4 ether, 0);
+        vm.expectRevert(SafeEthRateLimitedBuffer.ZeroWindow.selector);
+        new SafeEthRateLimitedBuffer(ISafe(address(safe)), owner, pauser, recipient, 10 ether, 4 ether, 0);
     }
 
     function testForwardLimitedByAllowance() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         vm.deal(recipient, 3 ether);
         assertEq(buffer.forwardAmount(), 4 ether);
 
@@ -49,12 +63,12 @@ contract EthRateLimitedBufferTest is Test {
         buffer.forward();
 
         assertEq(recipient.balance, 7 ether);
-        assertEq(address(buffer).balance, 16 ether);
+        assertEq(address(safe).balance, 16 ether);
         assertEq(buffer.allowance(), 0);
     }
 
     function testAllowanceRefillsLinearlyUpToMax() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         buffer.forward();
         assertEq(buffer.allowance(), 0);
 
@@ -68,31 +82,53 @@ contract EthRateLimitedBufferTest is Test {
         assertEq(buffer.allowance(), 4 ether);
     }
 
-    function testReceiveEth() public {
+    function testRejectsEth() public {
+        vm.deal(address(this), 1 ether);
         (bool ok,) = address(buffer).call{value: 1 ether}("");
-        assertTrue(ok);
-        assertEq(address(buffer).balance, 1 ether);
+        assertFalse(ok);
+        assertEq(address(buffer).balance, 0);
+    }
+
+    function testForwardIgnoresBufferBalance() public {
+        vm.deal(address(safe), 1 ether);
+        vm.deal(address(buffer), 20 ether);
+        assertEq(buffer.forwardAmount(), 1 ether);
+
+        buffer.forward();
+
+        assertEq(recipient.balance, 1 ether);
+        assertEq(address(safe).balance, 0);
+        assertEq(address(buffer).balance, 20 ether);
+    }
+
+    function testForwardModuleNotEnabled() public {
+        buffer = new SafeEthRateLimitedBuffer(ISafe(address(safe)), owner, pauser, recipient, 10 ether, 4 ether, 100);
+        vm.deal(address(safe), 20 ether);
+
+        vm.expectRevert("GS104");
+        buffer.forward();
     }
 
     function testForwardRecipientRejects() public {
-        buffer = new EthRateLimitedBuffer(owner, pauser, address(new Empty()), 10 ether, 4 ether, 100);
-        vm.deal(address(buffer), 20 ether);
+        buffer = _deploy(address(new Empty()), 10 ether, 4 ether, 100);
+        vm.deal(address(safe), 20 ether);
 
-        vm.expectRevert(AbsTopUp.TransferFailed.selector);
+        vm.expectRevert(SafeEthRateLimitedBuffer.SafeTransferFailed.selector);
         buffer.forward();
     }
 
     function testForwardLimitedByShortfall() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         vm.deal(recipient, 9 ether);
         buffer.forward();
 
         assertEq(recipient.balance, 10 ether);
+        assertEq(address(safe).balance, 19 ether);
         assertEq(buffer.allowance(), 3 ether);
     }
 
     function testForwardLimitedByFunds() public {
-        vm.deal(address(buffer), 1 ether);
+        vm.deal(address(safe), 1 ether);
         buffer.forward();
 
         assertEq(recipient.balance, 1 ether);
@@ -100,13 +136,13 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testForwardAmountZeroAboveTarget() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         vm.deal(recipient, 11 ether);
         assertEq(buffer.forwardAmount(), 0);
     }
 
     function testForwardZeroSendsNothing() public {
-        buffer = new EthRateLimitedBuffer(owner, pauser, address(new Empty()), 10 ether, 4 ether, 100);
+        buffer = _deploy(address(new Empty()), 10 ether, 4 ether, 100);
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit Forwarded(0);
@@ -114,7 +150,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testForwardZeroKeepsAllowance() public {
-        vm.deal(address(buffer), 4 ether);
+        vm.deal(address(safe), 4 ether);
         buffer.forward();
         vm.warp(block.timestamp + 10);
         assertEq(buffer.allowance(), 0.4 ether);
@@ -124,7 +160,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testPauseBlocksForward() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
 
         vm.prank(pauser);
         buffer.pause();
@@ -134,7 +170,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testUnpauseResumesForward() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         buffer.forward();
         vm.prank(pauser);
         buffer.pause();
@@ -185,7 +221,7 @@ contract EthRateLimitedBufferTest is Test {
 
     function testSetRecipient() public {
         address other = address(0x3333);
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit RecipientSet(other);
@@ -198,7 +234,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testSetTargetBalance() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit TargetBalanceSet(1 ether);
@@ -223,7 +259,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testSetMaxAllowanceLowerClamps() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         buffer.forward();
         vm.warp(block.timestamp + 50);
         assertEq(buffer.allowance(), 2 ether);
@@ -236,7 +272,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testSetMaxAllowanceRaiseKeepsCurrent() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         buffer.forward();
         vm.warp(block.timestamp + 50);
 
@@ -252,7 +288,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testSetWindowKeepsAccrued() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         buffer.forward();
         vm.warp(block.timestamp + 50);
 
@@ -268,17 +304,17 @@ contract EthRateLimitedBufferTest is Test {
 
     function testMaxAllowanceTooHigh() public {
         uint256 tooHigh = uint256(type(uint192).max) + 1;
-        vm.expectRevert(EthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
-        new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, tooHigh, 100);
+        vm.expectRevert(SafeEthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
+        new SafeEthRateLimitedBuffer(ISafe(address(safe)), owner, pauser, recipient, 10 ether, tooHigh, 100);
 
-        vm.expectRevert(EthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
+        vm.expectRevert(SafeEthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
         vm.prank(owner);
         buffer.setMaxAllowance(tooHigh);
         assertEq(buffer.maxAllowance(), 4 ether);
     }
 
     function testForwardAfterLongWarp() public {
-        vm.deal(address(buffer), 20 ether);
+        vm.deal(address(safe), 20 ether);
         buffer.forward();
         assertEq(buffer.allowance(), 0);
 
@@ -300,15 +336,15 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testSetWindowZero() public {
-        vm.expectRevert(EthRateLimitedBuffer.ZeroWindow.selector);
+        vm.expectRevert(SafeEthRateLimitedBuffer.ZeroWindow.selector);
         vm.prank(owner);
         buffer.setWindow(0);
     }
 
     function testMaxUint192AllowanceDoesNotOverflow() public {
         uint256 max = type(uint192).max;
-        buffer = new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, max, 100);
-        vm.deal(address(buffer), 30 ether);
+        buffer = _deploy(recipient, 10 ether, max, 100);
+        vm.deal(address(safe), 30 ether);
 
         vm.warp(block.timestamp + 2);
         assertEq(buffer.allowance(), max);
@@ -343,8 +379,8 @@ contract EthRateLimitedBufferTest is Test {
         window = bound(window, 1, type(uint64).max);
         spent = bound(spent, 0, max);
         elapsed = bound(elapsed, 0, type(uint64).max);
-        buffer = new EthRateLimitedBuffer(owner, pauser, recipient, type(uint256).max, max, window);
-        vm.deal(address(buffer), spent);
+        buffer = _deploy(recipient, type(uint256).max, max, window);
+        vm.deal(address(safe), spent);
         buffer.forward();
         uint256 stored = max - spent;
         assertEq(buffer.allowance(), stored);

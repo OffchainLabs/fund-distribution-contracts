@@ -1,0 +1,23 @@
+
+╭-----------------+---------+------+--------+-------+-----------------------------------------------------------------╮
+| Name            | Type    | Slot | Offset | Bytes | Contract                                                        |
++=====================================================================================================================+
+| _owner          | address | 0    | 0      | 20    | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| _paused         | bool    | 0    | 20     | 1     | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| pauser          | address | 1    | 0      | 20    | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| recipient       | address | 2    | 0      | 20    | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| targetBalance   | uint256 | 3    | 0      | 32    | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| maxAllowance    | uint256 | 4    | 0      | 32    | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| window          | uint256 | 5    | 0      | 32    | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| storedAllowance | uint192 | 6    | 0      | 24    | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+-----------------------------------------------------------------|
+| lastUpdate      | uint64  | 6    | 24     | 8     | src/TopUp/SafeEthRateLimitedBuffer.sol:SafeEthRateLimitedBuffer |
+╰-----------------+---------+------+--------+-------+-----------------------------------------------------------------╯
+

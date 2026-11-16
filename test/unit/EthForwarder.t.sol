@@ -72,7 +72,7 @@ contract EthForwarderTest is Test {
         forwarder = new EthForwarder(owner, pauser, address(new Empty()), remainder, 10 ether);
         vm.deal(address(forwarder), 20 ether);
 
-        vm.expectRevert(AbsTopUp.TransferFailed.selector);
+        vm.expectRevert(EthForwarder.TransferFailed.selector);
         forwarder.forward();
     }
 
@@ -80,7 +80,7 @@ contract EthForwarderTest is Test {
         forwarder = new EthForwarder(owner, pauser, recipient, address(new Empty()), 10 ether);
         vm.deal(address(forwarder), 20 ether);
 
-        vm.expectRevert(AbsTopUp.TransferFailed.selector);
+        vm.expectRevert(EthForwarder.TransferFailed.selector);
         forwarder.forward();
     }
 

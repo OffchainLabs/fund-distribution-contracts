@@ -4,7 +4,15 @@ pragma solidity ^0.8.16;
 import "./AbsTopUp.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract EthRateLimitedBuffer is AbsTopUp {
+interface ISafe {
+    function execTransactionFromModule(address to, uint256 value, bytes memory data, uint8 operation)
+        external
+        returns (bool success);
+}
+
+/// @notice Forwards ETH held by a Safe. This contract must be enabled as a module on the Safe.
+contract SafeEthRateLimitedBuffer is AbsTopUp {
+    ISafe public immutable safe;
     uint256 public maxAllowance;
     uint256 public window;
 
@@ -17,8 +25,10 @@ contract EthRateLimitedBuffer is AbsTopUp {
 
     error ZeroWindow();
     error MaxAllowanceTooHigh();
+    error SafeTransferFailed();
 
     constructor(
+        ISafe _safe,
         address _owner,
         address _pauser,
         address _recipient,
@@ -28,6 +38,7 @@ contract EthRateLimitedBuffer is AbsTopUp {
     ) AbsTopUp(_owner, _pauser, _recipient, _targetBalance) {
         if (_window == 0) revert ZeroWindow();
         if (_maxAllowance > type(uint192).max) revert MaxAllowanceTooHigh();
+        safe = _safe;
         maxAllowance = _maxAllowance;
         window = _window;
         _setAllowance(_maxAllowance);
@@ -38,7 +49,7 @@ contract EthRateLimitedBuffer is AbsTopUp {
         uint256 amount = _forwardAmount(_allowance);
         if (amount > 0) {
             _setAllowance(_allowance - amount);
-            _send(recipient, amount);
+            if (!safe.execTransactionFromModule(recipient, amount, "", 0)) revert SafeTransferFailed();
         }
         emit Forwarded(amount);
     }
@@ -70,7 +81,7 @@ contract EthRateLimitedBuffer is AbsTopUp {
     }
 
     function _forwardAmount(uint256 _allowance) internal view returns (uint256) {
-        return Math.min(Math.min(_shortfall(), _allowance), address(this).balance);
+        return Math.min(Math.min(_shortfall(), _allowance), address(safe).balance);
     }
 
     function _setAllowance(uint256 _allowance) internal {

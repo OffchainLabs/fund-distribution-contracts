@@ -9,11 +9,15 @@ contract EthForwarder is AbsTopUp {
     event Forwarded(uint256 toRecipient, uint256 toRemainder);
     event RemainderSet(address remainder);
 
+    error TransferFailed();
+
     constructor(address _owner, address _pauser, address _recipient, address _remainder, uint256 _targetBalance)
         AbsTopUp(_owner, _pauser, _recipient, _targetBalance)
     {
         remainder = _remainder;
     }
+
+    receive() external payable {}
 
     function forward() external whenNotPaused {
         (uint256 toRecipient, uint256 toRemainder) = forwardAmounts();
@@ -32,5 +36,10 @@ contract EthForwarder is AbsTopUp {
     function setRemainder(address _remainder) external onlyOwner {
         remainder = _remainder;
         emit RemainderSet(_remainder);
+    }
+
+    function _send(address _to, uint256 _amount) internal {
+        (bool success,) = _to.call{value: _amount}("");
+        if (!success) revert TransferFailed();
     }
 }

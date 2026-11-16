@@ -36,9 +36,9 @@ When setting up a new route, make sure the token exists on both side by the conf
 
 Anyone can call `forward` to top a recipient up to a target balance, limited by an allowance that refills linearly at `maxAllowance` per `window` seconds. The owner can change the recipient, target, max allowance, window and pauser. The pauser or owner can pause `forward`; only the owner can unpause.
 
-1. EthRateLimitedBuffer.sol
+1. SafeEthRateLimitedBuffer.sol
 
-    Forwards ETH held by the buffer
+    Forwards ETH held by a Safe. The buffer must be enabled as a module on the Safe.
 
 ## Forwarders
 
