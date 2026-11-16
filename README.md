@@ -32,6 +32,22 @@ These are the supported routes:
 
 When setting up a new route, make sure the token exists on both side by the configurated bridge or else fund can be stuck.
 
+## Rate Limited Buffers
+
+Anyone can call `forward` to top a recipient up to a target balance, limited by an allowance that refills linearly at `maxAllowance` per `window` seconds. The owner can change the recipient, target, max allowance and window.
+
+1. EthRateLimitedBuffer.sol
+
+    Forwards ETH held by the buffer
+
+2. ERC20RateLimitedBuffer.sol
+
+    Forwards an ERC20 token held by the buffer
+
+3. SafeEthRateLimitedBuffer.sol
+
+    Forwards ETH held by a Safe. The buffer must be enabled as a module on the Safe.
+
 ## Installation
 
 1. Install [Foundry](https://github.com/foundry-rs/foundry):
