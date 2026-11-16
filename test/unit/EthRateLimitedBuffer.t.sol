@@ -148,7 +148,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testPauseOnlyPauserOrOwner() public {
-        vm.expectRevert(AbsRateLimitedBuffer.NotPauser.selector);
+        vm.expectRevert(AbsOwnablePausable.NotPauser.selector);
         buffer.pause();
 
         vm.prank(owner);
@@ -174,7 +174,7 @@ contract EthRateLimitedBufferTest is Test {
         buffer.setPauser(other);
         assertEq(buffer.pauser(), other);
 
-        vm.expectRevert(AbsRateLimitedBuffer.NotPauser.selector);
+        vm.expectRevert(AbsOwnablePausable.NotPauser.selector);
         vm.prank(pauser);
         buffer.pause();
 

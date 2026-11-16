@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "../AbsOwnablePausable.sol";
 
-abstract contract AbsForwarder is Ownable {
+abstract contract AbsForwarder is AbsOwnablePausable {
     address public recipient;
     address public remainder;
     uint256 public target;
@@ -13,14 +13,15 @@ abstract contract AbsForwarder is Ownable {
     event RemainderSet(address remainder);
     event TargetSet(uint256 target);
 
-    constructor(address owner_, address recipient_, address remainder_, uint256 target_) {
-        _transferOwnership(owner_);
+    constructor(address owner_, address pauser_, address recipient_, address remainder_, uint256 target_)
+        AbsOwnablePausable(owner_, pauser_)
+    {
         recipient = recipient_;
         remainder = remainder_;
         target = target_;
     }
 
-    function forward() external {
+    function forward() external whenNotPaused {
         (uint256 toRecipient, uint256 toRemainder) = forwardAmounts();
         if (toRecipient > 0) _send(recipient, toRecipient);
         if (toRemainder > 0) _send(remainder, toRemainder);

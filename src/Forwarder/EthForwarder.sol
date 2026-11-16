@@ -6,8 +6,8 @@ import "./AbsForwarder.sol";
 contract EthForwarder is AbsForwarder {
     error TransferFailed();
 
-    constructor(address owner_, address recipient_, address remainder_, uint256 target_)
-        AbsForwarder(owner_, recipient_, remainder_, target_)
+    constructor(address owner_, address pauser_, address recipient_, address remainder_, uint256 target_)
+        AbsForwarder(owner_, pauser_, recipient_, remainder_, target_)
     {}
 
     receive() external payable {}

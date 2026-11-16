@@ -46,7 +46,7 @@ Anyone can call `forward` to top a recipient up to a target balance, limited by 
 
 ## Forwarders
 
-Anyone can call `forward` to top a recipient up to a target balance and send the rest to a remainder address. The forwarder keeps nothing. The owner can change the recipient, remainder and target.
+Anyone can call `forward` to top a recipient up to a target balance and send the rest to a remainder address. The forwarder keeps nothing. The owner can change the pauser, recipient, remainder and target. The pauser or owner can pause `forward`; only the owner can unpause.
 
 1. EthForwarder.sol
 

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "../AbsOwnablePausable.sol";
 
-abstract contract AbsRateLimitedBuffer is Ownable, Pausable {
-    address public pauser;
+abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     address public recipient;
     uint256 public target;
     uint256 public maxAllowance;
@@ -15,14 +13,12 @@ abstract contract AbsRateLimitedBuffer is Ownable, Pausable {
     uint256 internal lastUpdate;
 
     event Forwarded(uint256 amount);
-    event PauserSet(address pauser);
     event RecipientSet(address recipient);
     event TargetSet(uint256 target);
     event MaxAllowanceSet(uint256 maxAllowance);
     event WindowSet(uint256 window);
 
     error ZeroWindow();
-    error NotPauser();
 
     constructor(
         address owner_,
@@ -31,10 +27,8 @@ abstract contract AbsRateLimitedBuffer is Ownable, Pausable {
         uint256 target_,
         uint256 maxAllowance_,
         uint256 window_
-    ) {
+    ) AbsOwnablePausable(owner_, pauser_) {
         if (window_ == 0) revert ZeroWindow();
-        _transferOwnership(owner_);
-        pauser = pauser_;
         recipient = recipient_;
         target = target_;
         maxAllowance = maxAllowance_;
@@ -59,20 +53,6 @@ abstract contract AbsRateLimitedBuffer is Ownable, Pausable {
         uint256 recipientBalance = _recipientBalance();
         uint256 shortfall = target > recipientBalance ? target - recipientBalance : 0;
         return _min(_min(shortfall, allowance()), _balance());
-    }
-
-    function pause() external {
-        if (msg.sender != pauser && msg.sender != owner()) revert NotPauser();
-        _pause();
-    }
-
-    function unpause() external onlyOwner {
-        _unpause();
-    }
-
-    function setPauser(address pauser_) external onlyOwner {
-        pauser = pauser_;
-        emit PauserSet(pauser_);
     }
 
     function setRecipient(address recipient_) external onlyOwner {

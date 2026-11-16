@@ -10,6 +10,7 @@ import "forge-std/Test.sol";
 contract EthForwarderTest is Test {
     EthForwarder forwarder;
     address owner = address(0x1111);
+    address pauser = address(0x5555);
     address recipient = address(0x2222);
     address remainder = address(0x3333);
 
@@ -19,11 +20,12 @@ contract EthForwarderTest is Test {
     event TargetSet(uint256 target);
 
     function setUp() public {
-        forwarder = new EthForwarder(owner, recipient, remainder, 10 ether);
+        forwarder = new EthForwarder(owner, pauser, recipient, remainder, 10 ether);
     }
 
     function testConstructor() public {
         assertEq(forwarder.owner(), owner);
+        assertEq(forwarder.pauser(), pauser);
         assertEq(forwarder.recipient(), recipient);
         assertEq(forwarder.remainder(), remainder);
         assertEq(forwarder.target(), 10 ether);
@@ -67,7 +69,7 @@ contract EthForwarderTest is Test {
     }
 
     function testForwardRecipientRejects() public {
-        forwarder = new EthForwarder(owner, address(new Empty()), remainder, 10 ether);
+        forwarder = new EthForwarder(owner, pauser, address(new Empty()), remainder, 10 ether);
         vm.deal(address(forwarder), 20 ether);
 
         vm.expectRevert(EthForwarder.TransferFailed.selector);
@@ -75,7 +77,7 @@ contract EthForwarderTest is Test {
     }
 
     function testForwardRemainderRejects() public {
-        forwarder = new EthForwarder(owner, recipient, address(new Empty()), 10 ether);
+        forwarder = new EthForwarder(owner, pauser, recipient, address(new Empty()), 10 ether);
         vm.deal(address(forwarder), 20 ether);
 
         vm.expectRevert(EthForwarder.TransferFailed.selector);
@@ -83,7 +85,7 @@ contract EthForwarderTest is Test {
     }
 
     function testForwardZeroSendsNothing() public {
-        forwarder = new EthForwarder(owner, address(new Empty()), address(new Empty()), 10 ether);
+        forwarder = new EthForwarder(owner, pauser, address(new Empty()), address(new Empty()), 10 ether);
 
         vm.expectEmit(false, false, false, true, address(forwarder));
         emit Forwarded(0, 0);
@@ -91,6 +93,38 @@ contract EthForwarderTest is Test {
     }
 
     function testReceiveEth() public {
+        (bool ok,) = address(forwarder).call{value: 1 ether}("");
+        assertTrue(ok);
+        assertEq(address(forwarder).balance, 1 ether);
+    }
+
+    function testPauseBlocksForward() public {
+        vm.deal(address(forwarder), 20 ether);
+        vm.prank(pauser);
+        forwarder.pause();
+
+        vm.expectRevert("Pausable: paused");
+        forwarder.forward();
+    }
+
+    function testUnpauseResumesForward() public {
+        vm.deal(address(forwarder), 20 ether);
+        vm.deal(recipient, 3 ether);
+        vm.prank(pauser);
+        forwarder.pause();
+        vm.prank(owner);
+        forwarder.unpause();
+
+        forwarder.forward();
+        assertEq(recipient.balance, 10 ether);
+        assertEq(remainder.balance, 13 ether);
+        assertEq(address(forwarder).balance, 0);
+    }
+
+    function testReceiveWhilePaused() public {
+        vm.prank(pauser);
+        forwarder.pause();
+
         (bool ok,) = address(forwarder).call{value: 1 ether}("");
         assertTrue(ok);
         assertEq(address(forwarder).balance, 1 ether);
