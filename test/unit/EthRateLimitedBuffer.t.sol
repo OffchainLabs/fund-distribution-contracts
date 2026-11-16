@@ -35,7 +35,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testConstructorZeroWindow() public {
-        vm.expectRevert(AbsRateLimitedBuffer.ZeroWindow.selector);
+        vm.expectRevert(EthRateLimitedBuffer.ZeroWindow.selector);
         new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, 4 ether, 0);
     }
 
@@ -267,7 +267,7 @@ contract EthRateLimitedBufferTest is Test {
     }
 
     function testSetWindowZero() public {
-        vm.expectRevert(AbsRateLimitedBuffer.ZeroWindow.selector);
+        vm.expectRevert(EthRateLimitedBuffer.ZeroWindow.selector);
         vm.prank(owner);
         buffer.setWindow(0);
     }
