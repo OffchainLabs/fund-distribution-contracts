@@ -2,6 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "../AbsOwnablePausable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     address public recipient;
@@ -46,7 +47,11 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     }
 
     function allowance() public view returns (uint256) {
-        return _min(maxAllowance, storedAllowance + maxAllowance * (block.timestamp - lastUpdate) / window);
+        uint256 elapsed = block.timestamp - lastUpdate;
+        if (elapsed >= window) return maxAllowance;
+        uint256 refill = Math.mulDiv(maxAllowance, elapsed, window);
+        if (refill >= maxAllowance - storedAllowance) return maxAllowance;
+        return storedAllowance + refill;
     }
 
     function forwardAmount() public view returns (uint256) {

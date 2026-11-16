@@ -271,4 +271,57 @@ contract EthRateLimitedBufferTest is Test {
         vm.prank(owner);
         buffer.setWindow(0);
     }
+
+    function testMaxUint256AllowanceDoesNotOverflow() public {
+        uint256 max = type(uint256).max;
+        buffer = new EthRateLimitedBuffer(owner, pauser, recipient, 10 ether, max, 100);
+        vm.deal(address(buffer), 30 ether);
+
+        vm.warp(block.timestamp + 2);
+        assertEq(buffer.allowance(), max);
+        buffer.forward();
+        assertEq(recipient.balance, 10 ether);
+        assertEq(buffer.allowance(), max - 10 ether);
+
+        vm.warp(block.timestamp + 2);
+        assertEq(buffer.allowance(), max);
+        vm.deal(recipient, 0);
+        buffer.forward();
+        assertEq(recipient.balance, 10 ether);
+        vm.prank(owner);
+        buffer.setMaxAllowance(max);
+        vm.prank(owner);
+        buffer.setWindow(200);
+
+        vm.warp(block.timestamp + 1000);
+        assertEq(buffer.allowance(), max);
+        vm.deal(recipient, 0);
+        buffer.forward();
+        assertEq(recipient.balance, 10 ether);
+        vm.prank(owner);
+        buffer.setWindow(100);
+        vm.prank(owner);
+        buffer.setMaxAllowance(4 ether);
+        assertEq(buffer.allowance(), 4 ether);
+    }
+
+    function testFuzzAllowanceMatchesFormula(uint256 max, uint256 window, uint256 spent, uint256 elapsed) public {
+        window = bound(window, 1, type(uint64).max);
+        spent = bound(spent, 0, max);
+        elapsed = bound(elapsed, 0, type(uint64).max);
+        buffer = new EthRateLimitedBuffer(owner, pauser, recipient, type(uint256).max, max, window);
+        vm.deal(address(buffer), spent);
+        buffer.forward();
+        uint256 stored = max - spent;
+        assertEq(buffer.allowance(), stored);
+
+        vm.warp(block.timestamp + elapsed);
+        uint256 actual = buffer.allowance();
+        assertLe(actual, max);
+
+        if (elapsed != 0 && max > type(uint256).max / elapsed) return;
+        uint256 refill = max * elapsed / window;
+        if (stored > type(uint256).max - refill) return;
+        assertEq(actual, stored + refill < max ? stored + refill : max);
+    }
 }
