@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "../AbsOwnablePausable.sol";
+import "./AbsOwnablePausable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract EthRateLimitedBuffer is AbsOwnablePausable {

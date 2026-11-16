@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "../AbsOwnablePausable.sol";
+import "./AbsOwnablePausable.sol";
 
 contract EthForwarder is AbsOwnablePausable {
     address public recipient;

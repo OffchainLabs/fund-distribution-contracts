@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "../../src/RateLimitedBuffer/EthRateLimitedBuffer.sol";
+import "../../src/TopUp/EthRateLimitedBuffer.sol";
 
 import "../mocks/Empty.sol";
 

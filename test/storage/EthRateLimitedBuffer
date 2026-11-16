@@ -1,23 +1,23 @@
 
-╭-----------------+---------+------+--------+-------+---------------------------------------------------------------------╮
-| Name            | Type    | Slot | Offset | Bytes | Contract                                                            |
-+=========================================================================================================================+
-| _owner          | address | 0    | 0      | 20    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| _paused         | bool    | 0    | 20     | 1     | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| pauser          | address | 1    | 0      | 20    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| recipient       | address | 2    | 0      | 20    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| targetBalance   | uint256 | 3    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| maxAllowance    | uint256 | 4    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| window          | uint256 | 5    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| storedAllowance | uint256 | 6    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-|-----------------+---------+------+--------+-------+---------------------------------------------------------------------|
-| lastUpdate      | uint256 | 7    | 0      | 32    | src/RateLimitedBuffer/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
-╰-----------------+---------+------+--------+-------+---------------------------------------------------------------------╯
+╭-----------------+---------+------+--------+-------+---------------------------------------------------------╮
+| Name            | Type    | Slot | Offset | Bytes | Contract                                                |
++=============================================================================================================+
+| _owner          | address | 0    | 0      | 20    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| _paused         | bool    | 0    | 20     | 1     | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| pauser          | address | 1    | 0      | 20    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| recipient       | address | 2    | 0      | 20    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| targetBalance   | uint256 | 3    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| maxAllowance    | uint256 | 4    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| window          | uint256 | 5    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| storedAllowance | uint256 | 6    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+|-----------------+---------+------+--------+-------+---------------------------------------------------------|
+| lastUpdate      | uint256 | 7    | 0      | 32    | src/TopUp/EthRateLimitedBuffer.sol:EthRateLimitedBuffer |
+╰-----------------+---------+------+--------+-------+---------------------------------------------------------╯
 
