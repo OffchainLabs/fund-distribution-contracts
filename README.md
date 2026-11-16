@@ -52,10 +52,6 @@ Anyone can call `forward` to top a recipient up to a target balance and send the
 
     Forwards ETH
 
-2. ERC20Forwarder.sol
-
-    Forwards a single ERC20 token
-
 ## Installation
 
 1. Install [Foundry](https://github.com/foundry-rs/foundry):
