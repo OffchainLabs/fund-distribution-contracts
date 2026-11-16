@@ -15,12 +15,12 @@ contract EthForwarder is AbsOwnablePausable {
 
     error TransferFailed();
 
-    constructor(address owner_, address pauser_, address recipient_, address remainder_, uint256 target_)
-        AbsOwnablePausable(owner_, pauser_)
+    constructor(address _owner, address _pauser, address _recipient, address _remainder, uint256 _target)
+        AbsOwnablePausable(_owner, _pauser)
     {
-        recipient = recipient_;
-        remainder = remainder_;
-        targetBalance = target_;
+        recipient = _recipient;
+        remainder = _remainder;
+        targetBalance = _target;
     }
 
     receive() external payable {}
@@ -40,19 +40,19 @@ contract EthForwarder is AbsOwnablePausable {
         toRemainder = balance - toRecipient;
     }
 
-    function setRecipient(address recipient_) external onlyOwner {
-        recipient = recipient_;
-        emit RecipientSet(recipient_);
+    function setRecipient(address _recipient) external onlyOwner {
+        recipient = _recipient;
+        emit RecipientSet(_recipient);
     }
 
-    function setRemainder(address remainder_) external onlyOwner {
-        remainder = remainder_;
-        emit RemainderSet(remainder_);
+    function setRemainder(address _remainder) external onlyOwner {
+        remainder = _remainder;
+        emit RemainderSet(_remainder);
     }
 
-    function setTarget(uint256 target_) external onlyOwner {
-        targetBalance = target_;
-        emit TargetSet(target_);
+    function setTarget(uint256 _target) external onlyOwner {
+        targetBalance = _target;
+        emit TargetSet(_target);
     }
 
     function _send(address to, uint256 amount) private {

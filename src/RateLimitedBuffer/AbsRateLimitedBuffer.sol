@@ -22,19 +22,19 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
     error ZeroWindow();
 
     constructor(
-        address owner_,
-        address pauser_,
-        address recipient_,
-        uint256 target_,
-        uint256 maxAllowance_,
-        uint256 window_
-    ) AbsOwnablePausable(owner_, pauser_) {
-        if (window_ == 0) revert ZeroWindow();
-        recipient = recipient_;
-        targetBalance = target_;
-        maxAllowance = maxAllowance_;
-        window = window_;
-        _setAllowance(maxAllowance_);
+        address _owner,
+        address _pauser,
+        address _recipient,
+        uint256 _target,
+        uint256 _maxAllowance,
+        uint256 _window
+    ) AbsOwnablePausable(_owner, _pauser) {
+        if (_window == 0) revert ZeroWindow();
+        recipient = _recipient;
+        targetBalance = _target;
+        maxAllowance = _maxAllowance;
+        window = _window;
+        _setAllowance(_maxAllowance);
     }
 
     function forward() external whenNotPaused {
@@ -60,31 +60,31 @@ abstract contract AbsRateLimitedBuffer is AbsOwnablePausable {
         return _min(_min(shortfall, allowance()), _balance());
     }
 
-    function setRecipient(address recipient_) external onlyOwner {
-        recipient = recipient_;
-        emit RecipientSet(recipient_);
+    function setRecipient(address _recipient) external onlyOwner {
+        recipient = _recipient;
+        emit RecipientSet(_recipient);
     }
 
-    function setTarget(uint256 target_) external onlyOwner {
-        targetBalance = target_;
-        emit TargetSet(target_);
+    function setTarget(uint256 _target) external onlyOwner {
+        targetBalance = _target;
+        emit TargetSet(_target);
     }
 
-    function setMaxAllowance(uint256 maxAllowance_) external onlyOwner {
-        _setAllowance(_min(allowance(), maxAllowance_));
-        maxAllowance = maxAllowance_;
-        emit MaxAllowanceSet(maxAllowance_);
+    function setMaxAllowance(uint256 _maxAllowance) external onlyOwner {
+        _setAllowance(_min(allowance(), _maxAllowance));
+        maxAllowance = _maxAllowance;
+        emit MaxAllowanceSet(_maxAllowance);
     }
 
-    function setWindow(uint256 window_) external onlyOwner {
-        if (window_ == 0) revert ZeroWindow();
+    function setWindow(uint256 _window) external onlyOwner {
+        if (_window == 0) revert ZeroWindow();
         _setAllowance(allowance());
-        window = window_;
-        emit WindowSet(window_);
+        window = _window;
+        emit WindowSet(_window);
     }
 
-    function _setAllowance(uint256 allowance_) internal {
-        storedAllowance = allowance_;
+    function _setAllowance(uint256 _allowance) internal {
+        storedAllowance = _allowance;
         lastUpdate = block.timestamp;
     }
 

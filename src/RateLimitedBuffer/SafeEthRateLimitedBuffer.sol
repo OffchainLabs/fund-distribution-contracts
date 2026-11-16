@@ -16,15 +16,15 @@ contract SafeEthRateLimitedBuffer is AbsRateLimitedBuffer {
     error SafeTransferFailed();
 
     constructor(
-        ISafe safe_,
-        address owner_,
-        address pauser_,
-        address recipient_,
-        uint256 target_,
-        uint256 maxAllowance_,
-        uint256 window_
-    ) AbsRateLimitedBuffer(owner_, pauser_, recipient_, target_, maxAllowance_, window_) {
-        safe = safe_;
+        ISafe _safe,
+        address _owner,
+        address _pauser,
+        address _recipient,
+        uint256 _target,
+        uint256 _maxAllowance,
+        uint256 _window
+    ) AbsRateLimitedBuffer(_owner, _pauser, _recipient, _target, _maxAllowance, _window) {
+        safe = _safe;
     }
 
     function _balance() internal view override returns (uint256) {

@@ -11,9 +11,9 @@ abstract contract AbsOwnablePausable is Ownable, Pausable {
 
     error NotPauser();
 
-    constructor(address owner_, address pauser_) {
-        _transferOwnership(owner_);
-        pauser = pauser_;
+    constructor(address _owner, address _pauser) {
+        _transferOwnership(_owner);
+        pauser = _pauser;
     }
 
     function pause() external {
@@ -25,8 +25,8 @@ abstract contract AbsOwnablePausable is Ownable, Pausable {
         _unpause();
     }
 
-    function setPauser(address pauser_) external onlyOwner {
-        pauser = pauser_;
-        emit PauserSet(pauser_);
+    function setPauser(address _pauser) external onlyOwner {
+        pauser = _pauser;
+        emit PauserSet(_pauser);
     }
 }
