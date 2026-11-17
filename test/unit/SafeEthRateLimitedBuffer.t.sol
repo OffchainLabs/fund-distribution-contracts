@@ -11,7 +11,6 @@ import "forge-std/Test.sol";
 contract SafeEthRateLimitedBufferTest is Test {
     SafeMock safe;
     SafeEthRateLimitedBuffer buffer;
-    address owner = address(0x1111);
     address recipient = address(0x2222);
     address pauser = address(0x4444);
 
@@ -32,14 +31,13 @@ contract SafeEthRateLimitedBufferTest is Test {
         returns (SafeEthRateLimitedBuffer b)
     {
         b = new SafeEthRateLimitedBuffer(
-            ISafe(address(safe)), owner, pauser, _recipient, _targetBalance, _maxAllowance, _window
+            ISafe(address(safe)), pauser, _recipient, _targetBalance, _maxAllowance, _window
         );
         safe.enableModule(address(b));
     }
 
     function testConstructor() public {
         assertEq(address(buffer.safe()), address(safe));
-        assertEq(buffer.owner(), owner);
         assertEq(buffer.pauser(), pauser);
         assertEq(buffer.recipient(), recipient);
         assertEq(buffer.targetBalance(), 10 ether);
@@ -50,7 +48,7 @@ contract SafeEthRateLimitedBufferTest is Test {
 
     function testConstructorZeroWindow() public {
         vm.expectRevert(SafeEthRateLimitedBuffer.ZeroWindow.selector);
-        new SafeEthRateLimitedBuffer(ISafe(address(safe)), owner, pauser, recipient, 10 ether, 4 ether, 0);
+        new SafeEthRateLimitedBuffer(ISafe(address(safe)), pauser, recipient, 10 ether, 4 ether, 0);
     }
 
     function testForwardLimitedByAllowance() public {
@@ -102,7 +100,7 @@ contract SafeEthRateLimitedBufferTest is Test {
     }
 
     function testForwardModuleNotEnabled() public {
-        buffer = new SafeEthRateLimitedBuffer(ISafe(address(safe)), owner, pauser, recipient, 10 ether, 4 ether, 100);
+        buffer = new SafeEthRateLimitedBuffer(ISafe(address(safe)), pauser, recipient, 10 ether, 4 ether, 100);
         vm.deal(address(safe), 20 ether);
 
         vm.expectRevert("GS104");
@@ -176,29 +174,33 @@ contract SafeEthRateLimitedBufferTest is Test {
         buffer.pause();
         vm.warp(block.timestamp + 50);
 
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.unpause();
         buffer.forward();
 
         assertEq(recipient.balance, 6 ether);
     }
 
-    function testPauseOnlyPauserOrOwner() public {
-        vm.expectRevert(AbsTopUp.NotPauser.selector);
+    function testPauseOnlyPauserOrSafe() public {
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotPauser.selector);
         buffer.pause();
 
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.pause();
         assertTrue(buffer.paused());
     }
 
-    function testUnpauseOnlyOwner() public {
+    function testUnpauseOnlySafe() public {
         vm.prank(pauser);
         buffer.pause();
 
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
         vm.prank(pauser);
         buffer.unpause();
+
+        vm.prank(address(safe));
+        buffer.unpause();
+        assertFalse(buffer.paused());
     }
 
     function testSetPauser() public {
@@ -206,11 +208,11 @@ contract SafeEthRateLimitedBufferTest is Test {
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit PauserSet(other);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setPauser(other);
         assertEq(buffer.pauser(), other);
 
-        vm.expectRevert(AbsTopUp.NotPauser.selector);
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotPauser.selector);
         vm.prank(pauser);
         buffer.pause();
 
@@ -225,7 +227,7 @@ contract SafeEthRateLimitedBufferTest is Test {
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit RecipientSet(other);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setRecipient(other);
 
         buffer.forward();
@@ -238,23 +240,23 @@ contract SafeEthRateLimitedBufferTest is Test {
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit TargetBalanceSet(1 ether);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setTargetBalance(1 ether);
 
         buffer.forward();
         assertEq(recipient.balance, 1 ether);
     }
 
-    function testSettersOnlyOwner() public {
-        vm.expectRevert("Ownable: caller is not the owner");
+    function testSettersOnlySafe() public {
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
         buffer.setPauser(address(0x3333));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
         buffer.setRecipient(address(0x3333));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
         buffer.setTargetBalance(1);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
         buffer.setMaxAllowance(1);
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
         buffer.setWindow(1);
     }
 
@@ -266,7 +268,7 @@ contract SafeEthRateLimitedBufferTest is Test {
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit MaxAllowanceSet(1 ether);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setMaxAllowance(1 ether);
         assertEq(buffer.allowance(), 1 ether);
     }
@@ -276,7 +278,7 @@ contract SafeEthRateLimitedBufferTest is Test {
         buffer.forward();
         vm.warp(block.timestamp + 50);
 
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setMaxAllowance(8 ether);
         assertEq(buffer.allowance(), 2 ether);
 
@@ -294,7 +296,7 @@ contract SafeEthRateLimitedBufferTest is Test {
 
         vm.expectEmit(false, false, false, true, address(buffer));
         emit WindowSet(200);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setWindow(200);
         assertEq(buffer.allowance(), 2 ether);
 
@@ -305,10 +307,10 @@ contract SafeEthRateLimitedBufferTest is Test {
     function testMaxAllowanceTooHigh() public {
         uint256 tooHigh = uint256(type(uint192).max) + 1;
         vm.expectRevert(SafeEthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
-        new SafeEthRateLimitedBuffer(ISafe(address(safe)), owner, pauser, recipient, 10 ether, tooHigh, 100);
+        new SafeEthRateLimitedBuffer(ISafe(address(safe)), pauser, recipient, 10 ether, tooHigh, 100);
 
         vm.expectRevert(SafeEthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setMaxAllowance(tooHigh);
         assertEq(buffer.maxAllowance(), 4 ether);
     }
@@ -337,7 +339,7 @@ contract SafeEthRateLimitedBufferTest is Test {
 
     function testSetWindowZero() public {
         vm.expectRevert(SafeEthRateLimitedBuffer.ZeroWindow.selector);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setWindow(0);
     }
 
@@ -357,9 +359,9 @@ contract SafeEthRateLimitedBufferTest is Test {
         vm.deal(recipient, 0);
         buffer.forward();
         assertEq(recipient.balance, 10 ether);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setMaxAllowance(max);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setWindow(200);
 
         vm.warp(block.timestamp + 1000);
@@ -367,9 +369,9 @@ contract SafeEthRateLimitedBufferTest is Test {
         vm.deal(recipient, 0);
         buffer.forward();
         assertEq(recipient.balance, 10 ether);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setWindow(100);
-        vm.prank(owner);
+        vm.prank(address(safe));
         buffer.setMaxAllowance(4 ether);
         assertEq(buffer.allowance(), 4 ether);
     }

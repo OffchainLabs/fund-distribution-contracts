@@ -34,7 +34,7 @@ When setting up a new route, make sure the token exists on both side by the conf
 
 ## Rate Limited Buffers
 
-Anyone can call `forward` to top a recipient up to a target balance, limited by an allowance that refills linearly at `maxAllowance` per `window` seconds. The owner can change the recipient, target, max allowance, window and pauser. The pauser or owner can pause `forward`; only the owner can unpause.
+Anyone can call `forward` to top a recipient up to a target balance, limited by an allowance that refills linearly at `maxAllowance` per `window` seconds. The Safe is the owner and can change the recipient, target, max allowance, window and pauser. The pauser or Safe can pause `forward`; only the Safe can unpause.
 
 1. SafeEthRateLimitedBuffer.sol
 
