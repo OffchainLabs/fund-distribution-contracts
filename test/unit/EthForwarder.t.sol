@@ -15,6 +15,7 @@ contract EthForwarderTest is Test {
     address remainder = address(0x3333);
 
     event Forwarded(uint256 toRecipient, uint256 toRemainder);
+    event PauserSet(address pauser);
     event RecipientSet(address recipient);
     event RemainderSet(address remainder);
     event TargetBalanceSet(uint256 targetBalance);
@@ -130,6 +131,33 @@ contract EthForwarderTest is Test {
         assertEq(address(forwarder).balance, 1 ether);
     }
 
+    function testPauseOnlyPauserOrOwner() public {
+        vm.expectRevert(EthForwarder.NotPauser.selector);
+        forwarder.pause();
+
+        vm.prank(owner);
+        forwarder.pause();
+        assertTrue(forwarder.paused());
+    }
+
+    function testSetPauser() public {
+        address other = address(0x4444);
+
+        vm.expectEmit(false, false, false, true, address(forwarder));
+        emit PauserSet(other);
+        vm.prank(owner);
+        forwarder.setPauser(other);
+        assertEq(forwarder.pauser(), other);
+
+        vm.expectRevert(EthForwarder.NotPauser.selector);
+        vm.prank(pauser);
+        forwarder.pause();
+
+        vm.prank(other);
+        forwarder.pause();
+        assertTrue(forwarder.paused());
+    }
+
     function testSetRecipient() public {
         address other = address(0x4444);
         vm.deal(address(forwarder), 20 ether);
@@ -187,6 +215,8 @@ contract EthForwarderTest is Test {
     }
 
     function testSettersOnlyOwner() public {
+        vm.expectRevert("Ownable: caller is not the owner");
+        forwarder.setPauser(address(0x4444));
         vm.expectRevert("Ownable: caller is not the owner");
         forwarder.setRecipient(address(0x4444));
         vm.expectRevert("Ownable: caller is not the owner");

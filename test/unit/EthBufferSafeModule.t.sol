@@ -302,14 +302,15 @@ contract EthBufferSafeModuleTest is Test {
         assertEq(buffer.allowance(), 3 ether);
     }
 
-    function testMaxAllowanceTooHigh() public {
-        uint256 tooHigh = uint256(type(uint192).max) + 1;
+    function testConstructorMaxAllowanceTooHigh() public {
         vm.expectRevert(EthBufferSafeModule.MaxAllowanceTooHigh.selector);
-        new EthBufferSafeModule(ISafe(address(safe)), pauser, recipient, 10 ether, tooHigh, 100);
+        new EthBufferSafeModule(ISafe(address(safe)), pauser, recipient, 10 ether, uint256(type(uint192).max) + 1, 100);
+    }
 
+    function testSetMaxAllowanceTooHigh() public {
         vm.expectRevert(EthBufferSafeModule.MaxAllowanceTooHigh.selector);
         vm.prank(address(safe));
-        buffer.setMaxAllowance(tooHigh);
+        buffer.setMaxAllowance(uint256(type(uint192).max) + 1);
         assertEq(buffer.maxAllowance(), 4 ether);
     }
 
@@ -318,7 +319,7 @@ contract EthBufferSafeModuleTest is Test {
         buffer.forward();
         assertEq(buffer.allowance(), 0);
 
-        vm.warp(block.timestamp + 100 * 365 days);
+        vm.warp(block.timestamp + 200 * 365 days);
         assertEq(buffer.allowance(), 4 ether);
         vm.deal(recipient, 9 ether);
         buffer.forward();
