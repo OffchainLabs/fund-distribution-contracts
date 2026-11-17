@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "../../src/TopUp/SafeEthRateLimitedBuffer.sol";
+import "../../src/TopUp/EthBufferSafeModule.sol";
 
 import "../mocks/SafeMock.sol";
 import "../mocks/Empty.sol";
 
 import "forge-std/Test.sol";
 
-contract SafeEthRateLimitedBufferTest is Test {
+contract EthBufferSafeModuleTest is Test {
     SafeMock safe;
-    SafeEthRateLimitedBuffer buffer;
+    EthBufferSafeModule buffer;
     address recipient = address(0x2222);
     address pauser = address(0x4444);
 
@@ -28,11 +28,9 @@ contract SafeEthRateLimitedBufferTest is Test {
 
     function _deploy(address _recipient, uint256 _targetBalance, uint256 _maxAllowance, uint256 _window)
         internal
-        returns (SafeEthRateLimitedBuffer b)
+        returns (EthBufferSafeModule b)
     {
-        b = new SafeEthRateLimitedBuffer(
-            ISafe(address(safe)), pauser, _recipient, _targetBalance, _maxAllowance, _window
-        );
+        b = new EthBufferSafeModule(ISafe(address(safe)), pauser, _recipient, _targetBalance, _maxAllowance, _window);
         safe.enableModule(address(b));
     }
 
@@ -47,8 +45,8 @@ contract SafeEthRateLimitedBufferTest is Test {
     }
 
     function testConstructorZeroWindow() public {
-        vm.expectRevert(SafeEthRateLimitedBuffer.ZeroWindow.selector);
-        new SafeEthRateLimitedBuffer(ISafe(address(safe)), pauser, recipient, 10 ether, 4 ether, 0);
+        vm.expectRevert(EthBufferSafeModule.ZeroWindow.selector);
+        new EthBufferSafeModule(ISafe(address(safe)), pauser, recipient, 10 ether, 4 ether, 0);
     }
 
     function testForwardLimitedByAllowance() public {
@@ -100,7 +98,7 @@ contract SafeEthRateLimitedBufferTest is Test {
     }
 
     function testForwardModuleNotEnabled() public {
-        buffer = new SafeEthRateLimitedBuffer(ISafe(address(safe)), pauser, recipient, 10 ether, 4 ether, 100);
+        buffer = new EthBufferSafeModule(ISafe(address(safe)), pauser, recipient, 10 ether, 4 ether, 100);
         vm.deal(address(safe), 20 ether);
 
         vm.expectRevert("GS104");
@@ -111,7 +109,7 @@ contract SafeEthRateLimitedBufferTest is Test {
         buffer = _deploy(address(new Empty()), 10 ether, 4 ether, 100);
         vm.deal(address(safe), 20 ether);
 
-        vm.expectRevert(SafeEthRateLimitedBuffer.SafeTransferFailed.selector);
+        vm.expectRevert(EthBufferSafeModule.SafeTransferFailed.selector);
         buffer.forward();
     }
 
@@ -182,7 +180,7 @@ contract SafeEthRateLimitedBufferTest is Test {
     }
 
     function testPauseOnlyPauserOrSafe() public {
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotPauser.selector);
+        vm.expectRevert(EthBufferSafeModule.NotPauser.selector);
         buffer.pause();
 
         vm.prank(address(safe));
@@ -194,7 +192,7 @@ contract SafeEthRateLimitedBufferTest is Test {
         vm.prank(pauser);
         buffer.pause();
 
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
+        vm.expectRevert(EthBufferSafeModule.NotSafe.selector);
         vm.prank(pauser);
         buffer.unpause();
 
@@ -212,7 +210,7 @@ contract SafeEthRateLimitedBufferTest is Test {
         buffer.setPauser(other);
         assertEq(buffer.pauser(), other);
 
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotPauser.selector);
+        vm.expectRevert(EthBufferSafeModule.NotPauser.selector);
         vm.prank(pauser);
         buffer.pause();
 
@@ -248,15 +246,15 @@ contract SafeEthRateLimitedBufferTest is Test {
     }
 
     function testSettersOnlySafe() public {
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
+        vm.expectRevert(EthBufferSafeModule.NotSafe.selector);
         buffer.setPauser(address(0x3333));
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
+        vm.expectRevert(EthBufferSafeModule.NotSafe.selector);
         buffer.setRecipient(address(0x3333));
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
+        vm.expectRevert(EthBufferSafeModule.NotSafe.selector);
         buffer.setTargetBalance(1);
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
+        vm.expectRevert(EthBufferSafeModule.NotSafe.selector);
         buffer.setMaxAllowance(1);
-        vm.expectRevert(SafeEthRateLimitedBuffer.NotSafe.selector);
+        vm.expectRevert(EthBufferSafeModule.NotSafe.selector);
         buffer.setWindow(1);
     }
 
@@ -306,10 +304,10 @@ contract SafeEthRateLimitedBufferTest is Test {
 
     function testMaxAllowanceTooHigh() public {
         uint256 tooHigh = uint256(type(uint192).max) + 1;
-        vm.expectRevert(SafeEthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
-        new SafeEthRateLimitedBuffer(ISafe(address(safe)), pauser, recipient, 10 ether, tooHigh, 100);
+        vm.expectRevert(EthBufferSafeModule.MaxAllowanceTooHigh.selector);
+        new EthBufferSafeModule(ISafe(address(safe)), pauser, recipient, 10 ether, tooHigh, 100);
 
-        vm.expectRevert(SafeEthRateLimitedBuffer.MaxAllowanceTooHigh.selector);
+        vm.expectRevert(EthBufferSafeModule.MaxAllowanceTooHigh.selector);
         vm.prank(address(safe));
         buffer.setMaxAllowance(tooHigh);
         assertEq(buffer.maxAllowance(), 4 ether);
@@ -338,7 +336,7 @@ contract SafeEthRateLimitedBufferTest is Test {
     }
 
     function testSetWindowZero() public {
-        vm.expectRevert(SafeEthRateLimitedBuffer.ZeroWindow.selector);
+        vm.expectRevert(EthBufferSafeModule.ZeroWindow.selector);
         vm.prank(address(safe));
         buffer.setWindow(0);
     }

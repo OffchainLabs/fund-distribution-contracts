@@ -11,7 +11,7 @@ interface ISafe {
 }
 
 /// @notice Forwards ETH held by a Safe. This contract must be enabled as a module on the Safe.
-contract SafeEthRateLimitedBuffer is Pausable {
+contract EthBufferSafeModule is Pausable {
     ISafe public immutable safe;
     address public pauser;
     address public recipient;
