@@ -32,6 +32,18 @@ These are the supported routes:
 
 When setting up a new route, make sure the token exists on both side by the configurated bridge or else fund can be stuck.
 
+## Rate Limited Buffer
+
+EthBufferSafeModule.sol forwards ETH held by a Safe. The buffer must be enabled as a module on the Safe.
+
+Anyone can call `forward` to top a recipient up to a target balance, limited by an allowance that refills linearly at `maxAllowance` per `window` seconds. The Safe is the owner and can change the recipient, target, max allowance, window and pauser. The pauser or Safe can pause `forward`; only the Safe can unpause.
+
+## Forwarder
+
+EthForwarder.sol forwards ETH.
+
+Anyone can call `forward` to top a recipient up to a target balance and send the rest to a remainder address. The forwarder keeps nothing. The owner can change the pauser, recipient, remainder and target. The pauser or owner can pause `forward`; only the owner can unpause.
+
 ## Installation
 
 1. Install [Foundry](https://github.com/foundry-rs/foundry):
