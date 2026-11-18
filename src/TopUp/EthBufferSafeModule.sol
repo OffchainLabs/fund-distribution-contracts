@@ -25,10 +25,10 @@ contract EthBufferSafeModule is Pausable {
     /// @notice Seconds for the allowance to fully refill.
     uint256 public window;
 
-    /// @dev Allowance as of lastUpdate, before refill.
-    uint192 internal storedAllowance;
-    /// @dev Timestamp of the last allowance checkpoint.
-    uint64 internal lastUpdate;
+    /// @notice Allowance as of lastUpdate, before refill.
+    uint192 public storedAllowance;
+    /// @notice Timestamp of the last allowance checkpoint.
+    uint64 public lastUpdate;
 
     event Forwarded(uint256 amount);
     event PauserSet(address pauser);
